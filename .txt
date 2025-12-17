@@ -1,0 +1,18 @@
+npm init -y
+npm install express dotenv jsonwebtoken bcryptjs
+npm install nodemon --save-dev
+npm uninstall prisma @prisma/client
+npm install prisma@5.15.0 @prisma/client@5.15.0
+npx prisma init
+npx prisma format
+npx prisma migrate dev --name init_tables
+npx prisma db seed
+
+Elimina o ignora prisma.config.ts
+prisma.config.ts
+
+schema.prisma:
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
