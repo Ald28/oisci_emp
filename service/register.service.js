@@ -3,7 +3,7 @@ import { RegisterRepository } from '../repository/register.repository.js'
 import { prisma } from '../database/client.mjs'
 
 export async function registerUserService(adminUser, userData) {
-    
+
     if (adminUser.role !== 'admin') {
         throw new Error('No tienes permisos para registrar usuarios')
     }
@@ -25,10 +25,21 @@ export async function registerUserService(adminUser, userData) {
     })
 
     if (userData.roleName === 'cliente') {
+
+        if (!userData.ruc) {
+            throw new Error('El RUC es obligatorio para usuarios cliente')
+        }
+
+        if (typeof userData.ruc !== 'string' || userData.ruc.length !== 11) {
+            throw new Error('El RUC debe ser una cadena de 11 caracteres')
+        }
+
         await RegisterRepository.createClient({
             clientCode: `CLI-${Date.now()}`,
             razonSocial: userData.razonSocial,
             ruc: userData.ruc,
+            phone: userData.phone,
+            address: userData.address,
             userId: user.id,
             active: true,
         })

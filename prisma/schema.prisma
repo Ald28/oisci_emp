@@ -59,7 +59,9 @@ model Client {
   id          Int      @id @default(autoincrement())
   clientCode  String   @unique
   razonSocial String
-  ruc         String   @unique
+  ruc         String   @unique @db.VarChar(11)
+  phone       String
+  address     String
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
   active      Boolean  @default(true)

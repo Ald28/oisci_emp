@@ -8,6 +8,10 @@ npx prisma format
 npx prisma migrate dev --name init_tables
 npx prisma db seed
 
+Remove-Item -Recurse -Force prisma\migrations
+npx prisma migrate dev --name init
+npx prisma migrate reset
+
 Elimina o ignora prisma.config.ts
 prisma.config.ts
 
