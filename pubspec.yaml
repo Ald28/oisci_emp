@@ -1,0 +1,49 @@
+name: oisci_emp
+description: "A new Flutter project."
+
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  internet_connection_checker: ^1.0.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  workmanager: ^0.9.0+3
+  flutter_local_notifications: ^17.0.0
+
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.3
+  dio: ^5.9.0
+  flutter_secure_storage: ^9.2.4
+  connectivity_plus: ^7.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.6
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+
+flutter:
+
+  uses-material-design: true
+  assets:
+    - assets/icon/OISCI.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  image_path: "assets/icon/icon.png"
+
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
