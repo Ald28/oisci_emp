@@ -16,3 +16,17 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+| Paso                     | Qué hace / Por qué                                    |
+| ------------------------ | ----------------------------------------------------- |
+| `npm init -y`            | Crear archivo base para manejar proyecto Node         |
+| Instalar librerías       | Añadir funcionalidades (servidor, auth, config, etc.) |
+| Instalar nodemon         | Facilitar desarrollo con recarga automática           |
+| Desinstalar Prisma vieja | Evitar problemas con versión incompatible             |
+| Instalar Prisma 5.15     | Versión estable y compatible                          |
+| `prisma init`            | Crear estructura básica Prisma                        |
+| `prisma format`          | Mantener limpio schema.prisma                         |
+| `prisma migrate dev`     | Crear/actualizar tablas en BD según el modelo         |
+| `prisma db seed`         | Poner datos iniciales en la base                      |
+| Ignorar prisma.config.ts | Evitar configuraciones conflictivas innecesarias      |
+| Configurar datasource DB | Conectar Prisma a tu BD PostgreSQL                    |
