@@ -1,4 +1,4 @@
-import { EditClients } from "../repository/edit.repository.js"
+import { EditClients } from "../../repository/client/edit.repository.js"
 
 export async function editClientAndUserService(clientId, payload) {
     const { client, user } = payload

@@ -1,4 +1,4 @@
-import { ListClients } from '../repository/list.repository.js'
+import { ListClients } from '../../repository/client/list.repository.js'
 
 export async function listClientsService() {
     try {

@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
-import { RegisterRepository } from '../repository/register.repository.js'
-import { prisma } from '../database/client.mjs'
+import { RegisterRepository } from '../../repository/client/register.repository.js'
+import { prisma } from '../../database/client.mjs'
 
 export async function registerUserService(adminUser, userData) {
 

@@ -1,4 +1,4 @@
-import { deleteClientService, restoreClientService } from '../service/delete.service.js'
+import { deleteClientService, restoreClientService } from '../../service/client/delete.service.js'
 
 export async function deleteClient(req, res) {
     try {

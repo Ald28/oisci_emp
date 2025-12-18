@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { deleteClient, restoreClient } from '../controllers/delete.controller.js'
-import { authenticate, authorize } from '../middleware/auth.middleware.js'
+import { deleteClient, restoreClient } from '../../controllers/client/delete.controller.js'
+import { authenticate, authorize } from '../../middleware/auth.middleware.js'
 
 const router = Router()
 

@@ -1,4 +1,4 @@
-import { editClientAndUserService } from "../service/edit.service.js"
+import { editClientAndUserService } from "../../service/client/edit.service.js"
 
 export async function editClientAndUser(req, res) {
     try {

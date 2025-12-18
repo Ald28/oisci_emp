@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
-import { generateAccessToken, generateRefreshToken, } from '../src/config/jwt.js'
-import { AuthRepository } from '../repository/auth.repository.js'
-import { prisma } from '../database/client.mjs'
+import { generateAccessToken, generateRefreshToken, } from '../../src/config/jwt.js'
+import { AuthRepository } from '../../repository/client/auth.repository.js'
+import { prisma } from '../../database/client.mjs'
 
 export async function loginService({ email, password }) {
 

@@ -1,4 +1,4 @@
-import { listClientsService } from '../service/list.service.js'
+import { listClientsService } from '../../service/client/list.service.js'
 
 export async function listClients(req, res) {
     try {

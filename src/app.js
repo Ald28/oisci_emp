@@ -1,9 +1,9 @@
 import express from 'express';
-import userRoutes from '../routes/auth.routes.js';
-import registeRoutes from '../routes/register.routes.js';
-import listRoutes from '../routes/list.routes.js';
-import deleteRoutes from '../routes/delete.routes.js';
-import editRoutes from '../routes/edit.routes.js';
+import userRoutes from '../routes/client/auth.routes.js';
+import registeRoutes from '../routes/client/register.routes.js';
+import listRoutes from '../routes/client/list.routes.js';
+import deleteRoutes from '../routes/client/delete.routes.js';
+import editRoutes from '../routes/client/edit.routes.js';
 import dotenv from "dotenv";
 dotenv.config();
 

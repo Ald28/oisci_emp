@@ -1,4 +1,4 @@
-import { DeleteClients } from '../repository/delete.repository.js'
+import { DeleteClients } from '../../repository/client/delete.repository.js'
 
 export async function deleteClientService(clientId) {
     try {

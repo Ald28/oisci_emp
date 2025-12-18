@@ -1,4 +1,4 @@
-import { registerUserService } from '../service/register.service.js'
+import { registerUserService } from '../../service/client/register.service.js'
 
 export async function registerUser(req, res) {
     try {

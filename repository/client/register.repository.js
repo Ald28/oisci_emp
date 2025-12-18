@@ -1,4 +1,4 @@
-import { prisma } from '../database/client.mjs'
+import { prisma } from '../../database/client.mjs'
 
 export const RegisterRepository = {
     createUser(data) {

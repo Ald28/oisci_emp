@@ -1,4 +1,4 @@
-import { loginService } from '../service/auth.service.js'
+import { loginService } from '../../service/client/auth.service.js'
 
 export async function login(req, res) {
     try {
