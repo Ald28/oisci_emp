@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'interceptors/auth_interceptor.dart';
 
 class DioClient {
@@ -9,7 +10,7 @@ class DioClient {
 
   DioClient._internal() {
     dio = Dio(BaseOptions(
-      baseUrl: "http://192.168.1.12:8000",
+      baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000',
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
       headers: {"Content-Type": "application/json"},
