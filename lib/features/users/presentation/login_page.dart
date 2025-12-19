@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/auth_card.dart';
 import '../../../core/auth/auth_service.dart';
-import 'home_page.dart';
+import '../../home/presentation/pages/home_page.dart';
 import '../../users/data/user_repository_impl.dart';
 import '../../users/data/datasources/user_remote_datasource.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
