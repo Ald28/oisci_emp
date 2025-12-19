@@ -5,8 +5,9 @@ import { generateUserCode } from './utils.mjs'
 export async function seedUsers(roles) {
     const users = [
         { code: 1, name: 'Administrador', email: 'admin@admin.com', roleId: roles.adminRole.id },
-        { code: 2, name: 'Técnico Ejemplo', email: 'tecnico@empresa.com', roleId: roles.tecnicoRole.id },
-        { code: 3, name: 'Cliente Ejemplo', email: 'cliente@empresa.com', roleId: roles.clienteRole.id },
+        { code: 2, name: 'Administrador2', email: 'admin2@admin.com', roleId: roles.adminRole.id },
+        { code: 3, name: 'Técnico Ejemplo', email: 'tecnico@empresa.com', roleId: roles.tecnicoRole.id },
+        { code: 4, name: 'Cliente Ejemplo', email: 'cliente@empresa.com', roleId: roles.clienteRole.id },
     ]
 
     for (const u of users) {
