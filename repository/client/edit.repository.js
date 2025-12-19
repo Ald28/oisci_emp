@@ -1,7 +1,7 @@
 import { prisma } from '../../database/client.mjs'
 
 export const EditClients = {
-    async updateClientAndUser(clientId, clientData, userData) {
+    async updateClientAndUser(clientId, clientData, userData, editorId) {
         return prisma.$transaction(async (tx) => {
 
             const clientResult = await tx.client.updateMany({
@@ -19,7 +19,10 @@ export const EditClients = {
 
             const userResult = await tx.user.updateMany({
                 where: { id: client.userId, active: true },
-                data: userData,
+                data: {
+                    ...userData,
+                    updatedById: editorId,
+                },
             })
 
             if (userResult.count === 0) {
@@ -28,6 +31,15 @@ export const EditClients = {
 
             const user = await tx.user.findUnique({
                 where: { id: client.userId },
+                include: {
+                    updatedBy: {
+                        select: {
+                            userCode: true,
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
             })
 
             return { client, user }

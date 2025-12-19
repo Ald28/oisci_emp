@@ -4,11 +4,13 @@ export async function editClientAndUser(req, res) {
     try {
         const clientId = Number(req.params.id)
         const payload = req.body
+        const editorUser = req.user
 
-        if (isNaN(clientId)) {
-            return res.status(400).json({ message: 'ID inválido' })
-        }
-        const updatedData = await editClientAndUserService(clientId, payload)
+        const updatedData = await editClientAndUserService(
+            clientId,
+            payload,
+            editorUser
+        )
 
         return res.status(200).json({
             message: 'Cliente y usuario actualizados correctamente',

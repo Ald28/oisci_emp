@@ -8,3 +8,8 @@ router.delete('/clients/:id', authenticate, authorize(['admin']), deleteClient)
 router.patch('/clients/:id/restore', authenticate, authorize(['admin']), restoreClient)
 
 export default router
+
+/*| URL                     | Ingresar               |
+| ------------------------- | ---------------------- |
+| `/clients/2`              | Id del cliente         |
+| `/clients/2/restore`      | Id del cliente         |*/

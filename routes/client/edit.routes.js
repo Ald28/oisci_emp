@@ -7,3 +7,7 @@ const router = Router()
 router.put('/clients/:id', authenticate, authorize(['admin']), editClientAndUser)
 
 export default router
+
+/*| URL                       | Ingresar              |
+| ------------------------- | ---------------------- |
+| `/clients/2`                | Id del cliente            |*/

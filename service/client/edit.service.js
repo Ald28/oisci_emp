@@ -1,6 +1,6 @@
 import { EditClients } from "../../repository/client/edit.repository.js"
 
-export async function editClientAndUserService(clientId, payload) {
+export async function editClientAndUserService(clientId, payload, editorUser) {
     const { client, user } = payload
 
     if (!client && !user) {
@@ -10,6 +10,7 @@ export async function editClientAndUserService(clientId, payload) {
     return EditClients.updateClientAndUser(
         clientId,
         client ?? {},
-        user ?? {}
+        user ?? {},
+        editorUser.sub
     )
 }
