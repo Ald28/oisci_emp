@@ -13,7 +13,7 @@ export async function registerUserService(adminUser, userData) {
         throw new Error('El email ya está registrado')
     }
 
-    if (userData.roleName === 'cliente') {
+    if (userData.name === 'cliente') {
         if (!userData.ruc) {
             throw new Error('El RUC es obligatorio para usuarios cliente')
         }
@@ -36,6 +36,7 @@ export async function registerUserService(adminUser, userData) {
             email: userData.email,
             password: hashedPassword,
             roleId: userData.roleId,
+            createdById: adminUser.sub,
             active: true,
         })
 
@@ -51,7 +52,22 @@ export async function registerUserService(adminUser, userData) {
             })
         }
 
-        return user
+        const userWithCreator = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: {
+                role: true,
+                createdBy: {
+                    select: {
+                        userCode: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        })
+
+        return userWithCreator
+
     } catch (error) {
         if (error.code === 'P2002') {
             if (error.meta.target.includes('email')) {
