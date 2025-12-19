@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/main_drawer.dart';
+import '../widgets/action_button.dart';
 import '../../../../core/auth/auth_service.dart';
 
 /// Página principal del Home con AppBar y Drawer
@@ -58,29 +59,76 @@ class _HomePageState extends State<HomePage> {
         userEmail: _userEmail ?? 'usuario@example.com',
         onMenuItemSelected: _handleMenuItemSelected,
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.home,
-              size: 80,
-              color: Colors.grey[400],
-            ),
             const SizedBox(height: 16),
+            // Mensaje de bienvenida
             Text(
-              'Bienvenido, ${widget.name}',
+              'Bienvenido, ${widget.name} 👋',
               style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Selecciona una opción del menú para comenzar',
+            const SizedBox(height: 10),
+            const Text(
+              'Selecciona la actividad a realizar:',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Sección de Servicios
+            const Text(
+              'Servicios',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Botones de servicios con padding lateral
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ActionButton(
+                      icon: Icons.build,
+                      title: 'Mantenimiento',
+                      onTap: () {
+                        // TODO: Navegar a módulo de Mantenimiento
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Módulo de Mantenimiento'),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ActionButton(
+                      icon: Icons.search,
+                      title: 'Inspección',
+                      onTap: () {
+                        // TODO: Navegar a módulo de Inspección
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Módulo de Inspección'),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
