@@ -36,4 +36,8 @@ export const ListClients = {
             },
         })
     },
+
+    async listClients(search) {
+        return this.searchClients(search)
+    },
 }
