@@ -4,6 +4,28 @@ import { authenticate, authorize } from '../../middleware/auth.middleware.js'
 
 const router = Router()
 
+/**
+ * @swagger
+ * /users/clients:
+ *   get:
+ *     summary: Listar clientes
+ *     tags: [Clients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Lista de clientes
+ */
+
 router.get('/clients', authenticate, authorize(['admin']), listClients)
 
 export default router

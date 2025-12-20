@@ -34,3 +34,36 @@ datasource db {
 | `prisma db seed`         | Poner datos iniciales en la base                      |
 | Ignorar prisma.config.ts | Evitar configuraciones conflictivas innecesarias      |
 | Configurar datasource DB | Conectar Prisma a tu BD PostgreSQL                    |
+
+
+OISCI_EMP/
+├── controllers/
+│   ├── client/
+│   └── sede/
+├── database/
+├── generated/
+├── middleware/
+├── node_modules/
+├── prisma/
+│   ├── migrations/
+│   └── schema.prisma
+├── repository/
+│   ├── client/
+│   └── sede/
+├── routes/
+│   ├── client/
+│   └── sede/
+├── service/
+│   ├── client/
+│   └── sede/
+├── src/
+│   ├── config/
+│   ├── app.js
+│   └── server.js
+├── .env
+├── .gitignore
+├── .txt
+├── docker-compose.yml
+├── Dockerfile
+├── package-lock.json
+└── package.json
