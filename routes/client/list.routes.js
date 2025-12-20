@@ -8,8 +8,8 @@ router.get('/clients', authenticate, authorize(['admin']), listClients)
 
 export default router
 
-/*| URL                       | Resultado              |
-| ------------------------- | ---------------------- |
-| `/clients`                | Lista todos            |
-| `/clients?search=1045`    | Busca por RUC          |
-| `/clients?search=empresa` | Busca por razón social |*/
+/*| URL                          | Resultado              |
+| -------------------------      | ---------------------- |
+| /clients?page=1                | Lista todos            |
+| /clients?search=1045&page=3    | Busca por RUC          |
+| /clients?search=empresa&page=1 | Busca por razón social |*/

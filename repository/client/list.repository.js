@@ -1,7 +1,7 @@
 import { prisma } from '../../database/client.mjs'
 
 export const ListClients = {
-    async searchClients(search) {
+    async searchClients(search, page = 1, pageSize = 10) {
         const where = {
             active: true,
         }
@@ -22,22 +22,39 @@ export const ListClients = {
             ]
         }
 
-        return prisma.client.findMany({
-            where,
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        role: true,
+        const skip = (page - 1) * pageSize
+
+        const [clients, total] = await Promise.all([
+            prisma.client.findMany({
+                where,
+                skip,
+                take: pageSize,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            role: true,
+                        },
                     },
                 },
+            }),
+            prisma.client.count({ where }),
+        ])
+
+        return {
+            data: clients,
+            pagination: {
+                page,
+                pageSize,
+                total,
+                totalPages: Math.ceil(total / pageSize),
             },
-        })
+        }
     },
 
-    async listClients(search) {
-        return this.searchClients(search)
+    async listClients(search, page, pageSize) {
+        return this.searchClients(search, page, pageSize)
     },
 }

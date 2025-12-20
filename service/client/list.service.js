@@ -1,8 +1,8 @@
 import { ListClients } from '../../repository/client/list.repository.js'
 
-export async function listClientsService(search) {
+export async function listClientsService(search, page, pageSize) {
     try {
-        return await ListClients.searchClients(search)
+        return await ListClients.searchClients(search, page, pageSize)
     } catch (error) {
         throw new Error('Error al obtener la lista de clientes')
     }
