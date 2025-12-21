@@ -73,4 +73,20 @@ model Client {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  sedes       Sede[]
+}
+
+model Sede {
+  id              Int      @id @default(autoincrement())
+  name_sede       String
+  address         String
+  manager_name    String
+  manager_phone   String
+  manager_email   String
+  city            String
+  active          Boolean  @default(true)
+  clientId        Int
+  client          Client     @relation(fields: [clientId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

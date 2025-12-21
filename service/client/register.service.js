@@ -66,9 +66,19 @@ export async function registerUserService(adminUser, userData) {
 
         return await prisma.user.findUnique({
             where: { id: user.id },
-            include: {
+            select: {
+                id: true,
+                userCode: true,
+                name: true,
+                email: true,
+                active: true,
+                roleId: true,
+                createdAt: true,
+                updatedAt: true,
+
                 role: true,
                 clients: true,
+
                 createdBy: {
                     select: {
                         userCode: true,

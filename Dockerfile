@@ -19,4 +19,4 @@ COPY --from=builder /app /app
 
 EXPOSE 8000
 
-CMD ["node", "server.js"]
+CMD ["node", "src/server.js"]

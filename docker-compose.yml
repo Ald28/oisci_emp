@@ -27,9 +27,9 @@ services:
       - db
     command: >
       sh -c "
-        npx prisma generate &&
-        npx prisma migrate deploy &&
-        node server.js
+      npx prisma migrate deploy &&
+      npx prisma db seed &&
+      node src/server.js
       "
 
 volumes:
