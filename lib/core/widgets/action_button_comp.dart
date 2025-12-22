@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Botón de acción reutilizable para secciones del Home
-/// Puede usarse para Servicios, Informes, Maestros, etc.
-class ActionButton extends StatelessWidget {
+/// Botón de acción compacto (vertical) reutilizable
+class ActionButtonComp extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
 
-  const ActionButton({
+  const ActionButtonComp({
     super.key,
     required this.icon,
     required this.title,

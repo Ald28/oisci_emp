@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/main_drawer.dart';
-import '../widgets/action_button.dart';
+import '../../../../core/widgets/action_button_expand.dart';
+import '../../../services/presentation/pages/services_menu_page.dart';
 import '../../../../core/auth/auth_service.dart';
 
 /// Página principal del Home con AppBar y Drawer
@@ -45,6 +46,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEAEAEA),
       appBar: HomeAppBar(
         title: _currentTitle,
         leading: Builder(
@@ -84,52 +86,19 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 28),
-            // Sección de Servicios
-            const Text(
-              'Servicios',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Botones de servicios con padding lateral
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ActionButton(
-                      icon: Icons.build,
-                      title: 'Mantenimiento',
-                      onTap: () {
-                        // TODO: Navegar a módulo de Mantenimiento
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Módulo de Mantenimiento'),
-                          ),
-                        );
-                      },
-                    ),
+            // Botón de Servicios (ancho completo)
+            ActionButtonExpand(
+              icon: Icons.handyman,
+              title: 'Servicios',
+              subtitle: 'Gestionar servicios',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ServicesMenuPage(),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ActionButton(
-                      icon: Icons.search,
-                      title: 'Inspección',
-                      onTap: () {
-                        // TODO: Navegar a módulo de Inspección
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Módulo de Inspección'),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ),
