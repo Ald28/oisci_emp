@@ -3,18 +3,14 @@ import '../../../../core/network/dio_client.dart';
 import 'extinguisher_datasource.dart';
 import '../models/extinguisher_model.dart';
 
-/// Implementación HTTP: DataSource de Extintores (Backend Real)
-/// Endpoint: GET /nfc/search/:codigoNFC
 class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   final Dio _dio = DioClient().dio;
 
   @override
-  Future<ExtinguisherModel?> searchExtinguisher(String query) async {
+  Future<ExtinguisherModel?> searchExtinguisher(String searchTerm) async {
     try {
-      // Endpoint: GET /nfc/search/:codigoNFC
-      // Busca por código NFC, número de serie o cualquier identificador
       final response = await _dio.get(
-        '/nfc/search/$query',
+        '/nfc/search/$searchTerm',
       );
 
       // El backend retorna: { ok: true, data: {...} } o { ok: false, message: "..." }

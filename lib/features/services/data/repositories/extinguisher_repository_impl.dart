@@ -10,8 +10,8 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
       : dataSource = dataSource ?? HttpExtinguisherDataSource();
 
   @override
-  Future<Extinguisher?> searchExtinguisher(String query) async {
-    return await dataSource.searchExtinguisher(query);
+  Future<Extinguisher?> searchExtinguisher(String searchTerm) async {
+    return await dataSource.searchExtinguisher(searchTerm);
   }
 }
 

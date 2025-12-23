@@ -7,13 +7,11 @@ class SearchExtinguisherUseCase {
 
   SearchExtinguisherUseCase(this.repository);
 
-  /// Buscar extintor por código, número de serie o NFC UID
-  /// Retorna null si no se encuentra
-  Future<Extinguisher?> call(String query) async {
-    if (query.trim().isEmpty) {
+  Future<Extinguisher?> call(String searchTerm) async {
+    if (searchTerm.trim().isEmpty) {
       return null;
     }
-    return await repository.searchExtinguisher(query.trim());
+    return await repository.searchExtinguisher(searchTerm.trim());
   }
 }
 

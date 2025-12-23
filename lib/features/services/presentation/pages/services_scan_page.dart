@@ -72,7 +72,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     await _searchExtinguisher(_codeController.text.trim());
   }
 
-  Future<void> _searchExtinguisher(String query) async {
+  Future<void> _searchExtinguisher(String searchTerm) async {
     if (!mounted) return;
 
     setState(() {
@@ -80,8 +80,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     });
 
     try {
-      // Buscar extintor usando el use case
-      final extinguisher = await _searchUseCase.call(query);
+      final extinguisher = await _searchUseCase.call(searchTerm);
 
       if (!mounted) return;
 
@@ -90,7 +89,6 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
       });
 
       if (extinguisher != null) {
-        // Extintor encontrado, navegar a datos
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -101,8 +99,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
           ),
         );
       } else {
-        // Extintor no encontrado, mostrar modal
-        _showExtinguisherNotFoundDialog(query);
+        _showExtinguisherNotFoundDialog(searchTerm);
       }
     } catch (e) {
       if (!mounted) return;
@@ -111,7 +108,6 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         _isSearching = false;
       });
 
-      // Mostrar error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al buscar extintor: ${e.toString()}'),
@@ -121,13 +117,13 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     }
   }
 
-  void _showExtinguisherNotFoundDialog(String query) {
+  void _showExtinguisherNotFoundDialog(String searchTerm) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Extintor no encontrado'),
         content: Text(
-          'El extintor con código/número de serie "$query" no existe en la base de datos.\n\n¿Deseas registrar un nuevo extintor?',
+          'El extintor con código/número de serie "$searchTerm" no existe en la base de datos.\n\n¿Deseas registrar un nuevo extintor?',
         ),
         actions: [
           TextButton(
