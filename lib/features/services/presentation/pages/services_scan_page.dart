@@ -5,6 +5,8 @@ import '../widgets/code_search_field.dart';
 import 'service_data_page.dart';
 import 'service_register_page.dart';
 import '../../domain/entities/service_type.dart';
+import '../../domain/usecases/search_extinguisher_usecase.dart';
+import '../../data/repositories/extinguisher_repository_impl.dart';
 
 /// Pantalla: NFC + input manual + Buscar
 /// Compartida para Mantenimiento e Inspección
@@ -23,6 +25,12 @@ class ServicesScanPage extends StatefulWidget {
 class _ServicesScanPageState extends State<ServicesScanPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isScanning = false;
+  bool _isSearching = false;
+
+  // Inicializar use case
+  late final SearchExtinguisherUseCase _searchUseCase = SearchExtinguisherUseCase(
+    ExtinguisherRepositoryImpl(),
+  );
 
   @override
   void dispose() {
@@ -44,9 +52,10 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         _isScanning = false;
       });
 
-      // Simulamos que encontramos un código
-      final scannedCode = 'PG05'; // Esto vendría del NFC
-      await _searchExtinguisher(scannedCode);
+      // Simulamos que encontramos un código NFC
+      // En producción, esto vendría del escaneo NFC real
+      final nfcUid = 'NFC123456'; // Esto vendría del NFC
+      await _searchExtinguisher(nfcUid);
     }
   }
 
@@ -63,37 +72,62 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     await _searchExtinguisher(_codeController.text.trim());
   }
 
-  Future<void> _searchExtinguisher(String code) async {
-    // TODO: Llamar al API para buscar el extintor
-    // Por ahora simulamos la búsqueda
-    final extinguisherExists = code.isNotEmpty; // Simulación
-
+  Future<void> _searchExtinguisher(String query) async {
     if (!mounted) return;
 
-    if (extinguisherExists) {
-      // Extintor existe, navegar a datos
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ServiceDataPage(
-            extinguisherCode: code,
-            serviceType: widget.serviceType,
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // Buscar extintor usando el use case
+      final extinguisher = await _searchUseCase.call(query);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = false;
+      });
+
+      if (extinguisher != null) {
+        // Extintor encontrado, navegar a datos
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ServiceDataPage(
+              extinguisher: extinguisher,
+              serviceType: widget.serviceType,
+            ),
           ),
+        );
+      } else {
+        // Extintor no encontrado, mostrar modal
+        _showExtinguisherNotFoundDialog(query);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = false;
+      });
+
+      // Mostrar error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al buscar extintor: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
-    } else {
-      // Extintor no existe, mostrar modal
-      _showExtinguisherNotFoundDialog(code);
     }
   }
 
-  void _showExtinguisherNotFoundDialog(String code) {
+  void _showExtinguisherNotFoundDialog(String query) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Extintor no encontrado'),
         content: Text(
-          'El extintor con código "$code" no existe en la base de datos.\n\n¿Deseas registrar un nuevo extintor?',
+          'El extintor con código/número de serie "$query" no existe en la base de datos.\n\n¿Deseas registrar un nuevo extintor?',
         ),
         actions: [
           TextButton(
@@ -163,10 +197,19 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             ),
             const SizedBox(height: 32),
             // Campo de búsqueda manual
-            CodeSearchField(
-              controller: _codeController,
-              onSearch: _handleManualSearch,
-            ),
+            _isSearching
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFE84343),
+                      ),
+                    ),
+                  )
+                : CodeSearchField(
+                    controller: _codeController,
+                    onSearch: _handleManualSearch,
+                  ),
           ],
         ),
       ),

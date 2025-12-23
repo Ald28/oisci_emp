@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../domain/entities/service_type.dart';
+import '../../domain/entities/extinguisher.dart';
+import 'package:intl/intl.dart';
 
 /// Pantalla: Mostrar datos del extintor + Continuar
 class ServiceDataPage extends StatelessWidget {
-  final String extinguisherCode;
+  final Extinguisher extinguisher;
   final ServiceType serviceType;
 
   const ServiceDataPage({
     super.key,
-    required this.extinguisherCode,
+    required this.extinguisher,
     required this.serviceType,
   });
 
@@ -57,31 +59,42 @@ class ServiceDataPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _buildDataRow('1', 'Código', 'PG05'),
-                    _buildDivider(),
-                    _buildDataRow('2', 'Ubicación', 'Escalera turbina'),
-                    _buildDivider(),
-                    _buildDataRow('3', 'Nro. Serie', 'U1572454'),
-                    _buildDivider(),
-                    _buildDataRow('4', 'Nro. Cilindro', '25478126'),
-                    _buildDivider(),
-                    _buildDataRow('5', 'Tipo de agente', 'PQS ABC'),
-                    _buildDivider(),
-                    _buildDataRow('6', 'Capacidad', '05 LBS'),
-                    _buildDivider(),
-                    _buildDataRow('7', 'Presión', 'INTERNA'),
-                    _buildDivider(),
-                    _buildDataRow('8', 'Marca', 'AMEREX'),
-                    _buildDivider(),
-                    _buildDataRow('9', 'Modelo', '4021'),
-                    _buildDivider(),
-                    _buildDataRow('10', 'Rating', '3A:40B:C'),
-                    _buildDivider(),
-                    _buildDataRow('11', 'Año de fabricación', '2008'),
-                    _buildDivider(),
-                    _buildDataRow('12', 'Fecha de Prueba Hidrostática', 'DIC 2023'),
-                    _buildDivider(),
-                    _buildDataRow('13', 'Fecha de mantenimiento', 'DIC 2023'),
+                    if (extinguisher.codigoNFC != null)
+                      _buildDataRow('1', 'Código NFC', extinguisher.codigoNFC!),
+                    if (extinguisher.codigoNFC != null) _buildDivider(),
+                    if (extinguisher.ubicacion != null)
+                      _buildDataRow('2', 'Ubicación', extinguisher.ubicacion!),
+                    if (extinguisher.ubicacion != null) _buildDivider(),
+                    if (extinguisher.numeroSerie != null)
+                      _buildDataRow('3', 'Nro. Serie', extinguisher.numeroSerie!),
+                    if (extinguisher.numeroSerie != null) _buildDivider(),
+                    if (extinguisher.numeroCilindro != null)
+                      _buildDataRow('4', 'Nro. Cilindro', extinguisher.numeroCilindro!),
+                    if (extinguisher.numeroCilindro != null) _buildDivider(),
+                    if (extinguisher.tipo != null)
+                      _buildDataRow('5', 'Tipo', extinguisher.tipo!),
+                    if (extinguisher.tipo != null) _buildDivider(),
+                    if (extinguisher.agente != null)
+                      _buildDataRow('6', 'Agente', extinguisher.agente!),
+                    if (extinguisher.agente != null) _buildDivider(),
+                    if (extinguisher.capacidad != null)
+                      _buildDataRow('7', 'Capacidad', extinguisher.capacidad!),
+                    if (extinguisher.capacidad != null) _buildDivider(),
+                    if (extinguisher.estado != null)
+                      _buildDataRow('8', 'Estado', extinguisher.estado!),
+                    if (extinguisher.estado != null) _buildDivider(),
+                    if (extinguisher.historico != null)
+                      _buildDataRow('9', 'Histórico', extinguisher.historico!),
+                    if (extinguisher.historico != null) _buildDivider(),
+                    if (extinguisher.fechaBaja != null)
+                      _buildDataRow('10', 'Fecha de Baja', extinguisher.fechaBaja!),
+                    if (extinguisher.fechaBaja != null) _buildDivider(),
+                    if (extinguisher.createdAt != null)
+                      _buildDataRow(
+                        '11',
+                        'Fecha de Creación',
+                        DateFormat('dd/MM/yyyy').format(extinguisher.createdAt!),
+                      ),
                   ],
                 ),
               ),
@@ -123,7 +136,10 @@ class ServiceDataPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDataRow(String number, String label, String value) {
+  Widget _buildDataRow(String number, String label, String? value) {
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
