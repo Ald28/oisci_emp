@@ -12,6 +12,8 @@ Remove-Item -Recurse -Force prisma\migrations
 npx prisma migrate dev --name init
 npx prisma migrate reset
 
+npx prisma migrate dev --name create_extintor_table
+
 Elimina o ignora prisma.config.ts
 prisma.config.ts
 
