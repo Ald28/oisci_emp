@@ -31,24 +31,27 @@ model RolePermission {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  userCode      String   @unique
-  name          String
-  email         String   @unique
-  password      String
-  active        Boolean  @default(true)
+  id       Int     @id @default(autoincrement())
+  userCode String  @unique
+  name     String
+  email    String  @unique
+  password String
+  active   Boolean @default(true)
+
+  extintoresCreados Extintor[] @relation("ExtintorUsuarioCreador")
+
   createdById   Int?
-  createdBy     User?    @relation("UserCreator", fields: [createdById], references: [id])
-  createdUsers  User[]   @relation("UserCreator")
+  createdBy     User?          @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers  User[]         @relation("UserCreator")
   updatedById   Int?
-  updatedBy     User?    @relation("UserUpdater", fields: [updatedById], references: [id])
-  updatedUsers  User[]   @relation("UserUpdater")
+  updatedBy     User?          @relation("UserUpdater", fields: [updatedById], references: [id])
+  updatedUsers  User[]         @relation("UserUpdater")
   roleId        Int
-  role          Role     @relation(fields: [roleId], references: [id])
+  role          Role           @relation(fields: [roleId], references: [id])
   clients       Client[]
   refreshTokens RefreshToken[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model RefreshToken {
@@ -77,42 +80,41 @@ model Client {
 }
 
 model Sede {
-  id              Int      @id @default(autoincrement())
-  name_sede       String
-  address         String
-  manager_name    String
-  manager_phone   String
-  manager_email   String
-  city            String
-  active          Boolean  @default(true)
-  clientId        Int
-  client          Client     @relation(fields: [clientId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  extintores      Extintor[]
+  id            Int        @id @default(autoincrement())
+  name_sede     String
+  address       String
+  manager_name  String
+  manager_phone String
+  manager_email String
+  city          String
+  active        Boolean    @default(true)
+  clientId      Int
+  client        Client     @relation(fields: [clientId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  extintores    Extintor[]
 }
 
 model Extintor {
-  id             Int        @id @default(autoincrement())
-  codigoNFC      String?    @db.VarChar(45)
-  numeroSerie    String?    @db.VarChar(45)
-  tipo           String?    @db.VarChar(45)
-  capacidad      String?    @db.VarChar(45)
-  agente         String?    @db.VarChar(45)
-  numeroCilindro String?    @db.VarChar(45)
-  ubicacion      String?    @db.VarChar(45)
-  estado         EstadoEnum?
-  historico      String?    @db.VarChar(45)
-  fechaBaja      String?    @db.VarChar(45)
-  foto           String?    @db.VarChar(45)
-  createdAt      DateTime?  @default(now())
-  updatedAt      DateTime?  @updatedAt
-  usuarioCreador String?    @db.VarChar(45)
-  sedeId         Int
+  id               Int         @id @default(autoincrement())
+  codigoNFC        String?     @unique @db.VarChar(45)
+  numeroSerie      String?     @db.VarChar(45)
+  tipo             String?     @db.VarChar(45)
+  capacidad        String?     @db.VarChar(45)
+  agente           String?     @db.VarChar(45)
+  numeroCilindro   String?     @db.VarChar(45)
+  ubicacion        String?     @db.VarChar(45)
+  estado           EstadoEnum?
+  historico        String?     @db.VarChar(45)
+  fechaBaja        String?     @db.VarChar(45)
+  foto             String?     @db.VarChar(45)
+  createdAt        DateTime?   @default(now())
+  updatedAt        DateTime?   @updatedAt
+  sedeId           Int
+  usuarioCreadorId Int
 
-  sede           Sede       @relation(fields: [sedeId], references: [id])
-
-  @@map("Extintor")
+  sede           Sede @relation(fields: [sedeId], references: [id])
+  usuarioCreador User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
 }
 
 enum EstadoEnum {

@@ -13,6 +13,9 @@ import sedeCreateRoutes from '../routes/sede/create.routes.js';
 import sedeListRoutes from '../routes/sede/list.routes.js';
 import sedeDeleteRoutes from '../routes/sede/delete.routes.js';
 
+import nfcListRoutes from '../routes/nfc/list.routes.js';
+import nfcCreateRoutes from '../routes/nfc/create.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -32,5 +35,8 @@ app.use('/users', editRoutes);
 app.use('/sede', sedeCreateRoutes);
 app.use('/sede', sedeListRoutes);
 app.use('/sede', sedeDeleteRoutes);
+
+app.use('/nfc', nfcListRoutes);
+app.use('/nfc', nfcCreateRoutes);
 
 export default app;
