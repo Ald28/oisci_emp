@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -52,48 +52,66 @@ router.get('/list-nfc', listNFCController);
 
 /**
  * @swagger
- * /nfc/search/{codigoNFC}:
+ * /nfc/search/{searchTerm}:
  *   get:
- *     summary: Buscar un NFC por su código
+ *     summary: Buscar extintor por código NFC o número de serie
  *     tags:
  *       - NFC
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: codigoNFC
+ *         name: searchTerm
  *         required: true
  *         schema:
  *           type: string
+ *         description: Código NFC o número de serie del extintor
  *         example: "NFC123456"
  *     responses:
  *       200:
- *         description: NFC encontrado
+ *         description: Extintor encontrado
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 codigoNFC:
- *                   type: string
- *                   example: "NFC123456"
- *                 numeroSerie:
- *                   type: string
- *                   example: "SERIE98765"
- *                 tipo:
- *                   type: string
- *                   example: "Polvo Químico"
- *                 capacidad:
- *                   type: string
- *                   example: "5kg"
- *                 agente:
- *                   type: string
- *                   example: "ABC"
- *                 estado:
- *                   type: string
- *                   example: "OPERATIVO"
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     codigoNFC:
+ *                       type: string
+ *                       example: "NFC123456"
+ *                     numeroSerie:
+ *                       type: string
+ *                       example: "SERIE98765"
+ *                     tipo:
+ *                       type: string
+ *                       example: "Polvo Químico"
+ *                     capacidad:
+ *                       type: string
+ *                       example: "5kg"
+ *                     agente:
+ *                       type: string
+ *                       example: "ABC"
+ *                     estado:
+ *                       type: string
+ *                       example: "OPERATIVO"
  *       404:
- *         description: NFC no encontrado
+ *         description: Extintor no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Extintor no encontrado"
  *       401:
  *         description: No autenticado
  *       403:
@@ -101,6 +119,6 @@ router.get('/list-nfc', listNFCController);
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/search/:codigoNFC', getNFCByIdController);
+router.get('/search/:searchTerm', authenticate, searchExtinguisherController);
 
 export default router;

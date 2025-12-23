@@ -30,5 +30,26 @@ export const ListRepository = {
                 sede: true
             }
         });
+    },
+
+    async findByCodeOrSerial(searchTerm) {
+        return prisma.extintor.findFirst({
+            where: {
+                OR: [
+                    { codigoNFC: searchTerm },
+                    { numeroSerie: searchTerm }
+                ]
+            },
+            include: {
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                sede: true
+            }
+        });
     }
 };
