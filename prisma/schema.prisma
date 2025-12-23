@@ -90,3 +90,31 @@ model Sede {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model Extintor {
+  id             Int      @id @default(autoincrement())
+  codigoNFC      String?  @db.VarChar(45)
+  numeroSerie    String?  @db.VarChar(45)
+  tipo           String?  @db.VarChar(45)
+  capacidad      String?  @db.VarChar(45)
+  agente         String?  @db.VarChar(45)
+  numeroCilindro String?  @db.VarChar(45)
+  ubicacion      String?  @db.VarChar(45)
+  estado         EstadoEnum?
+  historico      String?  @db.VarChar(45)
+  fechaBaja      String?  @db.VarChar(45)
+  foto           String?  @db.VarChar(45)
+  createdAt      String?  @db.VarChar(45)
+  updatedAt      String?  @db.VarChar(45)
+  usuarioCreador String?  @db.VarChar(45)
+  sedeId         Int
+
+  sede           Sede     @relation(fields: [sedeId], references: [id])
+
+  @@map("extintor")
+}
+
+enum EstadoEnum {
+  OPERATIVO
+  INOPERATIVO
+}
