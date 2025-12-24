@@ -17,6 +17,7 @@ class Extinguisher {
   final DateTime? updatedAt;
   final int sedeId;
   final int usuarioCreadorId;
+  final String? sedeName; // Nombre de la sede (cuando viene en la respuesta)
 
   const Extinguisher({
     required this.id,
@@ -35,6 +36,7 @@ class Extinguisher {
     this.updatedAt,
     required this.sedeId,
     required this.usuarioCreadorId,
+    this.sedeName,
   });
 }
 

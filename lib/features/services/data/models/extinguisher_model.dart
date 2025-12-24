@@ -20,6 +20,7 @@ class ExtinguisherModel extends Extinguisher {
     super.updatedAt,
     required super.sedeId,
     required super.usuarioCreadorId,
+    super.sedeName,
   });
 
   /// Constructor desde JSON del backend
@@ -46,6 +47,12 @@ class ExtinguisherModel extends Extinguisher {
       throw Exception('sedeId no encontrado en la respuesta');
     }
 
+    // Extraer nombre de la sede si viene en la respuesta
+    String? sedeName;
+    if (json['sede'] != null && json['sede'] is Map) {
+      sedeName = (json['sede'] as Map<String, dynamic>)['name_sede'] as String?;
+    }
+
     return ExtinguisherModel(
       id: json['id'] as int,
       codigoNFC: json['codigoNFC'] as String?,
@@ -67,6 +74,7 @@ class ExtinguisherModel extends Extinguisher {
           : null,
       sedeId: sedeId,
       usuarioCreadorId: usuarioCreadorId,
+      sedeName: sedeName,
     );
   }
 

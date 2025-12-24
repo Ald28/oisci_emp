@@ -84,6 +84,9 @@ class ServiceDataPage extends StatelessWidget {
                     if (extinguisher.estado != null)
                       _buildField('Estado', extinguisher.estado!),
                     if (extinguisher.estado != null) const SizedBox(height: 12),
+                    if (extinguisher.sedeName != null)
+                      _buildField('Sede', extinguisher.sedeName!),
+                    if (extinguisher.sedeName != null) const SizedBox(height: 12),
                     if (extinguisher.historico != null)
                       _buildField('Histórico', extinguisher.historico!),
                     if (extinguisher.historico != null) const SizedBox(height: 12),
