@@ -1,5 +1,7 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 
+const serverUrl = process.env.API_URL || 'http://localhost:8000';
+
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
@@ -9,8 +11,8 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:8000',
-      description: 'Servidor local',
+      url: serverUrl,
+      description: 'Servidor API',
     },
   ],
   components: {
@@ -27,9 +29,7 @@ const swaggerDefinition = {
 
 const options = {
   swaggerDefinition,
-  apis: [
-    './routes/**/*.js',
-  ],
+  apis: ['./routes/**/*.js'],
 };
 
 export default swaggerJSDoc(options);
