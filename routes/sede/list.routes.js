@@ -54,7 +54,7 @@ const router = Router();
 router.get(
     '/list-sedes',
     authenticate,
-    authorize(['admin', 'user']),
+    authorize(['admin', 'user', 'tecnico']),
     listSedeController
 );
 
