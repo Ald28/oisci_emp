@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import dotenv from "dotenv";
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger.js';
@@ -20,7 +21,21 @@ dotenv.config();
 
 const app = express();
 
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        message: 'Servidor backend activo ingresar a la ruta de /api-docs para ver la documentación',
+        timestamp: new Date()
+    });
+});
 
 // 📌 Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
