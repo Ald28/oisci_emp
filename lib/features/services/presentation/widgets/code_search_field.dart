@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/primary_button.dart';
 
 /// Widget: Input + Botón Buscar
 class CodeSearchField extends StatefulWidget {
@@ -37,6 +38,7 @@ class _CodeSearchFieldState extends State<CodeSearchField> {
   @override
   Widget build(BuildContext context) {
     final hasText = widget.controller.text.isNotEmpty;
+    final showLabelOnTop = _isFocused || hasText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,86 +51,83 @@ class _CodeSearchFieldState extends State<CodeSearchField> {
           ),
         ),
         const SizedBox(height: 16),
-        // Label (aparece cuando está enfocado o tiene texto)
-        if (_isFocused || hasText)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Código o Nº de Serie:',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: _isFocused ? const Color(0xFFE84343) : Colors.black87,
-              ),
-            ),
-          ),
-        // Input field
+        // Input field con label en el borde superior izquierdo
         Focus(
           onFocusChange: (focused) {
             setState(() {
               _isFocused = focused;
             });
           },
-          child: TextField(
-            controller: widget.controller,
-            decoration: InputDecoration(
-              hintText: 'Código o Nº de Serie',
-              hintStyle: TextStyle(
-                color: Colors.grey[400],
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: _isFocused ? const Color(0xFFE84343) : Colors.grey[400]!,
-                  width: _isFocused ? 2 : 1,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              TextField(
+                controller: widget.controller,
+                decoration: InputDecoration(
+                  hintText: showLabelOnTop ? null : 'Código o Nº de Serie',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: _isFocused ? const Color(0xFFE84343) : Colors.grey[300]!,
+                      width: _isFocused ? 2 : 1,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFE84343),
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.fromLTRB(12, 18, 12, 14),
+                ),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: Colors.grey[400]!,
-                  width: 1,
+              // Label en el borde superior izquierdo (cuando está enfocado o tiene texto)
+              if (showLabelOnTop)
+                Positioned(
+                  top: -8,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAEAEA),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Código o Nº de Serie',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _isFocused ? const Color(0xFFE84343) : Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE84343),
-                  width: 2,
-                ),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
         // Botón Buscar (debajo del input)
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: widget.onSearch,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE84343),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Buscar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+        PrimaryButton(
+          text: 'Buscar',
+          onPressed: widget.onSearch,
         ),
       ],
     );
