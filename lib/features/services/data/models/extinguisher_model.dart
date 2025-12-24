@@ -24,7 +24,28 @@ class ExtinguisherModel extends Extinguisher {
 
   /// Constructor desde JSON del backend
   /// El backend retorna: { ok: true, data: {...} }
+  /// Cuando se crea, puede incluir usuarioCreador y sede como objetos
   factory ExtinguisherModel.fromJson(Map<String, dynamic> json) {
+    // Manejar usuarioCreadorId (puede venir como campo directo o dentro de usuarioCreador)
+    int usuarioCreadorId;
+    if (json['usuarioCreadorId'] != null) {
+      usuarioCreadorId = json['usuarioCreadorId'] as int;
+    } else if (json['usuarioCreador'] != null && json['usuarioCreador'] is Map) {
+      usuarioCreadorId = (json['usuarioCreador'] as Map<String, dynamic>)['id'] as int;
+    } else {
+      throw Exception('usuarioCreadorId no encontrado en la respuesta');
+    }
+
+    // Manejar sedeId (puede venir como campo directo o dentro de sede)
+    int sedeId;
+    if (json['sedeId'] != null) {
+      sedeId = json['sedeId'] as int;
+    } else if (json['sede'] != null && json['sede'] is Map) {
+      sedeId = (json['sede'] as Map<String, dynamic>)['id'] as int;
+    } else {
+      throw Exception('sedeId no encontrado en la respuesta');
+    }
+
     return ExtinguisherModel(
       id: json['id'] as int,
       codigoNFC: json['codigoNFC'] as String?,
@@ -44,8 +65,8 @@ class ExtinguisherModel extends Extinguisher {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
-      sedeId: json['sedeId'] as int,
-      usuarioCreadorId: json['usuarioCreadorId'] as int,
+      sedeId: sedeId,
+      usuarioCreadorId: usuarioCreadorId,
     );
   }
 

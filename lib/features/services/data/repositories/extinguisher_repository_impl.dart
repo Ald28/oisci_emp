@@ -13,5 +13,10 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
   Future<Extinguisher?> searchExtinguisher(String searchTerm) async {
     return await dataSource.searchExtinguisher(searchTerm);
   }
+
+  @override
+  Future<Extinguisher> createExtinguisher(Map<String, dynamic> data) async {
+    return await dataSource.createExtinguisher(data);
+  }
 }
 
