@@ -36,8 +36,8 @@ export const ListRepository = {
         return prisma.extintor.findFirst({
             where: {
                 OR: [
-                    { codigoNFC: searchTerm },
-                    { numeroSerie: searchTerm }
+                    { codeNFC: searchTerm },
+                    { serialNumber: searchTerm }
                 ]
             },
             include: {

@@ -97,17 +97,17 @@ model Sede {
 
 model Extintor {
   id               Int         @id @default(autoincrement())
-  codigoNFC        String?     @unique @db.VarChar(45)
-  numeroSerie      String?     @db.VarChar(45)
-  tipo             String?     @db.VarChar(45)
-  capacidad        String?     @db.VarChar(45)
-  agente           String?     @db.VarChar(45)
-  numeroCilindro   String?     @db.VarChar(45)
-  ubicacion        String?     @db.VarChar(45)
-  estado           EstadoEnum?
-  historico        String?     @db.VarChar(45)
-  fechaBaja        String?     @db.VarChar(45)
-  foto             String?     @db.VarChar(45)
+  codeNFC          String?     @unique @db.VarChar(45)
+  serialNumber     String?     @db.VarChar(45)
+  type             String?     @db.VarChar(45)
+  capacity         String?     @db.VarChar(45)
+  agent            String?     @db.VarChar(45)
+  cylinderNumber   String?     @db.VarChar(45)
+  location         String?     @db.VarChar(45)
+  status           StatusEnum?
+  historic         String?     @db.VarChar(45)
+  dateLow          String?     @db.VarChar(45)
+  photo            String?     @db.VarChar(45)
   createdAt        DateTime?   @default(now())
   updatedAt        DateTime?   @updatedAt
   sedeId           Int
@@ -117,7 +117,7 @@ model Extintor {
   usuarioCreador User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
 }
 
-enum EstadoEnum {
+enum StatusEnum {
   OPERATIVO
   INOPERATIVO
 }

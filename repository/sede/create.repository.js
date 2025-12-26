@@ -22,6 +22,10 @@ export const CreateSedeRepository = {
                 city,
                 clientId,
             },
+            include: {
+                client: true,
+                extintores: true,
+            },
         });
     },
 };

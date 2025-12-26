@@ -69,3 +69,10 @@ OISCI_EMP/
 ├── Dockerfile
 ├── package-lock.json
 └── package.json
+
+
+docker compose down
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose logs -f backend

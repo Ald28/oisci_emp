@@ -11,9 +11,12 @@ export const ListRepository = {
         });
     },
 
-    async searchSedeByClient(id){
-        return prisma.sede.findUnique({
-            where: { id },
+    async searchSedeByClient(clientId) {
+        return prisma.sede.findMany({
+            where: {
+                clientId: clientId,
+                active: true,
+            },
         });
     }
 };
