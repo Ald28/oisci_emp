@@ -2,13 +2,18 @@ import { prisma } from './client.mjs'
 import { seedRoles } from './seed/roles.seed.mjs'
 import { seedUsers } from './seed/users.seed.mjs'
 import { seedClients } from './seed/clients.seed.mjs'
+import { seedSedes } from './seed/sedes.seed.mjs'
+import { seedExtintores } from './seed/extintores.seed.mjs'
 
 async function main() {
     const roles = await seedRoles()
     const clienteUser = await seedUsers(roles)
     await seedClients(clienteUser)
 
-    console.log('Seed completado: Roles, Usuarios y Cliente creados')
+    await seedSedes()
+    await seedExtintores()
+
+    console.log('Seed completado: Roles, Usuarios, Clientes, Sedes y Extintores creados')
 }
 
 main()

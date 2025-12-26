@@ -20,38 +20,38 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               codigoNFC:
+ *               codeNFC:
  *                 type: string
  *                 example: "NFC123456"
- *               numeroSerie:
+ *               serialNumber:
  *                 type: string
  *                 example: "SERIE98765"
- *               tipo:
+ *               type:
  *                 type: string
  *                 example: "Polvo Químico"
- *               capacidad:
+ *               capacity:
  *                 type: string
  *                 example: "5kg"
- *               agente:
+ *               agent:
  *                 type: string
  *                 example: "ABC"
- *               numeroCilindro:
+ *               cylinderNumber:
  *                 type: string
  *                 example: "CIL123"
- *               ubicacion:
+ *               location:
  *                 type: string
  *                 example: "Planta 1"
- *               estado:
+ *               status:
  *                 type: string
  *                 enum: [OPERATIVO, INOPERATIVO]
  *                 example: "OPERATIVO"
- *               historico:
+ *               historic:
  *                 type: string
  *                 example: "Mantenimiento 2025-01-01"
- *               fechaBaja:
+ *               dateLow:
  *                 type: string
  *                 example: "2026-01-01"
- *               foto:
+ *               photo:
  *                 type: string
  *                 example: "url_de_la_foto.jpg"
  *               sedeId:

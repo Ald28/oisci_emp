@@ -6,8 +6,10 @@ export async function seedUsers(roles) {
     const users = [
         { code: 1, name: 'Administrador', email: 'admin@admin.com', roleId: roles.adminRole.id },
         { code: 2, name: 'Administrador2', email: 'admin2@admin.com', roleId: roles.adminRole.id },
-        { code: 3, name: 'Técnico Ejemplo', email: 'tecnico@empresa.com', roleId: roles.tecnicoRole.id },
-        { code: 4, name: 'Cliente Ejemplo', email: 'cliente@empresa.com', roleId: roles.clienteRole.id },
+        { code: 3, name: 'Técnico 1', email: 'tecnico1@empresa.com', roleId: roles.tecnicoRole.id },
+        { code: 4, name: 'Técnico 2', email: 'tecnico2@empresa.com', roleId: roles.tecnicoRole.id },
+        { code: 5, name: 'Cliente 1', email: 'cliente1@empresa.com', roleId: roles.clienteRole.id },
+        { code: 6, name: 'Cliente 2', email: 'cliente2@empresa.com', roleId: roles.clienteRole.id },
     ]
 
     for (const u of users) {
@@ -24,6 +26,6 @@ export async function seedUsers(roles) {
         })
     }
 
-    const clienteUser = await prisma.user.findUnique({ where: { email: 'cliente@empresa.com' } })
+    const clienteUser = await prisma.user.findUnique({ where: { email: 'cliente1@empresa.com' } })
     return clienteUser
 }

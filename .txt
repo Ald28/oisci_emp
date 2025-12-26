@@ -11,6 +11,7 @@ npx prisma db seed
 Remove-Item -Recurse -Force prisma\migrations
 npx prisma migrate dev --name init
 npx prisma migrate reset
+npx prisma db seed
 
 npx prisma migrate dev --name create_extintor_table
 
