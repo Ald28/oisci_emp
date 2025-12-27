@@ -60,39 +60,39 @@ class ServiceDataPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     // Campos de datos del extintor
-                    if (extinguisher.codigoNFC != null)
-                      _buildField('Código NFC', extinguisher.codigoNFC!),
-                    if (extinguisher.codigoNFC != null) const SizedBox(height: 12),
-                    if (extinguisher.numeroSerie != null)
-                      _buildField('Nro. Serie', extinguisher.numeroSerie!),
-                    if (extinguisher.numeroSerie != null) const SizedBox(height: 12),
-                    if (extinguisher.ubicacion != null)
-                      _buildField('Ubicación', extinguisher.ubicacion!),
-                    if (extinguisher.ubicacion != null) const SizedBox(height: 12),
-                    if (extinguisher.numeroCilindro != null)
-                      _buildField('Nro. Cilindro', extinguisher.numeroCilindro!),
-                    if (extinguisher.numeroCilindro != null) const SizedBox(height: 12),
-                    if (extinguisher.tipo != null)
-                      _buildField('Tipo', extinguisher.tipo!),
-                    if (extinguisher.tipo != null) const SizedBox(height: 12),
-                    if (extinguisher.agente != null)
-                      _buildField('Agente', extinguisher.agente!),
-                    if (extinguisher.agente != null) const SizedBox(height: 12),
-                    if (extinguisher.capacidad != null)
-                      _buildField('Capacidad', extinguisher.capacidad!),
-                    if (extinguisher.capacidad != null) const SizedBox(height: 12),
-                    if (extinguisher.estado != null)
-                      _buildField('Estado', extinguisher.estado!),
-                    if (extinguisher.estado != null) const SizedBox(height: 12),
+                    if (extinguisher.codeNFC != null)
+                      _buildField('Código NFC', extinguisher.codeNFC!),
+                    if (extinguisher.codeNFC != null) const SizedBox(height: 12),
+                    if (extinguisher.serialNumber != null)
+                      _buildField('Nro. Serie', extinguisher.serialNumber!),
+                    if (extinguisher.serialNumber != null) const SizedBox(height: 12),
+                    if (extinguisher.location != null)
+                      _buildField('Ubicación', extinguisher.location!),
+                    if (extinguisher.location != null) const SizedBox(height: 12),
+                    if (extinguisher.cylinderNumber != null)
+                      _buildField('Nro. Cilindro', extinguisher.cylinderNumber!),
+                    if (extinguisher.cylinderNumber != null) const SizedBox(height: 12),
+                    if (extinguisher.type != null)
+                      _buildField('Tipo', extinguisher.type!),
+                    if (extinguisher.type != null) const SizedBox(height: 12),
+                    if (extinguisher.agent != null)
+                      _buildField('Agente', extinguisher.agent!),
+                    if (extinguisher.agent != null) const SizedBox(height: 12),
+                    if (extinguisher.capacity != null)
+                      _buildField('Capacidad', extinguisher.capacity!),
+                    if (extinguisher.capacity != null) const SizedBox(height: 12),
+                    if (extinguisher.status != null)
+                      _buildField('Estado', extinguisher.status!),
+                    if (extinguisher.status != null) const SizedBox(height: 12),
                     if (extinguisher.sedeName != null)
                       _buildField('Sede', extinguisher.sedeName!),
                     if (extinguisher.sedeName != null) const SizedBox(height: 12),
-                    if (extinguisher.historico != null)
-                      _buildField('Histórico', extinguisher.historico!),
-                    if (extinguisher.historico != null) const SizedBox(height: 12),
-                    if (extinguisher.fechaBaja != null)
-                      _buildField('Fecha de Baja', extinguisher.fechaBaja!),
-                    if (extinguisher.fechaBaja != null) const SizedBox(height: 12),
+                    if (extinguisher.historic != null)
+                      _buildField('Histórico', extinguisher.historic!),
+                    if (extinguisher.historic != null) const SizedBox(height: 12),
+                    if (extinguisher.dateLow != null)
+                      _buildField('Fecha de Baja', extinguisher.dateLow!),
+                    if (extinguisher.dateLow != null) const SizedBox(height: 12),
                     if (extinguisher.createdAt != null)
                       _buildField(
                         'Fecha de Creación',

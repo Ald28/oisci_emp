@@ -111,35 +111,35 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
     try {
       final data = {
-        'codigoNFC': _codigoNFCController.text.trim().isEmpty 
+        'codeNFC': _codigoNFCController.text.trim().isEmpty 
             ? null 
             : _codigoNFCController.text.trim(),
-        'numeroSerie': _numeroSerieController.text.trim().isEmpty 
+        'serialNumber': _numeroSerieController.text.trim().isEmpty 
             ? null 
             : _numeroSerieController.text.trim(),
-        'tipo': _tipoController.text.trim().isEmpty 
+        'type': _tipoController.text.trim().isEmpty 
             ? null 
             : _tipoController.text.trim(),
-        'capacidad': _capacidadController.text.trim().isEmpty 
+        'capacity': _capacidadController.text.trim().isEmpty 
             ? null 
             : _capacidadController.text.trim(),
-        'agente': _agenteController.text.trim().isEmpty 
+        'agent': _agenteController.text.trim().isEmpty 
             ? null 
             : _agenteController.text.trim(),
-        'numeroCilindro': _numeroCilindroController.text.trim().isEmpty 
+        'cylinderNumber': _numeroCilindroController.text.trim().isEmpty 
             ? null 
             : _numeroCilindroController.text.trim(),
-        'ubicacion': _ubicacionController.text.trim().isEmpty 
+        'location': _ubicacionController.text.trim().isEmpty 
             ? null 
             : _ubicacionController.text.trim(),
-        'estado': _estado,
-        'historico': _historicoController.text.trim().isEmpty 
+        'status': _estado,
+        'historic': _historicoController.text.trim().isEmpty 
             ? null 
             : _historicoController.text.trim(),
-        'fechaBaja': _fechaBajaController.text.trim().isEmpty 
+        'dateLow': _fechaBajaController.text.trim().isEmpty 
             ? null 
             : _fechaBajaController.text.trim(),
-        'foto': _fotoController.text.trim().isEmpty 
+        'photo': _fotoController.text.trim().isEmpty 
             ? null 
             : _fotoController.text.trim(),
         'sedeId': _sedeId,

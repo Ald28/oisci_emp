@@ -2,17 +2,17 @@
 /// Coincide con el modelo Extintor del backend (Prisma)
 class Extinguisher {
   final int id;
-  final String? codigoNFC; // Código NFC único
-  final String? numeroSerie;
-  final String? tipo; // Polvo Químico, CO2, Agua, etc.
-  final String? capacidad; // EJ: "5kg"
-  final String? agente; // EJ: "ABC"
-  final String? numeroCilindro;
-  final String? ubicacion;
-  final String? estado; // OPERATIVO / INOPERATIVO
-  final String? historico;
-  final String? fechaBaja;
-  final String? foto;
+  final String? codeNFC; // Código NFC único
+  final String? serialNumber;
+  final String? type; // Polvo Químico, CO2, Agua, etc.
+  final String? capacity; // EJ: "5kg"
+  final String? agent; // EJ: "ABC"
+  final String? cylinderNumber;
+  final String? location;
+  final String? status; // OPERATIVO / INOPERATIVO
+  final String? historic;
+  final String? dateLow;
+  final String? photo;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int sedeId;
@@ -21,17 +21,17 @@ class Extinguisher {
 
   const Extinguisher({
     required this.id,
-    this.codigoNFC,
-    this.numeroSerie,
-    this.tipo,
-    this.capacidad,
-    this.agente,
-    this.numeroCilindro,
-    this.ubicacion,
-    this.estado,
-    this.historico,
-    this.fechaBaja,
-    this.foto,
+    this.codeNFC,
+    this.serialNumber,
+    this.type,
+    this.capacity,
+    this.agent,
+    this.cylinderNumber,
+    this.location,
+    this.status,
+    this.historic,
+    this.dateLow,
+    this.photo,
     this.createdAt,
     this.updatedAt,
     required this.sedeId,
