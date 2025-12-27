@@ -29,7 +29,10 @@ export async function seedSedes() {
     ]
 
     for (const sede of sedes) {
-        await prisma.sede.create({ data: sede })
+        await prisma.sede.createMany({
+            data: sedes,
+            skipDuplicates: true,
+        })
     }
 
     console.log('Sedes creadas')

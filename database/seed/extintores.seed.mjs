@@ -42,7 +42,10 @@ export async function seedExtintores() {
     ]
 
     for (const ext of extintores) {
-        await prisma.extintor.create({ data: ext })
+        await prisma.extintor.createMany({
+            data: extintores,
+            skipDuplicates: true
+        })
     }
 
     console.log('Extintores creados')
