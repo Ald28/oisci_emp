@@ -20,9 +20,9 @@ const router = Router()
  *               - password
  *             properties:
  *               email:
- *                 type: string
+ *                 type: admin@admin.com
  *               password:
- *                 type: string
+ *                 type: 123456
  *     responses:
  *       200:
  *         description: Login exitoso
