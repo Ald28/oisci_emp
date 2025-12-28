@@ -35,7 +35,8 @@ class MainDrawer extends StatelessWidget {
     );
 
     if (confirm == true && context.mounted) {
-      await AuthService.clearSession();
+      // Usar logout() en lugar de clearSession() para mantener credenciales para login offline
+      await AuthService.logout();
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,

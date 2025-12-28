@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/network/error_handler.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -84,6 +86,18 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           _sedes = sedes;
           _isLoadingSedes = false;
         });
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSedes = false;
+        });
+        // Usar el helper reutilizable para manejar errores
+        ErrorHandler.handleDioError(
+          context,
+          e,
+          customMessage: 'Error al cargar sedes: ${ErrorHandler.getErrorMessage(e)}',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -181,6 +195,19 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             serviceType: widget.serviceType,
           ),
         ),
+      );
+    } on DioException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Usar el helper reutilizable para manejar errores
+      ErrorHandler.handleDioError(
+        context,
+        e,
+        customMessage: 'Error al registrar extintor: ${ErrorHandler.getErrorMessage(e)}',
       );
     } catch (e) {
       if (!mounted) return;

@@ -24,6 +24,12 @@ class _LoginPageState extends State<LoginPage> {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
+    // Validar campos vacíos
+    if (email.isEmpty || password.isEmpty) {
+      _msg("Por favor completa todos los campos");
+      return;
+    }
+
     final hasInternet = await InternetConnectionChecker().hasConnection;
 
     // =========================
@@ -32,21 +38,61 @@ class _LoginPageState extends State<LoginPage> {
     if (!hasInternet) {
       final session = await AuthService.loadSession();
 
-      if (session["email"] == email &&
-          session["password"] == password &&
-          session["role"] == "tecnico" &&
-          session["accessToken"] != null) {
+      // Verificar si hay credenciales guardadas (email y password)
+      final savedEmail = session["email"] as String?;
+      final savedPassword = session["password"] as String?;
+      
+      if (savedEmail == null || savedPassword == null) {
+        _msg("No hay sesión guardada. Se requiere conexión a internet para iniciar sesión por primera vez.");
+        return;
+      }
+
+      // Verificar que las credenciales ingresadas coincidan con las guardadas
+      if (savedEmail != email || savedPassword != password) {
+        _msg("Credenciales incorrectas");
+        return;
+      }
+
+      // Si hay token guardado, verificar que el rol sea técnico
+      final savedToken = session["accessToken"] as String?;
+      final savedRole = session["role"] as String?;
+      final savedUserId = session["userId"] as String?;
+      final savedName = session["name"] as String?;
+
+      // Si hay token y datos completos, verificar rol
+      if (savedToken != null && savedToken.isNotEmpty) {
+        if (savedRole != "tecnico") {
+          _msg("Acceso permitido solo para técnicos");
+          return;
+        }
+        
+        // Si hay userId y name, usar esos datos
+        if (savedUserId != null && savedName != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomePage(userId: savedUserId, name: savedName),
+            ),
+          );
+          return;
+        }
+      }
+
+      // Si no hay token pero las credenciales coinciden, 
+      // permitir acceso pero mostrar advertencia de que algunas funciones pueden no estar disponibles
+      if (savedRole == "tecnico" && savedUserId != null && savedName != null) {
+        // Permitir acceso con datos guardados (aunque el token haya expirado)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                HomePage(userId: session["userId"], name: session["name"]),
+            builder: (_) => HomePage(userId: savedUserId, name: savedName),
           ),
         );
         return;
       }
 
-      _msg("Acceso permitido solo para técnicos");
+      // Si no hay datos suficientes
+      _msg("No hay sesión guardada. Se requiere conexión a internet para iniciar sesión por primera vez.");
       return;
     }
 
@@ -62,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      // Guardar sesión para uso offline futuro
       await AuthService.saveSession(
         accessToken: user.accessToken,
         refreshToken: user.refreshToken,

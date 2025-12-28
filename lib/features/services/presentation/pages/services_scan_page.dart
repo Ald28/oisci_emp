@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/network/error_handler.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../widgets/nfc_hint_card.dart';
 import '../widgets/code_search_field.dart';
@@ -101,6 +103,22 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
       } else {
         _showExtinguisherNotFoundDialog(searchTerm);
       }
+    } on DioException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSearching = false;
+      });
+
+      // Usar el helper reutilizable para manejar errores
+      final handled = ErrorHandler.handleDioError(
+        context,
+        e,
+        customMessage: 'Error al buscar extintor: ${ErrorHandler.getErrorMessage(e)}',
+      );
+      
+      // Si el error 401 fue manejado, no hacer nada más
+      if (handled) return;
     } catch (e) {
       if (!mounted) return;
 

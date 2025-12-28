@@ -35,8 +35,28 @@ class AuthService {
     };
   }
 
+  /// Cerrar sesión: Borra solo los tokens de sesión activa
+  /// Mantiene email, password, userId, name y role para permitir login offline futuro
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Solo borrar tokens de sesión activa
+    // Mantener credenciales y datos del usuario para login offline
+    await prefs.remove("accessToken");
+    await prefs.remove("refreshToken");
+    // NO borrar userId, name, role, email y password para permitir login offline
+  }
+
+  /// Limpiar sesión completamente: Borra TODO incluyendo credenciales
+  /// Usar solo cuando se quiera eliminar completamente los datos del usuario
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    // Limpiar todo, incluyendo credenciales
+    await prefs.remove("accessToken");
+    await prefs.remove("refreshToken");
+    await prefs.remove("userId");
+    await prefs.remove("name");
+    await prefs.remove("role");
+    await prefs.remove("email");
+    await prefs.remove("password");
   }
 }

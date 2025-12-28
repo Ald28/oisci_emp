@@ -3,6 +3,9 @@ import 'core/auth/auth_service.dart';
 import 'features/users/presentation/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
+/// GlobalKey para el Navigator, usado por el interceptor para redirecciones globales
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class App extends StatelessWidget {
   const App({super.key});
 
@@ -14,6 +17,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
       home: FutureBuilder(
         future: _loadSession(),
         builder: (context, snapshot) {
