@@ -1,5 +1,14 @@
 -- CreateEnum
-CREATE TYPE "EstadoEnum" AS ENUM ('OPERATIVO', 'INOPERATIVO');
+CREATE TYPE "StatusEnum" AS ENUM ('OPERATIVO', 'INOPERATIVO');
+
+-- CreateEnum
+CREATE TYPE "TypeService" AS ENUM ('MANTENIMIENTO', 'INSPECCION');
+
+-- CreateEnum
+CREATE TYPE "ServiceStatus" AS ENUM ('EN_PROCESO', 'FINALIZADO');
+
+-- CreateEnum
+CREATE TYPE "ServiceValid" AS ENUM ('AROVADO', 'RECHAZADO');
 
 -- CreateTable
 CREATE TABLE "Role" (
@@ -90,23 +99,43 @@ CREATE TABLE "Sede" (
 -- CreateTable
 CREATE TABLE "Extintor" (
     "id" SERIAL NOT NULL,
-    "codigoNFC" VARCHAR(45),
-    "numeroSerie" VARCHAR(45),
-    "tipo" VARCHAR(45),
-    "capacidad" VARCHAR(45),
-    "agente" VARCHAR(45),
-    "numeroCilindro" VARCHAR(45),
-    "ubicacion" VARCHAR(45),
-    "estado" "EstadoEnum",
-    "historico" VARCHAR(45),
-    "fechaBaja" VARCHAR(45),
-    "foto" VARCHAR(45),
+    "codeNFC" VARCHAR(45),
+    "serialNumber" VARCHAR(45),
+    "type" VARCHAR(45),
+    "capacity" VARCHAR(45),
+    "agent" VARCHAR(45),
+    "cylinderNumber" VARCHAR(45),
+    "location" VARCHAR(45),
+    "status" "StatusEnum",
+    "historic" VARCHAR(45),
+    "dateLow" VARCHAR(45),
+    "photo" VARCHAR(45),
     "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3),
     "sedeId" INTEGER NOT NULL,
     "usuarioCreadorId" INTEGER NOT NULL,
 
     CONSTRAINT "Extintor_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Servicio" (
+    "id" SERIAL NOT NULL,
+    "type" "TypeService" NOT NULL,
+    "dateStart" TIMESTAMP(3) NOT NULL,
+    "dateEnd" TIMESTAMP(3),
+    "sincronizado" BOOLEAN NOT NULL DEFAULT false,
+    "status" "ServiceStatus" NOT NULL,
+    "statusValid" "ServiceValid" NOT NULL,
+    "historic" VARCHAR(45),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "usuarioCreadorId" INTEGER NOT NULL,
+    "usuarioActualizadorId" INTEGER,
+    "sedeId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+
+    CONSTRAINT "Servicio_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -131,7 +160,13 @@ CREATE UNIQUE INDEX "Client_clientCode_key" ON "Client"("clientCode");
 CREATE UNIQUE INDEX "Client_ruc_key" ON "Client"("ruc");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Extintor_codigoNFC_key" ON "Extintor"("codigoNFC");
+CREATE UNIQUE INDEX "Sede_clientId_name_sede_key" ON "Sede"("clientId", "name_sede");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Extintor_codeNFC_key" ON "Extintor"("codeNFC");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Servicio_sedeId_type_dateStart_key" ON "Servicio"("sedeId", "type", "dateStart");
 
 -- AddForeignKey
 ALTER TABLE "RolePermission" ADD CONSTRAINT "RolePermission_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -162,3 +197,15 @@ ALTER TABLE "Extintor" ADD CONSTRAINT "Extintor_sedeId_fkey" FOREIGN KEY ("sedeI
 
 -- AddForeignKey
 ALTER TABLE "Extintor" ADD CONSTRAINT "Extintor_usuarioCreadorId_fkey" FOREIGN KEY ("usuarioCreadorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Servicio" ADD CONSTRAINT "Servicio_sedeId_fkey" FOREIGN KEY ("sedeId") REFERENCES "Sede"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Servicio" ADD CONSTRAINT "Servicio_usuarioCreadorId_fkey" FOREIGN KEY ("usuarioCreadorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Servicio" ADD CONSTRAINT "Servicio_usuarioActualizadorId_fkey" FOREIGN KEY ("usuarioActualizadorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Servicio" ADD CONSTRAINT "Servicio_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

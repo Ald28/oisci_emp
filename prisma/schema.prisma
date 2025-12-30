@@ -40,6 +40,10 @@ model User {
 
   extintoresCreados Extintor[] @relation("ExtintorUsuarioCreador")
 
+  serviciosCreados      Servicio[] @relation("ServicioUsuarioCreador")
+  serviciosActualizados Servicio[] @relation("ServicioUsuarioActualizador")
+  serviciosAsignados    Servicio[]
+
   createdById   Int?
   createdBy     User?          @relation("UserCreator", fields: [createdById], references: [id])
   createdUsers  User[]         @relation("UserCreator")
@@ -93,6 +97,8 @@ model Sede {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   extintores    Extintor[]
+  servicios     Servicio[]
+  @@unique([clientId, name_sede])
 }
 
 model Extintor {
@@ -120,4 +126,45 @@ model Extintor {
 enum StatusEnum {
   OPERATIVO
   INOPERATIVO
+}
+
+model Servicio {
+  id           Int           @id @default(autoincrement())
+  type         TypeService
+  dateStart    DateTime
+  dateEnd      DateTime?
+  sincronizado Boolean       @default(false)
+  status       ServiceStatus
+  statusValid  ServiceValid
+  historic     String?       @db.VarChar(45)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarioCreadorId      Int
+  usuarioActualizadorId Int?
+
+  sedeId Int
+  userId Int
+
+  sede                Sede  @relation(fields: [sedeId], references: [id])
+  usuarioCreador      User  @relation("ServicioUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+  usuarioActualizador User? @relation("ServicioUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
+  user                User  @relation(fields: [userId], references: [id])
+  @@unique([sedeId, type, dateStart])
+}
+
+enum TypeService {
+  MANTENIMIENTO
+  INSPECCION
+}
+
+enum ServiceStatus {
+  EN_PROCESO
+  FINALIZADO
+}
+
+enum ServiceValid {
+  APROBADO
+  RECHAZADO
 }

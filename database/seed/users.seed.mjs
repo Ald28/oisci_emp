@@ -26,6 +26,7 @@ export async function seedUsers(roles) {
         })
     }
 
-    const clienteUser = await prisma.user.findUnique({ where: { email: 'cliente1@empresa.com' } })
-    return clienteUser
+    return prisma.user.findMany({
+        where: { role: { name: 'cliente' } }
+    })
 }

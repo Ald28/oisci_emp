@@ -1,19 +1,23 @@
 import { prisma } from '../client.mjs'
 import { generateClientCode } from './utils.mjs'
 
-export async function seedClients(clienteUser) {
-    if (clienteUser) {
+export async function seedClients(clienteUsers) {
+    for (let i = 0; i < clienteUsers.length; i++) {
+        const user = clienteUsers[i]
+
         await prisma.client.upsert({
-            where: { ruc: '12345678901' },
+            where: { ruc: `1234567890${i + 1}` },
             update: {},
             create: {
-                clientCode: generateClientCode(1),
-                razonSocial: 'Cliente Ejemplo S.A.',
-                ruc: '12345678901',
+                clientCode: generateClientCode(i + 1),
+                razonSocial: `Cliente Ejemplo ${i + 1} S.A.`,
+                ruc: `1234567890${i + 1}`,
                 phone: '987654321',
                 address: 'Av. Ejemplo 123, Ciudad',
-                userId: clienteUser.id,
+                userId: user.id,
             },
         })
     }
+
+    console.log('Clientes creados')
 }

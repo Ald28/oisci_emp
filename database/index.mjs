@@ -4,6 +4,7 @@ import { seedUsers } from './seed/users.seed.mjs'
 import { seedClients } from './seed/clients.seed.mjs'
 import { seedSedes } from './seed/sedes.seed.mjs'
 import { seedExtintores } from './seed/extintores.seed.mjs'
+import { seedServicios } from './seed/servicios.seed.mjs'
 
 async function main() {
     const roles = await seedRoles()
@@ -12,8 +13,9 @@ async function main() {
 
     await seedSedes()
     await seedExtintores()
+    await seedServicios()
 
-    console.log('Seed completado: Roles, Usuarios, Clientes, Sedes y Extintores creados')
+    console.log('Seed completado: Roles, Usuarios, Clientes, Sedes, Extintores y Servicios creados')
 }
 
 main()
