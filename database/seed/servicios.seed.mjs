@@ -1,4 +1,5 @@
 import { prisma } from '../client.mjs'
+import { ServiceValid } from '@prisma/client'
 
 export async function seedServicios() {
     const sede = await prisma.sede.findFirst()
@@ -9,17 +10,9 @@ export async function seedServicios() {
         where: { email: 'tecnico1@empresa.com' }
     })
 
-    if (!sede) {
-        throw new Error('No existe sede para crear servicios')
-    }
-
-    if (!creador) {
-        throw new Error('No existe usuario creador')
-    }
-
-    if (!tecnico) {
-        throw new Error('No existe usuario técnico')
-    }
+    if (!sede) throw new Error('No existe sede para crear servicios')
+    if (!creador) throw new Error('No existe usuario creador')
+    if (!tecnico) throw new Error('No existe usuario técnico')
 
     const servicios = [
         {
