@@ -28,7 +28,7 @@ export async function seedServicios() {
             dateEnd: null,
             sincronizado: false,
             status: 'EN_PROCESO',
-            statusValid: 'APROBADO',
+            statusValid: ServiceValid.APROBADO,
             historic: 'Servicio de mantenimiento preventivo',
 
             sedeId: sede.id,
@@ -42,7 +42,7 @@ export async function seedServicios() {
             dateEnd: new Date('2024-01-02'),
             sincronizado: true,
             status: 'FINALIZADO',
-            statusValid: 'APROBADO',
+            statusValid: ServiceValid.APROBADO,
             historic: 'Inspección anual de extintores',
 
             sedeId: sede.id,
