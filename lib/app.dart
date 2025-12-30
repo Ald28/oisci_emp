@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/auth/auth_service.dart';
+import 'core/sync/sync_service.dart';
+import 'core/sync/sede_sync_service.dart';
 import 'features/users/presentation/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
@@ -11,6 +13,28 @@ class App extends StatelessWidget {
 
   Future<Map<String, dynamic>> _loadSession() async {
     return await AuthService.loadSession();
+  }
+
+  /// Sincronizar extintores pendientes en background
+  Future<void> _syncPendingExtinguishers() async {
+    try {
+      final syncService = SyncService();
+      await syncService.syncPendingExtinguishers();
+    } catch (e) {
+      // Silenciar errores de sincronización en background
+      // No queremos interrumpir el inicio de la app
+    }
+  }
+
+  /// Sincronizar sedes en background
+  Future<void> _syncSedes() async {
+    try {
+      final sedeSyncService = SedeSyncService();
+      await sedeSyncService.syncSedes();
+    } catch (e) {
+      // Silenciar errores de sincronización en background
+      // Las sedes se pueden cargar desde local si falla
+    }
   }
 
   @override
@@ -33,6 +57,9 @@ class App extends StatelessWidget {
           final name = session["name"];
 
           if (token != null && userId != null && name != null) {
+            // Sincronizar pendientes y sedes en background cuando hay sesión activa
+            _syncPendingExtinguishers();
+            _syncSedes();
             return HomePage(userId: userId, name: name);
           }
 

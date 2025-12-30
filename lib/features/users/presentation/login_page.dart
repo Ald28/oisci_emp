@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/auth_card.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/sync/sede_sync_service.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../users/data/user_repository_impl.dart';
 import '../../users/data/datasources/user_remote_datasource.dart';
@@ -119,6 +120,9 @@ class _LoginPageState extends State<LoginPage> {
         password: password,
       );
 
+      // Sincronizar sedes en background (descargar y guardar localmente)
+      _syncSedesInBackground();
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -134,6 +138,15 @@ class _LoginPageState extends State<LoginPage> {
   void _msg(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// Sincronizar sedes en background después del login
+  void _syncSedesInBackground() {
+    // Ejecutar en background sin bloquear la UI
+    SedeSyncService().syncSedes().then((success) {
+      // Silenciar errores de sincronización en background
+      // Las sedes se pueden cargar desde local si falla
+    });
   }
 
   @override

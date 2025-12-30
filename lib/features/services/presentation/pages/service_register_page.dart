@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../../../core/network/error_handler.dart';
+import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -17,10 +19,7 @@ import '../../domain/entities/extinguisher.dart';
 class ServiceRegisterPage extends StatefulWidget {
   final ServiceType serviceType;
 
-  const ServiceRegisterPage({
-    super.key,
-    required this.serviceType,
-  });
+  const ServiceRegisterPage({super.key, required this.serviceType});
 
   @override
   State<ServiceRegisterPage> createState() => _ServiceRegisterPageState();
@@ -38,16 +37,15 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _historicoController = TextEditingController();
   final _fechaBajaController = TextEditingController();
   final _fotoController = TextEditingController();
-  
+
   String? _estado;
   int? _sedeId;
   bool _isLoading = false;
   bool _isLoadingSedes = false;
   List<Sede> _sedes = [];
 
-  late final CreateExtinguisherUseCase _createUseCase = CreateExtinguisherUseCase(
-    ExtinguisherRepositoryImpl(),
-  );
+  late final CreateExtinguisherUseCase _createUseCase =
+      CreateExtinguisherUseCase(ExtinguisherRepositoryImpl());
   late final GetSedesUseCase _getSedesUseCase = GetSedesUseCase(
     SedeRepositoryImpl(),
   );
@@ -80,7 +78,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
     try {
       final sedes = await _getSedesUseCase();
-      
+
       if (mounted) {
         setState(() {
           _sedes = sedes;
@@ -96,7 +94,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         ErrorHandler.handleDioError(
           context,
           e,
-          customMessage: 'Error al cargar sedes: ${ErrorHandler.getErrorMessage(e)}',
+          customMessage:
+              'Error al cargar sedes: ${ErrorHandler.getErrorMessage(e)}',
         );
       }
     } catch (e) {
@@ -125,36 +124,36 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
     try {
       final data = {
-        'codeNFC': _codigoNFCController.text.trim().isEmpty 
-            ? null 
+        'codeNFC': _codigoNFCController.text.trim().isEmpty
+            ? null
             : _codigoNFCController.text.trim(),
-        'serialNumber': _numeroSerieController.text.trim().isEmpty 
-            ? null 
+        'serialNumber': _numeroSerieController.text.trim().isEmpty
+            ? null
             : _numeroSerieController.text.trim(),
-        'type': _tipoController.text.trim().isEmpty 
-            ? null 
+        'type': _tipoController.text.trim().isEmpty
+            ? null
             : _tipoController.text.trim(),
-        'capacity': _capacidadController.text.trim().isEmpty 
-            ? null 
+        'capacity': _capacidadController.text.trim().isEmpty
+            ? null
             : _capacidadController.text.trim(),
-        'agent': _agenteController.text.trim().isEmpty 
-            ? null 
+        'agent': _agenteController.text.trim().isEmpty
+            ? null
             : _agenteController.text.trim(),
-        'cylinderNumber': _numeroCilindroController.text.trim().isEmpty 
-            ? null 
+        'cylinderNumber': _numeroCilindroController.text.trim().isEmpty
+            ? null
             : _numeroCilindroController.text.trim(),
-        'location': _ubicacionController.text.trim().isEmpty 
-            ? null 
+        'location': _ubicacionController.text.trim().isEmpty
+            ? null
             : _ubicacionController.text.trim(),
         'status': _estado,
-        'historic': _historicoController.text.trim().isEmpty 
-            ? null 
+        'historic': _historicoController.text.trim().isEmpty
+            ? null
             : _historicoController.text.trim(),
-        'dateLow': _fechaBajaController.text.trim().isEmpty 
-            ? null 
+        'dateLow': _fechaBajaController.text.trim().isEmpty
+            ? null
             : _fechaBajaController.text.trim(),
-        'photo': _fotoController.text.trim().isEmpty 
-            ? null 
+        'photo': _fotoController.text.trim().isEmpty
+            ? null
             : _fotoController.text.trim(),
         'sedeId': _sedeId,
       };
@@ -172,6 +171,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         return;
       }
 
+      // Verificar conectividad antes de registrar
+      final hasInternet = await InternetConnectionChecker().hasConnection;
+
       final extinguisher = await _createUseCase.call(data);
 
       if (!mounted) return;
@@ -180,12 +182,46 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Extintor registrado exitosamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // Mostrar mensaje según si se guardó localmente o en el servidor
+      if (!hasInternet || extinguisher.id == 0) {
+        // Se guardó localmente (sin internet o ID temporal)
+        final syncService = SyncService();
+        final pendingCount = await syncService.getPendingCount();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Extintor guardado localmente. Se sincronizará automáticamente cuando haya conexión.\n'
+              'Pendientes: $pendingCount',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        // Se guardó en el servidor
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Extintor registrado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Si se guardó localmente (ID = 0), intentar sincronizar en background
+      if (extinguisher.id == 0) {
+        final syncService = SyncService();
+        syncService.syncPendingExtinguishers().then((syncedCount) {
+          if (syncedCount > 0 && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$syncedCount extintor(es) sincronizado(s)'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        });
+      }
 
       Navigator.pushReplacement(
         context,
@@ -207,7 +243,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       ErrorHandler.handleDioError(
         context,
         e,
-        customMessage: 'Error al registrar extintor: ${ErrorHandler.getErrorMessage(e)}',
+        customMessage:
+            'Error al registrar extintor: ${ErrorHandler.getErrorMessage(e)}',
       );
     } catch (e) {
       if (!mounted) return;
@@ -216,10 +253,26 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         _isLoading = false;
       });
 
+      // Mostrar mensaje de error más amigable
+      String errorMessage = 'Error al registrar extintor';
+      final errorStr = e.toString();
+
+      if (errorStr.contains('sedeId')) {
+        errorMessage = 'Por favor selecciona una sede antes de registrar';
+      } else if (errorStr.contains('usuario') || errorStr.contains('sesión')) {
+        errorMessage = 'Error de sesión. Por favor, inicia sesión nuevamente';
+      } else if (errorStr.contains('Null') && errorStr.contains('int')) {
+        errorMessage =
+            'Error: Faltan datos requeridos. Por favor, completa todos los campos obligatorios';
+      } else {
+        errorMessage = 'Error al registrar extintor: ${e.toString()}';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al registrar extintor: ${e.toString()}'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -238,7 +291,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth > 600 ? 600.0 : constraints.maxWidth;
+          final maxWidth = constraints.maxWidth > 600
+              ? 600.0
+              : constraints.maxWidth;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Center(
@@ -355,10 +410,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           decoration: BoxDecoration(
             color: const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.grey[300]!,
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -453,10 +505,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           decoration: BoxDecoration(
             color: const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.grey[300]!,
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
