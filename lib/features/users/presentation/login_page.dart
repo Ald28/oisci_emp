@@ -69,6 +69,7 @@ class _LoginPageState extends State<LoginPage> {
         
         // Si hay userId y name, usar esos datos
         if (savedUserId != null && savedName != null) {
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -83,6 +84,7 @@ class _LoginPageState extends State<LoginPage> {
       // permitir acceso pero mostrar advertencia de que algunas funciones pueden no estar disponibles
       if (savedRole == "tecnico" && savedUserId != null && savedName != null) {
         // Permitir acceso con datos guardados (aunque el token haya expirado)
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -123,6 +125,7 @@ class _LoginPageState extends State<LoginPage> {
       // Sincronizar sedes en background (descargar y guardar localmente)
       _syncSedesInBackground();
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

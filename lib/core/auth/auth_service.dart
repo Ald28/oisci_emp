@@ -47,7 +47,8 @@ class AuthService {
   }
 
   /// Limpiar sesión completamente: Borra TODO incluyendo credenciales
-  /// Usar solo cuando se quiera eliminar completamente los datos del usuario
+  /// Usar solo cuando se quiera eliminar completamente los datos del usuario.
+  /// Esto elimina todos los datos guardados: tokens, credenciales y datos del usuario.
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     // Limpiar todo, incluyendo credenciales

@@ -13,7 +13,6 @@ import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import 'service_data_page.dart';
-import '../../domain/entities/extinguisher.dart';
 
 /// Pantalla: Registro de extintor nuevo
 class ServiceRegisterPage extends StatefulWidget {
@@ -188,6 +187,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         final syncService = SyncService();
         final pendingCount = await syncService.getPendingCount();
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -223,6 +223,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         });
       }
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -401,7 +402,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
   Widget _buildEstadoDropdown() {
     final hasValue = _estado != null;
-    final isFocused = false; // TODO: Implementar focus state para dropdown
 
     return Stack(
       clipBehavior: Clip.none,
@@ -413,14 +413,14 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             border: Border.all(color: Colors.grey[300]!, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: DropdownButtonFormField<String>(
-            value: _estado,
+            initialValue: _estado,
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 14),
               border: InputBorder.none,
@@ -508,7 +508,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             border: Border.all(color: Colors.grey[300]!, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -526,7 +526,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                   ),
                 )
               : DropdownButtonFormField<int>(
-                  value: _sedeId,
+                  initialValue: _sedeId,
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 14),
                     border: InputBorder.none,

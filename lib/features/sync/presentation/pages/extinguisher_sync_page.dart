@@ -127,6 +127,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
 
         await _loadPendingExtinguishers();
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -170,6 +171,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
         });
         await _loadPendingExtinguishers();
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Extintor sincronizado exitosamente'),
@@ -185,6 +187,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
         });
         await _loadPendingExtinguishers();
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al sincronizar: ${e.toString()}'),

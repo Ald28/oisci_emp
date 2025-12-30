@@ -30,23 +30,26 @@ class AuthInterceptor extends Interceptor {
     if (err.response?.statusCode == 401) {
       // Cerrar sesión (mantiene credenciales para login offline)
       AuthService.logout();
-      
+
       // Redirigir al login usando el navigatorKey global
       final context = navigatorKey.currentContext;
-      if (context != null) {
+      if (context != null && context.mounted) {
         // Mostrar mensaje
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.'),
+            content: Text(
+              'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+            ),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
         );
-        
+
         // Redirigir después de un breve delay
         Future.delayed(const Duration(seconds: 1), () {
           final currentContext = navigatorKey.currentContext;
-          if (currentContext != null) {
+          // Verificar que el contexto sigue siendo válido antes de usarlo
+          if (currentContext != null && currentContext.mounted) {
             Navigator.of(currentContext).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const LoginPage()),
               (route) => false,

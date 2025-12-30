@@ -25,11 +25,11 @@ class PrimaryButton extends StatelessWidget {
           backgroundColor: const Color(0xFFE84343),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 0,
-          disabledBackgroundColor: const Color(0xFFE84343).withOpacity(0.6),
+          disabledBackgroundColor: const Color(
+            0xFFE84343,
+          ).withValues(alpha: 0.6),
         ),
         child: isLoading
             ? const SizedBox(
@@ -60,4 +60,3 @@ class PrimaryButton extends StatelessWidget {
     );
   }
 }
-
