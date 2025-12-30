@@ -29,7 +29,9 @@ class ServiceDataPage extends StatelessWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final maxWidth = constraints.maxWidth > 600 ? 600.0 : constraints.maxWidth;
+          final maxWidth = constraints.maxWidth > 600
+              ? 600.0
+              : constraints.maxWidth;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Center(
@@ -51,27 +53,30 @@ class ServiceDataPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(
-                          Icons.edit,
-                          size: 20,
-                          color: Colors.grey[600],
-                        ),
+                        Icon(Icons.edit, size: 20, color: Colors.grey[600]),
                       ],
                     ),
                     const SizedBox(height: 24),
                     // Campos de datos del extintor
                     if (extinguisher.codeNFC != null)
                       _buildField('Código NFC', extinguisher.codeNFC!),
-                    if (extinguisher.codeNFC != null) const SizedBox(height: 12),
+                    if (extinguisher.codeNFC != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.serialNumber != null)
                       _buildField('Nro. Serie', extinguisher.serialNumber!),
-                    if (extinguisher.serialNumber != null) const SizedBox(height: 12),
+                    if (extinguisher.serialNumber != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.location != null)
                       _buildField('Ubicación', extinguisher.location!),
-                    if (extinguisher.location != null) const SizedBox(height: 12),
+                    if (extinguisher.location != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.cylinderNumber != null)
-                      _buildField('Nro. Cilindro', extinguisher.cylinderNumber!),
-                    if (extinguisher.cylinderNumber != null) const SizedBox(height: 12),
+                      _buildField(
+                        'Nro. Cilindro',
+                        extinguisher.cylinderNumber!,
+                      ),
+                    if (extinguisher.cylinderNumber != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.type != null)
                       _buildField('Tipo', extinguisher.type!),
                     if (extinguisher.type != null) const SizedBox(height: 12),
@@ -80,23 +85,29 @@ class ServiceDataPage extends StatelessWidget {
                     if (extinguisher.agent != null) const SizedBox(height: 12),
                     if (extinguisher.capacity != null)
                       _buildField('Capacidad', extinguisher.capacity!),
-                    if (extinguisher.capacity != null) const SizedBox(height: 12),
+                    if (extinguisher.capacity != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.status != null)
                       _buildField('Estado', extinguisher.status!),
                     if (extinguisher.status != null) const SizedBox(height: 12),
                     if (extinguisher.sedeName != null)
                       _buildField('Sede', extinguisher.sedeName!),
-                    if (extinguisher.sedeName != null) const SizedBox(height: 12),
+                    if (extinguisher.sedeName != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.historic != null)
                       _buildField('Histórico', extinguisher.historic!),
-                    if (extinguisher.historic != null) const SizedBox(height: 12),
+                    if (extinguisher.historic != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.dateLow != null)
                       _buildField('Fecha de Baja', extinguisher.dateLow!),
-                    if (extinguisher.dateLow != null) const SizedBox(height: 12),
+                    if (extinguisher.dateLow != null)
+                      const SizedBox(height: 12),
                     if (extinguisher.createdAt != null)
                       _buildField(
                         'Fecha de Creación',
-                        DateFormat('dd/MM/yyyy').format(extinguisher.createdAt!),
+                        DateFormat(
+                          'dd/MM/yyyy',
+                        ).format(extinguisher.createdAt!),
                       ),
                     const SizedBox(height: 32),
                     // Botón Continuar
@@ -129,16 +140,11 @@ class ServiceDataPage extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 56,
-        ),
+        constraints: const BoxConstraints(minHeight: 56),
         decoration: BoxDecoration(
           color: const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.grey[300]!,
-            width: 1,
-          ),
+          border: Border.all(color: Colors.grey[300]!, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
