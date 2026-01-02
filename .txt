@@ -14,6 +14,7 @@ npx prisma migrate reset
 npx prisma db seed
 
 npx prisma migrate dev --name create_extintor_table
+npx prisma db seed /*EJECUTAR EN LOCAL APUNTANDO A LA BASE DE DATOS EN PRODUC*/
 
 Elimina o ignora prisma.config.ts
 prisma.config.ts

@@ -119,6 +119,6 @@ router.get('/list-nfc', listNFCController);
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/search/:searchTerm', authenticate, searchExtinguisherController);
+router.get('/search/:searchTerm', searchExtinguisherController);
 
 export default router;

@@ -13,4 +13,4 @@ WORKDIR /app
 COPY --from=builder /app /app
 
 EXPOSE 8000
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node src/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
