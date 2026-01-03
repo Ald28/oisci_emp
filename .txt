@@ -13,8 +13,10 @@ npx prisma migrate dev --name init
 npx prisma migrate reset
 npx prisma db seed
 
-npx prisma migrate dev --name create_extintor_table
-npx prisma db seed /*EJECUTAR EN LOCAL APUNTANDO A LA BASE DE DATOS EN PRODUC*/
+npx prisma migrate dev --name create_extintor_table (LOCAL)
+subir cambios al repositorio (git add . | git commit -m "" | git push -u origin backend)
+npx prisma migrate deploy (APUNTANDO A LA BD EN PRODUCCION)
+npx prisma db seed /*EJECUTAR APUNTANDO A LA BASE DE DATOS EN PRODUC*/
 
 Elimina o ignora prisma.config.ts
 prisma.config.ts

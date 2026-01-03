@@ -45,12 +45,6 @@ const router = Router();
  *                 type: string
  *                 enum: [OPERATIVO, INOPERATIVO]
  *                 example: "OPERATIVO"
- *               historic:
- *                 type: string
- *                 example: "Mantenimiento 2025-01-01"
- *               dateLow:
- *                 type: string
- *                 example: "2026-01-01"
  *               photo:
  *                 type: string
  *                 example: "url_de_la_foto.jpg"
