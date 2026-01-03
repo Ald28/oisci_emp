@@ -102,25 +102,25 @@ model Sede {
 }
 
 model Extintor {
-  id               Int         @id @default(autoincrement())
-  codeNFC          String?     @unique @db.VarChar(45)
-  serialNumber     String?     @db.VarChar(45)
-  type             String?     @db.VarChar(45)
-  capacity         String?     @db.VarChar(45)
-  agent            String?     @db.VarChar(45)
-  cylinderNumber   String?     @db.VarChar(45)
-  location         String?     @db.VarChar(45)
+  id               Int        @id @default(autoincrement())
+  codeNFC          String?    @unique @db.VarChar(45)
+  serialNumber     String?    @db.VarChar(45)
+  type             String?    @db.VarChar(45)
+  capacity         String?    @db.VarChar(45)
+  agent            String?    @db.VarChar(45)
+  cylinderNumber   String?    @db.VarChar(45)
+  location         String?    @db.VarChar(45)
   status           StatusEnum?
-  historic         String?     @db.VarChar(45)
-  dateLow          String?     @db.VarChar(45)
-  photo            String?     @db.VarChar(45)
-  createdAt        DateTime?   @default(now())
-  updatedAt        DateTime?   @updatedAt
+  historic         Int?
+  dateLow          DateTime?
+  photo            String?    @db.VarChar(45)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
   sedeId           Int
   usuarioCreadorId Int
 
-  sede           Sede @relation(fields: [sedeId], references: [id])
-  usuarioCreador User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+  sede             Sede @relation(fields: [sedeId], references: [id])
+  usuarioCreador   User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
 }
 
 enum StatusEnum {
