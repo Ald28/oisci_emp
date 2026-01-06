@@ -10,8 +10,7 @@ class Extinguisher {
   final String? cylinderNumber;
   final String? location;
   final String? status; // OPERATIVO / INOPERATIVO
-  final String? historic;
-  final String? dateLow;
+  final DateTime? dateLow; // Fecha según schema de Prisma
   final String? photo;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -29,7 +28,6 @@ class Extinguisher {
     this.cylinderNumber,
     this.location,
     this.status,
-    this.historic,
     this.dateLow,
     this.photo,
     this.createdAt,
@@ -39,4 +37,3 @@ class Extinguisher {
     this.sedeName,
   });
 }
-

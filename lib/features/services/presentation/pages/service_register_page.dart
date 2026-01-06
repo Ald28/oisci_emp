@@ -5,6 +5,7 @@ import '../../../../core/network/error_handler.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
+import '../../../../core/widgets/floating_label_date_picker.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
 import '../../domain/entities/sede.dart';
@@ -12,13 +13,20 @@ import '../../domain/usecases/create_extinguisher_usecase.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/sede_repository_impl.dart';
+import '../../data/datasources/local_extinguisher_datasource.dart';
 import 'service_data_page.dart';
 
 /// Pantalla: Registro de extintor nuevo
 class ServiceRegisterPage extends StatefulWidget {
   final ServiceType serviceType;
+  final String?
+  initialSerial; // Número de serie autocompletado desde NFC o búsqueda
 
-  const ServiceRegisterPage({super.key, required this.serviceType});
+  const ServiceRegisterPage({
+    super.key,
+    required this.serviceType,
+    this.initialSerial,
+  });
 
   @override
   State<ServiceRegisterPage> createState() => _ServiceRegisterPageState();
@@ -33,10 +41,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _agenteController = TextEditingController();
   final _numeroCilindroController = TextEditingController();
   final _ubicacionController = TextEditingController();
-  final _historicoController = TextEditingController();
-  final _fechaBajaController = TextEditingController();
   final _fotoController = TextEditingController();
 
+  DateTime? _fechaBaja;
   String? _estado;
   int? _sedeId;
   bool _isLoading = false;
@@ -48,10 +55,16 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   late final GetSedesUseCase _getSedesUseCase = GetSedesUseCase(
     SedeRepositoryImpl(),
   );
+  final LocalExtinguisherDataSource _localDataSource =
+      LocalExtinguisherDataSource();
 
   @override
   void initState() {
     super.initState();
+    // Autocompletar número de serie si viene desde NFC o búsqueda
+    if (widget.initialSerial != null) {
+      _numeroSerieController.text = widget.initialSerial!;
+    }
     _loadSedes();
   }
 
@@ -64,8 +77,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     _agenteController.dispose();
     _numeroCilindroController.dispose();
     _ubicacionController.dispose();
-    _historicoController.dispose();
-    _fechaBajaController.dispose();
     _fotoController.dispose();
     super.dispose();
   }
@@ -145,12 +156,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ubicacionController.text.trim(),
         'status': _estado,
-        'historic': _historicoController.text.trim().isEmpty
-            ? null
-            : _historicoController.text.trim(),
-        'dateLow': _fechaBajaController.text.trim().isEmpty
-            ? null
-            : _fechaBajaController.text.trim(),
+        'dateLow': _fechaBaja?.toIso8601String(),
         'photo': _fotoController.text.trim().isEmpty
             ? null
             : _fotoController.text.trim(),
@@ -167,6 +173,48 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         setState(() {
           _isLoading = false;
         });
+        return;
+      }
+
+      // Validar unicidad de codeNFC y serialNumber antes de registrar
+      final codeNFC = _codigoNFCController.text.trim().isEmpty
+          ? null
+          : _codigoNFCController.text.trim();
+      final serialNumber = _numeroSerieController.text.trim().isEmpty
+          ? null
+          : _numeroSerieController.text.trim();
+
+      // Verificar si ya existe en SQLite (tanto sincronizados como pendientes)
+      final duplicates = await _localDataSource.checkDuplicates(
+        codeNFC: codeNFC,
+        serialNumber: serialNumber,
+      );
+
+      if (duplicates['codeNFC'] == true || duplicates['serialNumber'] == true) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        String errorMessage = 'Ya existe un extintor con ';
+        final errors = <String>[];
+        if (duplicates['codeNFC'] == true) {
+          errors.add('el mismo código NFC');
+        }
+        if (duplicates['serialNumber'] == true) {
+          errors.add('el mismo número de serie');
+        }
+        errorMessage += errors.join(' y ');
+        errorMessage +=
+            '.\n\nNota: Tanto el código NFC como el número de serie deben ser únicos. Si continúa, tendrá problemas al sincronizar.';
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
         return;
       }
 
@@ -240,6 +288,31 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         _isLoading = false;
       });
 
+      // Verificar si es un error de duplicado desde el backend
+      final errorMessage = e.response?.data is Map<String, dynamic>
+          ? (e.response!.data as Map<String, dynamic>)['message'] as String?
+          : null;
+
+      if (errorMessage != null &&
+          (errorMessage.toLowerCase().contains('unique') ||
+              errorMessage.toLowerCase().contains('duplicate') ||
+              errorMessage.toLowerCase().contains('ya existe') ||
+              errorMessage.toLowerCase().contains('codenfc') ||
+              errorMessage.toLowerCase().contains('serialnumber'))) {
+        // Error de duplicado desde el backend
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ya existe un extintor con el mismo código NFC o número de serie.\n\n'
+              'Nota: Tanto el código NFC como el número de serie deben ser únicos.',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+
       // Usar el helper reutilizable para manejar errores
       ErrorHandler.handleDioError(
         context,
@@ -265,6 +338,11 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       } else if (errorStr.contains('Null') && errorStr.contains('int')) {
         errorMessage =
             'Error: Faltan datos requeridos. Por favor, completa todos los campos obligatorios';
+      } else if (errorStr.toLowerCase().contains('unique') ||
+          errorStr.toLowerCase().contains('duplicate')) {
+        errorMessage =
+            'Ya existe un extintor con el mismo código NFC o número de serie.\n\n'
+            'Nota: Tanto el código NFC como el número de serie deben ser únicos.';
       } else {
         errorMessage = 'Error al registrar extintor: ${e.toString()}';
       }
@@ -365,16 +443,16 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       // Dropdown para Estado
                       _buildEstadoDropdown(),
                       const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _historicoController,
-                        label: 'Histórico',
-                        hintText: 'Histórico',
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _fechaBajaController,
+                      // Selector de Fecha de Baja
+                      FloatingLabelDatePicker(
+                        selectedDate: _fechaBaja,
                         label: 'Fecha de Baja',
                         hintText: 'Fecha de Baja',
+                        onDateSelected: (date) {
+                          setState(() {
+                            _fechaBaja = date;
+                          });
+                        },
                       ),
                       const SizedBox(height: 12),
                       FloatingLabelTextField(

@@ -1,60 +1,56 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:sqflite/sqflite.dart';
+import '../../../../core/database/app_database.dart';
 import '../models/sede_model.dart';
-import '../models/sede_hive_model.dart';
 import 'sede_datasource.dart';
 
-/// DataSource local usando Hive para almacenar sedes
+/// DataSource local usando SQLite para almacenar sedes
 class LocalSedeDataSource implements SedeDataSource {
-  static const String _boxName = 'sedes';
-
-  /// Obtener la caja de Hive
-  Future<Box<SedeHiveModel>> _getBox() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      return await Hive.openBox<SedeHiveModel>(_boxName);
-    }
-    return Hive.box<SedeHiveModel>(_boxName);
-  }
-
   @override
   Future<List<SedeModel>> getSedes() async {
-    final box = await _getBox();
-    final sedesHive = box.values.toList();
+    final db = await AppDatabase.database;
 
-    // Convertir de SedeHiveModel a SedeModel
-    return sedesHive.map((sedeHive) {
-      return SedeModel(
-        id: sedeHive.id,
-        nameSede: sedeHive.nameSede,
-        address: sedeHive.address,
-        city: sedeHive.city,
-        active: sedeHive.active,
-      );
-    }).toList();
+    final result = await db.query(
+      'sede',
+      where: 'active = ?',
+      whereArgs: [1],
+      orderBy: 'name_sede ASC',
+    );
+
+    return result.map((map) => SedeModel.fromMap(map)).toList();
   }
 
   /// Guardar sedes localmente (desde el servidor)
   Future<void> saveSedes(List<SedeModel> sedes) async {
-    final box = await _getBox();
+    final db = await AppDatabase.database;
 
-    // Limpiar sedes existentes
-    await box.clear();
+    // Iniciar transacción para mejor rendimiento
+    await db.transaction((txn) async {
+      // Limpiar sedes existentes
+      await txn.delete('sede');
 
-    // Guardar nuevas sedes
-    for (final sede in sedes) {
-      final sedeHive = SedeHiveModel.fromSedeModel(sede);
-      await box.add(sedeHive);
-    }
+      // Guardar nuevas sedes usando INSERT OR REPLACE
+      for (final sede in sedes) {
+        await txn.insert(
+          'sede',
+          sede.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
   }
 
   /// Verificar si hay sedes guardadas localmente
   Future<bool> hasSedes() async {
-    final box = await _getBox();
-    return box.isNotEmpty;
+    final db = await AppDatabase.database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM sede');
+    final count = result.first['count'] as int;
+    return count > 0;
   }
 
   /// Obtener cantidad de sedes guardadas
   Future<int> getSedesCount() async {
-    final box = await _getBox();
-    return box.length;
+    final db = await AppDatabase.database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM sede');
+    return result.first['count'] as int;
   }
 }

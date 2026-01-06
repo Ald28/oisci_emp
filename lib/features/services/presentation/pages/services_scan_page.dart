@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/network/error_handler.dart';
+import '../../../../core/nfc/nfc_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../widgets/nfc_hint_card.dart';
 import '../widgets/code_search_field.dart';
@@ -15,10 +16,7 @@ import '../../data/repositories/extinguisher_repository_impl.dart';
 class ServicesScanPage extends StatefulWidget {
   final ServiceType serviceType;
 
-  const ServicesScanPage({
-    super.key,
-    required this.serviceType,
-  });
+  const ServicesScanPage({super.key, required this.serviceType});
 
   @override
   State<ServicesScanPage> createState() => _ServicesScanPageState();
@@ -30,9 +28,8 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   bool _isSearching = false;
 
   // Inicializar use case
-  late final SearchExtinguisherUseCase _searchUseCase = SearchExtinguisherUseCase(
-    ExtinguisherRepositoryImpl(),
-  );
+  late final SearchExtinguisherUseCase _searchUseCase =
+      SearchExtinguisherUseCase(ExtinguisherRepositoryImpl());
 
   @override
   void dispose() {
@@ -45,19 +42,56 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
       _isScanning = true;
     });
 
-    // TODO: Implementar escaneo NFC real
-    // Por ahora simulamos un escaneo
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Escanear tarjeta NFC
+      final result = await NfcService.scan();
 
-    if (mounted) {
+      if (!mounted) return;
+
       setState(() {
         _isScanning = false;
       });
 
-      // Simulamos que encontramos un código NFC
-      // En producción, esto vendría del escaneo NFC real
-      final nfcUid = 'NFC123456'; // Esto vendría del NFC
-      await _searchExtinguisher(nfcUid);
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo leer la tarjeta NFC'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Usar codeNFC si está disponible, sino usar UID
+      final searchTerm = result.codeNFC ?? result.uid;
+
+      // Mostrar mensaje informativo
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.codeNFC != null
+                ? 'codeNFC leído: ${result.codeNFC}'
+                : 'UID leído: ${result.uid}',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Buscar extintor
+      await _searchExtinguisher(searchTerm);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isScanning = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al escanear NFC: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -101,7 +135,17 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
           ),
         );
       } else {
-        _showExtinguisherNotFoundDialog(searchTerm);
+        // Si no encuentra el extintor, abrir directamente el formulario de registro
+        // con el número de serie autocompletado (como en movil-aldo)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ServiceRegisterPage(
+              serviceType: widget.serviceType,
+              initialSerial: searchTerm,
+            ),
+          ),
+        );
       }
     } on DioException catch (e) {
       if (!mounted) return;
@@ -114,9 +158,10 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
       final handled = ErrorHandler.handleDioError(
         context,
         e,
-        customMessage: 'Error al buscar extintor: ${ErrorHandler.getErrorMessage(e)}',
+        customMessage:
+            'Error al buscar extintor: ${ErrorHandler.getErrorMessage(e)}',
       );
-      
+
       // Si el error 401 fue manejado, no hacer nada más
       if (handled) return;
     } catch (e) {
@@ -133,42 +178,6 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         ),
       );
     }
-  }
-
-  void _showExtinguisherNotFoundDialog(String searchTerm) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Extintor no encontrado'),
-        content: Text(
-          'El extintor con código/número de serie "$searchTerm" no existe en la base de datos.\n\n¿Deseas registrar un nuevo extintor?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ServiceRegisterPage(
-                    serviceType: widget.serviceType,
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE84343),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Registrar'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -201,13 +210,8 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             // Tarjeta NFC
             Center(
               child: _isScanning
-                  ? const CircularProgressIndicator(
-                      color: Color(0xFFE84343),
-                    )
-                  : InkWell(
-                      onTap: _handleNfcScan,
-                      child: NfcHintCard(),
-                    ),
+                  ? const CircularProgressIndicator(color: Color(0xFFE84343))
+                  : InkWell(onTap: _handleNfcScan, child: NfcHintCard()),
             ),
             const SizedBox(height: 32),
             // Campo de búsqueda manual

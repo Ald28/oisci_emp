@@ -42,6 +42,76 @@ class AppDatabase {
     await db.execute('''
       CREATE UNIQUE INDEX idx_user_userId ON user(userId)
     ''');
+
+    // Tabla para almacenar sedes (según schema de Prisma)
+    await db.execute('''
+      CREATE TABLE sede (
+        id INTEGER PRIMARY KEY,
+        name_sede TEXT NOT NULL,
+        address TEXT NOT NULL,
+        manager_name TEXT NOT NULL,
+        manager_phone TEXT NOT NULL,
+        manager_email TEXT NOT NULL,
+        city TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        clientId INTEGER NOT NULL,
+        createdAt TEXT,
+        updatedAt TEXT
+      )
+    ''');
+
+    // Índice único para sede id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_sede_id ON sede(id)
+    ''');
+
+    // Tabla para almacenar extintores (según schema de Prisma)
+    await db.execute('''
+      CREATE TABLE extintor (
+        id INTEGER PRIMARY KEY,
+        codeNFC TEXT,
+        serialNumber TEXT,
+        type TEXT,
+        capacity TEXT,
+        agent TEXT,
+        cylinderNumber TEXT,
+        location TEXT,
+        status TEXT,
+        dateLow TEXT,
+        photo TEXT,
+        sedeId INTEGER NOT NULL,
+        usuarioCreadorId INTEGER NOT NULL,
+        createdAt TEXT,
+        updatedAt TEXT,
+        synced INTEGER DEFAULT 1
+      )
+    ''');
+
+    // Índices para búsquedas rápidas
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_extintor_id ON extintor(id)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_extintor_codeNFC ON extintor(codeNFC)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_extintor_serialNumber ON extintor(serialNumber)
+    ''');
+
+    // Tabla para cola de sincronización (extintores pendientes)
+    await db.execute('''
+      CREATE TABLE sync_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        lastSyncError TEXT,
+        syncAttempts INTEGER DEFAULT 0,
+        lastSyncAttempt TEXT
+      )
+    ''');
   }
 
   /// Cerrar la base de datos

@@ -13,7 +13,6 @@ class ExtinguisherModel extends Extinguisher {
     super.cylinderNumber,
     super.location,
     super.status,
-    super.historic,
     super.dateLow,
     super.photo,
     super.createdAt,
@@ -31,8 +30,10 @@ class ExtinguisherModel extends Extinguisher {
     int usuarioCreadorId;
     if (json['usuarioCreadorId'] != null) {
       usuarioCreadorId = json['usuarioCreadorId'] as int;
-    } else if (json['usuarioCreador'] != null && json['usuarioCreador'] is Map) {
-      usuarioCreadorId = (json['usuarioCreador'] as Map<String, dynamic>)['id'] as int;
+    } else if (json['usuarioCreador'] != null &&
+        json['usuarioCreador'] is Map) {
+      usuarioCreadorId =
+          (json['usuarioCreador'] as Map<String, dynamic>)['id'] as int;
     } else {
       throw Exception('usuarioCreadorId no encontrado en la respuesta');
     }
@@ -63,8 +64,9 @@ class ExtinguisherModel extends Extinguisher {
       cylinderNumber: json['cylinderNumber'] as String?,
       location: json['location'] as String?,
       status: json['status'] as String?,
-      historic: json['historic'] as String?,
-      dateLow: json['dateLow'] as String?,
+      dateLow: json['dateLow'] != null
+          ? DateTime.parse(json['dateLow'] as String)
+          : null,
       photo: json['photo'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -89,11 +91,36 @@ class ExtinguisherModel extends Extinguisher {
       'cylinderNumber': cylinderNumber,
       'location': location,
       'status': status,
-      'historic': historic,
-      'dateLow': dateLow,
+      'dateLow': dateLow?.toIso8601String(),
       'photo': photo,
       'sedeId': sedeId,
     };
   }
-}
 
+  /// Crear desde Map de SQLite
+  factory ExtinguisherModel.fromMap(Map<String, dynamic> map) {
+    return ExtinguisherModel(
+      id: map['id'] as int,
+      codeNFC: map['codeNFC'] as String?,
+      serialNumber: map['serialNumber'] as String?,
+      type: map['type'] as String?,
+      capacity: map['capacity'] as String?,
+      agent: map['agent'] as String?,
+      cylinderNumber: map['cylinderNumber'] as String?,
+      location: map['location'] as String?,
+      status: map['status'] as String?,
+      dateLow: map['dateLow'] != null
+          ? DateTime.parse(map['dateLow'] as String)
+          : null,
+      photo: map['photo'] as String?,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'] as String)
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
+      sedeId: map['sedeId'] as int,
+      usuarioCreadorId: map['usuarioCreadorId'] as int,
+    );
+  }
+}

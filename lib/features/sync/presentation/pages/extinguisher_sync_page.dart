@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/sync/sync_service.dart';
-import '../../../services/data/models/pending_extinguisher_model.dart';
 
 /// Página de sincronización de extintores pendientes
 class ExtinguisherSyncPage extends StatefulWidget {
@@ -15,7 +15,7 @@ class ExtinguisherSyncPage extends StatefulWidget {
 class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
   final SyncService _syncService = SyncService();
 
-  List<PendingExtinguisherModel> _pendingExtinguishers = [];
+  List<Map<String, dynamic>> _pendingExtinguishers = [];
   bool _isLoading = false;
   bool _isSyncing = false;
   double _syncProgress = 0.0;
@@ -51,11 +51,10 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _pendingExtinguishers =
-              []; // Asegurar que la lista esté vacía en caso de error
+          _pendingExtinguishers = [];
         });
 
-        // Solo mostrar error si realmente hay un problema, no si simplemente no hay pendientes
+        // Solo mostrar error si realmente hay un problema
         final errorMessage = e.toString();
         if (!errorMessage.contains('No hay') &&
             !errorMessage.contains('empty')) {
@@ -90,35 +89,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
     });
 
     try {
-      int synced = 0;
-      final total = _pendingExtinguishers.length;
-
-      for (int i = 0; i < _pendingExtinguishers.length; i++) {
-        final extinguisher = _pendingExtinguishers[i];
-
-        try {
-          final success = await _syncService.syncSingleExtinguisher(
-            extinguisher,
-          );
-          if (success) {
-            synced++;
-          }
-
-          if (mounted) {
-            setState(() {
-              _syncedCount = synced;
-              _syncProgress = (i + 1) / total;
-            });
-          }
-        } catch (e) {
-          extinguisher.markSyncError(e.toString());
-          if (mounted) {
-            setState(() {
-              _syncProgress = (i + 1) / total;
-            });
-          }
-        }
-      }
+      final synced = await _syncService.syncPendingExtinguishers();
 
       if (mounted) {
         setState(() {
@@ -131,11 +102,13 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              synced == total
+              synced == _totalCount
                   ? 'Todos los extintores se sincronizaron exitosamente'
-                  : '$synced de $total extintores sincronizados',
+                  : '$synced de $_totalCount extintores sincronizados',
             ),
-            backgroundColor: synced == total ? Colors.green : Colors.orange,
+            backgroundColor: synced == _totalCount
+                ? Colors.green
+                : Colors.orange,
           ),
         );
       }
@@ -154,16 +127,13 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
     }
   }
 
-  Future<void> _syncSingle(PendingExtinguisherModel extinguisher) async {
+  Future<void> _syncSingle(int queueId) async {
     setState(() {
       _isSyncing = true;
     });
 
     try {
-      final success = await _syncService.syncSingleExtinguisher(extinguisher);
-      if (!success) {
-        throw Exception(extinguisher.lastSyncError ?? 'Error desconocido');
-      }
+      final success = await _syncService.syncSingleExtinguisher(queueId);
 
       if (mounted) {
         setState(() {
@@ -173,14 +143,17 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Extintor sincronizado exitosamente'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Extintor sincronizado exitosamente'
+                  : 'Error al sincronizar extintor',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
       }
     } catch (e) {
-      extinguisher.markSyncError(e.toString());
       if (mounted) {
         setState(() {
           _isSyncing = false;
@@ -198,7 +171,13 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
     }
   }
 
-  void _showErrorDialog(PendingExtinguisherModel extinguisher) {
+  void _showErrorDialog(Map<String, dynamic> item) {
+    final payload =
+        jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+    final lastSyncError = item['lastSyncError'] as String?;
+    final syncAttempts = item['syncAttempts'] as int? ?? 0;
+    final lastSyncAttempt = item['lastSyncAttempt'] as String?;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -209,18 +188,16 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Extintor: ${extinguisher.codeNFC ?? extinguisher.serialNumber ?? "Sin código"}',
+                'Extintor: ${payload['codeNFC'] ?? payload['serialNumber'] ?? "Sin código"}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Error: ${extinguisher.lastSyncError ?? "Error desconocido"}',
-              ),
+              Text('Error: ${lastSyncError ?? "Error desconocido"}'),
               const SizedBox(height: 8),
-              Text('Intentos: ${extinguisher.syncAttempts}'),
-              if (extinguisher.lastSyncAttempt != null)
+              Text('Intentos: $syncAttempts'),
+              if (lastSyncAttempt != null)
                 Text(
-                  'Último intento: ${DateFormat('dd/MM/yyyy HH:mm').format(extinguisher.lastSyncAttempt!)}',
+                  'Último intento: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(lastSyncAttempt))}',
                 ),
             ],
           ),
@@ -233,7 +210,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _syncSingle(extinguisher);
+              _syncSingle(item['id'] as int);
             },
             child: const Text('Reintentar'),
           ),
@@ -332,8 +309,8 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _pendingExtinguishers.length,
                     itemBuilder: (context, index) {
-                      final extinguisher = _pendingExtinguishers[index];
-                      return _buildExtinguisherCard(extinguisher);
+                      final item = _pendingExtinguishers[index];
+                      return _buildExtinguisherCard(item);
                     },
                   ),
                 ),
@@ -342,8 +319,17 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
     );
   }
 
-  Widget _buildExtinguisherCard(PendingExtinguisherModel extinguisher) {
-    final hasError = extinguisher.hasError;
+  Widget _buildExtinguisherCard(Map<String, dynamic> item) {
+    final payload =
+        jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+    final hasError =
+        item['lastSyncError'] != null &&
+        (item['lastSyncError'] as String).isNotEmpty;
+    final codeNFC = payload['codeNFC'] as String?;
+    final serialNumber = payload['serialNumber'] as String?;
+    final type = payload['type'] as String?;
+    final location = payload['location'] as String?;
+    final createdAt = item['createdAt'] as String?;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -356,22 +342,22 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
           ),
         ),
         title: Text(
-          extinguisher.codeNFC ?? extinguisher.serialNumber ?? 'Sin código',
+          codeNFC ?? serialNumber ?? 'Sin código',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (extinguisher.type != null) Text('Tipo: ${extinguisher.type}'),
-            if (extinguisher.location != null)
-              Text('Ubicación: ${extinguisher.location}'),
-            Text(
-              'Creado: ${DateFormat('dd/MM/yyyy HH:mm').format(extinguisher.createdAt)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
+            if (type != null) Text('Tipo: $type'),
+            if (location != null) Text('Ubicación: $location'),
+            if (createdAt != null)
+              Text(
+                'Creado: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(createdAt))}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
             if (hasError)
               Text(
-                'Error: ${extinguisher.lastSyncError}',
+                'Error: ${item['lastSyncError']}',
                 style: const TextStyle(color: Colors.red, fontSize: 12),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -384,12 +370,14 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
             if (hasError)
               IconButton(
                 icon: const Icon(Icons.error_outline, color: Colors.red),
-                onPressed: () => _showErrorDialog(extinguisher),
+                onPressed: () => _showErrorDialog(item),
                 tooltip: 'Ver error',
               ),
             IconButton(
               icon: const Icon(Icons.sync),
-              onPressed: _isSyncing ? null : () => _syncSingle(extinguisher),
+              onPressed: _isSyncing
+                  ? null
+                  : () => _syncSingle(item['id'] as int),
               tooltip: 'Sincronizar',
             ),
           ],
