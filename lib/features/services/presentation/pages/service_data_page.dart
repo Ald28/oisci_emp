@@ -3,6 +3,7 @@ import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
 import '../../domain/entities/extinguisher.dart';
+import 'maintenance/maintenance_checklist_page.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla: Mostrar datos del extintor + Continuar
@@ -106,16 +107,24 @@ class ServiceDataPage extends StatelessWidget {
                     PrimaryButton(
                       text: 'Continuar',
                       onPressed: () {
-                        // TODO: Navegar al siguiente paso según serviceType
-                        // Si es maintenance -> maintenance_checklist_page
-                        // Si es inspection -> inspection_checklist_page
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Continuar con ${serviceType == ServiceType.maintenance ? 'Mantenimiento' : 'Inspección'}',
+                        if (serviceType == ServiceType.maintenance) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MaintenanceChecklistPage(
+                                extinguisher: extinguisher,
+                                serviceType: serviceType,
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        } else {
+                          // TODO: Navegar a inspection_checklist_page cuando esté implementado
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Inspección - Próximamente'),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
