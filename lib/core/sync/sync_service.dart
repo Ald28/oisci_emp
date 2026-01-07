@@ -74,6 +74,102 @@ class SyncService {
     return syncedCount;
   }
 
+  /// Sincronizar todos los extintores pendientes con progreso
+  /// Retorna un Stream con el progreso de sincronización
+  Stream<Map<String, dynamic>> syncPendingExtinguishersWithProgress() async* {
+    // Verificar conexión a internet
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+    if (!hasInternet) {
+      yield {
+        'step': 'Sin conexión',
+        'progress': 0.0,
+        'error': 'No hay conexión a internet',
+      };
+      return;
+    }
+
+    // Obtener todos los extintores pendientes de la cola
+    final pendingItems = await _localDataSource.getPendingExtinguishers();
+
+    if (pendingItems.isEmpty) {
+      yield {'step': 'No hay registros pendientes', 'progress': 1.0};
+      return;
+    }
+
+    final totalItems = pendingItems.length;
+    int syncedCount = 0;
+
+    yield {
+      'step': 'Sincronizando registros...',
+      'progress': 0.0,
+      'total': totalItems,
+      'synced': 0,
+    };
+
+    // Intentar sincronizar cada extintor pendiente
+    for (int i = 0; i < pendingItems.length; i++) {
+      final item = pendingItems[i];
+      try {
+        // Decodificar el payload JSON
+        final data =
+            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+
+        // Actualizar progreso
+        yield {
+          'step': 'Sincronizando registro ${i + 1} de $totalItems...',
+          'progress': (i / totalItems),
+          'total': totalItems,
+          'synced': syncedCount,
+        };
+
+        // Intentar crear en el servidor y obtener el extintor creado
+        final extinguisher = await _httpDataSource.createExtinguisher(data);
+
+        // Buscar el extintor temporal en extintor por codeNFC o serialNumber
+        // para actualizarlo con el ID real del servidor
+        final codeNFC = data['codeNFC'] as String?;
+        final serialNumber = data['serialNumber'] as String?;
+
+        if (codeNFC != null || serialNumber != null) {
+          // Actualizar el registro existente en extintor con el ID real y synced = 1
+          await _localDataSource.updateExtinguisherAfterSync(
+            codeNFC: codeNFC,
+            serialNumber: serialNumber,
+            extinguisher: extinguisher,
+          );
+        } else {
+          // Si no hay codeNFC ni serialNumber, insertar nuevo (caso raro)
+          await _localDataSource.saveExtinguisher(extinguisher);
+        }
+
+        // Si se creó exitosamente, eliminar de la cola
+        await _localDataSource.deleteQueueItem(item['id'] as int);
+        syncedCount++;
+      } catch (e) {
+        // Si falla, actualizar el error en la cola
+        final errorMessage = e.toString();
+        await _localDataSource.updateSyncError(item['id'] as int, errorMessage);
+        // Continuar con el siguiente, pero reportar el error
+        yield {
+          'step': 'Error en registro ${i + 1} de $totalItems',
+          'progress': ((i + 1) / totalItems),
+          'total': totalItems,
+          'synced': syncedCount,
+          'error':
+              'Error al sincronizar: ${errorMessage.substring(0, errorMessage.length > 50 ? 50 : errorMessage.length)}...',
+        };
+      }
+    }
+
+    // Completado
+    yield {
+      'step': 'Sincronización completada',
+      'progress': 1.0,
+      'total': totalItems,
+      'synced': syncedCount,
+    };
+  }
+
   /// Obtener la cantidad de extintores pendientes
   Future<int> getPendingCount() async {
     final pending = await _localDataSource.getPendingExtinguishers();

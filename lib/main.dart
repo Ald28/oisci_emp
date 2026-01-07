@@ -14,7 +14,11 @@ void main() async {
   // Inicializar base de datos SQLite
   await AppDatabase.database;
 
+  // Inicializar servicio de notificaciones
   await NotificationService.init();
+
+  // Solicitar permisos de notificaciones (requerido para Android 13+)
+  await NotificationService.requestPermissions();
 
   runApp(const App());
 }

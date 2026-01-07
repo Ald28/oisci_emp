@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'sync_service.dart';
+import 'sync_progress_controller.dart';
+import '../notifications/notification_service.dart';
 
 /// Servicio para monitorear conectividad y sincronizar automáticamente
 class ConnectivitySyncService {
@@ -59,14 +61,97 @@ class ConnectivitySyncService {
       }
     }
 
+    // Verificar si hay registros pendientes antes de sincronizar
+    final hasPending = await _syncService.hasPendingExtinguishers();
+    if (!hasPending) {
+      return; // No hay nada que sincronizar
+    }
+
     _isSyncing = true;
     _lastSyncTime = DateTime.now();
 
+    // Obtener cantidad de pendientes para la notificación
+    final pendingCount = await _syncService.getPendingCount();
+
+    // ID único para la notificación de progreso
+    const notificationId = 1001;
+
+    // Mostrar notificación inicial (funciona aunque la app esté cerrada)
+    await NotificationService.showProgress(
+      id: notificationId,
+      title: 'Sincronización en curso',
+      body: 'Subiendo registros pendientes...',
+      progress: 0,
+      maxProgress: pendingCount,
+    );
+
+    // Emitir progreso inicial
+    SyncProgressController().emitProgress({
+      'step': 'Sincronizando registros...',
+      'progress': 0.0,
+      'total': pendingCount,
+      'synced': 0,
+    });
+
     try {
-      // Sincronizar extintores pendientes
-      await _syncService.syncPendingExtinguishers();
+      // Sincronizar con progreso
+      await for (final progress
+          in _syncService.syncPendingExtinguishersWithProgress()) {
+        // Emitir progreso para que HomePage pueda escucharlo
+        SyncProgressController().emitProgress(progress);
+
+        // Actualizar notificación con progreso
+        final total = progress['total'] as int? ?? pendingCount;
+        final synced = progress['synced'] as int? ?? 0;
+        final progressValue = progress['progress'] as double? ?? 0.0;
+        final step = progress['step'] as String? ?? 'Sincronizando...';
+
+        if (progressValue < 1.0) {
+          await NotificationService.showProgress(
+            id: notificationId,
+            title: 'Sincronizando registros',
+            body: step,
+            progress: synced,
+            maxProgress: total,
+          );
+        } else {
+          // Si el progreso es 100%, cancelar la notificación de progreso
+          await NotificationService.cancel(notificationId);
+        }
+      }
+
+      // Cancelar la notificación de progreso antes de mostrar la de éxito
+      await NotificationService.cancel(notificationId);
+
+      // Notificación de éxito
+      final finalProgress = await _syncService.getPendingCount();
+      if (finalProgress == 0) {
+        await NotificationService.show(
+          'Sincronización completada',
+          'Todos los registros se han subido exitosamente',
+        );
+      } else {
+        await NotificationService.show(
+          'Sincronización parcial',
+          'Se subieron algunos registros. Revisa los errores en la pantalla de sincronización.',
+        );
+      }
     } catch (e) {
-      // Silenciar errores de sincronización automática
+      // Cancelar la notificación de progreso antes de mostrar la de error
+      await NotificationService.cancel(notificationId);
+
+      // Notificación de error
+      await NotificationService.show(
+        'Error de sincronización',
+        'No se pudieron subir todos los registros',
+      );
+
+      // Emitir error
+      SyncProgressController().emitProgress({
+        'step': 'Error',
+        'progress': 0.0,
+        'error': 'Error durante la sincronización: ${e.toString()}',
+      });
     } finally {
       _isSyncing = false;
     }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/main_drawer.dart';
 import '../../../../core/widgets/action_button_expand.dart';
 import '../../../../core/widgets/sync_progress_banner.dart';
 import '../../../../core/sync/initial_sync_service.dart';
+import '../../../../core/sync/sync_progress_controller.dart';
 import '../../../services/presentation/pages/services_menu_page.dart';
 import '../../../../core/auth/auth_service.dart';
 
@@ -25,12 +27,20 @@ class _HomePageState extends State<HomePage> {
   String _syncStep = '';
   double _syncProgress = 0.0;
   String? _syncError;
+  StreamSubscription<Map<String, dynamic>>? _syncProgressSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadUserEmail();
     _checkAndSyncInitialData();
+    _listenToAutoSyncProgress();
+  }
+
+  @override
+  void dispose() {
+    _syncProgressSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUserEmail() async {
@@ -38,6 +48,41 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _userEmail = session['email'] ?? 'usuario@example.com';
     });
+  }
+
+  /// Escuchar el progreso de sincronización automática
+  void _listenToAutoSyncProgress() {
+    _syncProgressSubscription = SyncProgressController().progressStream.listen(
+      (data) {
+        if (mounted) {
+          setState(() {
+            _isSyncing = true;
+            _syncStep = data['step'] as String? ?? 'Sincronizando...';
+            _syncProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
+            _syncError = data['error'] as String?;
+
+            // Si está completado o hay error, ocultar después de un momento
+            if (_syncProgress >= 1.0 || _syncError != null) {
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) {
+                  setState(() {
+                    _isSyncing = false;
+                  });
+                }
+              });
+            }
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _syncError = 'Error: ${error.toString()}';
+            _isSyncing = false;
+          });
+        }
+      },
+    );
   }
 
   /// Verificar si necesita sincronización inicial y ejecutarla
