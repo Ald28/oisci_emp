@@ -77,7 +77,6 @@ class AppDatabase {
         cylinderNumber TEXT,
         location TEXT,
         status TEXT,
-        dateLow TEXT,
         photo TEXT,
         sedeId INTEGER NOT NULL,
         usuarioCreadorId INTEGER NOT NULL,

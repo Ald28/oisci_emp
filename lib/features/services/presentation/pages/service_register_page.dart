@@ -5,7 +5,6 @@ import '../../../../core/network/error_handler.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
-import '../../../../core/widgets/floating_label_date_picker.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
 import '../../domain/entities/sede.dart';
@@ -43,7 +42,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _ubicacionController = TextEditingController();
   final _fotoController = TextEditingController();
 
-  DateTime? _fechaBaja;
   String? _estado;
   int? _sedeId;
   bool _isLoading = false;
@@ -156,7 +154,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ubicacionController.text.trim(),
         'status': _estado,
-        'dateLow': _fechaBaja?.toIso8601String(),
         'photo': _fotoController.text.trim().isEmpty
             ? null
             : _fotoController.text.trim(),
@@ -442,18 +439,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       const SizedBox(height: 12),
                       // Dropdown para Estado
                       _buildEstadoDropdown(),
-                      const SizedBox(height: 12),
-                      // Selector de Fecha de Baja
-                      FloatingLabelDatePicker(
-                        selectedDate: _fechaBaja,
-                        label: 'Fecha de Baja',
-                        hintText: 'Fecha de Baja',
-                        onDateSelected: (date) {
-                          setState(() {
-                            _fechaBaja = date;
-                          });
-                        },
-                      ),
                       const SizedBox(height: 12),
                       FloatingLabelTextField(
                         controller: _fotoController,

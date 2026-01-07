@@ -90,11 +90,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'cylinderNumber': data['cylinderNumber'] as String?,
       'location': data['location'] as String?,
       'status': data['status'] as String?,
-      'dateLow': data['dateLow'] != null
-          ? (data['dateLow'] is String
-                ? data['dateLow'] as String
-                : (data['dateLow'] as DateTime).toIso8601String())
-          : null,
       'photo': data['photo'] as String?,
       'sedeId': sedeId,
       'usuarioCreadorId': usuarioCreadorId,
@@ -125,11 +120,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       cylinderNumber: data['cylinderNumber'] as String?,
       location: data['location'] as String?,
       status: data['status'] as String?,
-      dateLow: data['dateLow'] != null
-          ? (data['dateLow'] is String
-                ? DateTime.parse(data['dateLow'] as String)
-                : data['dateLow'] as DateTime)
-          : null,
       photo: data['photo'] as String?,
       sedeId: sedeId,
       usuarioCreadorId: usuarioCreadorId,
@@ -152,7 +142,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'cylinderNumber': extinguisher.cylinderNumber,
       'location': extinguisher.location,
       'status': extinguisher.status,
-      'dateLow': extinguisher.dateLow?.toIso8601String(),
       'photo': extinguisher.photo,
       'sedeId': extinguisher.sedeId,
       'usuarioCreadorId': extinguisher.usuarioCreadorId,
@@ -202,7 +191,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
         'cylinderNumber': extinguisher.cylinderNumber,
         'location': extinguisher.location,
         'status': extinguisher.status,
-        'dateLow': extinguisher.dateLow?.toIso8601String(),
         'photo': extinguisher.photo,
         'sedeId': extinguisher.sedeId,
         'usuarioCreadorId': extinguisher.usuarioCreadorId,

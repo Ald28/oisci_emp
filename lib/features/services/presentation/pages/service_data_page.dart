@@ -94,13 +94,6 @@ class ServiceDataPage extends StatelessWidget {
                       _buildField('Sede', extinguisher.sedeName!),
                     if (extinguisher.sedeName != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.dateLow != null)
-                      _buildField(
-                        'Fecha de Baja',
-                        DateFormat('dd/MM/yyyy').format(extinguisher.dateLow!),
-                      ),
-                    if (extinguisher.dateLow != null)
-                      const SizedBox(height: 12),
                     if (extinguisher.createdAt != null)
                       _buildField(
                         'Fecha de Creación',

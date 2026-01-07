@@ -13,7 +13,6 @@ class ExtinguisherModel extends Extinguisher {
     super.cylinderNumber,
     super.location,
     super.status,
-    super.dateLow,
     super.photo,
     super.createdAt,
     super.updatedAt,
@@ -64,9 +63,6 @@ class ExtinguisherModel extends Extinguisher {
       cylinderNumber: json['cylinderNumber'] as String?,
       location: json['location'] as String?,
       status: json['status'] as String?,
-      dateLow: json['dateLow'] != null
-          ? DateTime.parse(json['dateLow'] as String)
-          : null,
       photo: json['photo'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -91,7 +87,6 @@ class ExtinguisherModel extends Extinguisher {
       'cylinderNumber': cylinderNumber,
       'location': location,
       'status': status,
-      'dateLow': dateLow?.toIso8601String(),
       'photo': photo,
       'sedeId': sedeId,
     };
@@ -109,9 +104,6 @@ class ExtinguisherModel extends Extinguisher {
       cylinderNumber: map['cylinderNumber'] as String?,
       location: map['location'] as String?,
       status: map['status'] as String?,
-      dateLow: map['dateLow'] != null
-          ? DateTime.parse(map['dateLow'] as String)
-          : null,
       photo: map['photo'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
