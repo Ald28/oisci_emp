@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
         password: password,
       );
 
-      // Sincronizar datos en background (descargar y guardar localmente)
+      // Si ya hay datos, sincronizar en background
       _syncSedesInBackground();
       _syncExtinguishersInBackground();
 

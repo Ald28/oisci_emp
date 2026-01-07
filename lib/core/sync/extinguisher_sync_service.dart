@@ -23,32 +23,67 @@ class ExtinguisherSyncService {
 
     try {
       // Obtener todos los extintores del servidor
-      // Nota: El backend debería tener un endpoint para listar todos los extintores
-      // Por ahora, esto es un placeholder - necesitarás implementar el endpoint en el backend
-      final response = await _dio.get('/nfc/list-extintores');
-      final responseData = response.data as Map<String, dynamic>;
+      // El endpoint /nfc/list-nfc retorna directamente un array o un objeto con { ok: true, data: [...] }
+      final response = await _dio.get('/nfc/list-nfc');
+      final responseData = response.data;
 
-      if (responseData['ok'] == true && responseData['data'] != null) {
-        final extintoresList = responseData['data'] as List;
-        final extintores = extintoresList
-            .map(
-              (json) =>
-                  ExtinguisherModel.fromJson(json as Map<String, dynamic>),
-            )
-            .toList();
+      List extintoresList;
 
-        // Guardar cada extintor localmente
-        for (final extintor in extintores) {
-          await _localDataSource.saveExtinguisher(extintor);
+      // Manejar diferentes formatos de respuesta
+      if (responseData is List) {
+        // Si la respuesta es directamente un array
+        extintoresList = responseData;
+      } else if (responseData is Map<String, dynamic>) {
+        // Si la respuesta es un objeto con formato { ok: true, data: [...] }
+        if (responseData['ok'] == true && responseData['data'] != null) {
+          extintoresList = responseData['data'] as List;
+        } else {
+          throw Exception(
+            'Respuesta inválida del servidor: ${responseData['message'] ?? 'Formato de respuesta inesperado'}',
+          );
         }
-
-        return true;
+      } else {
+        throw Exception('Formato de respuesta inesperado del servidor');
       }
 
-      return false;
+      // Convertir y guardar cada extintor localmente
+      final extintores = extintoresList
+          .map(
+            (json) => ExtinguisherModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+
+      for (final extintor in extintores) {
+        await _localDataSource.saveExtinguisher(extintor);
+      }
+
+      return true;
+    } on DioException catch (e) {
+      // Capturar errores de Dio y lanzar con mensaje más claro
+      String errorMessage;
+      if (e.response?.data is Map<String, dynamic>) {
+        final errorData = e.response!.data as Map<String, dynamic>;
+        errorMessage =
+            errorData['message'] as String? ??
+            errorData['error'] as String? ??
+            'Error al descargar extintores';
+      } else if (e.response?.data is String) {
+        errorMessage = e.response!.data as String;
+      } else {
+        errorMessage =
+            'Error al descargar extintores: ${e.message ?? 'Error desconocido'}';
+      }
+
+      // Si es un error 404, el endpoint no existe
+      if (e.response?.statusCode == 404) {
+        errorMessage =
+            'Endpoint no encontrado. Verifique que el backend tenga el endpoint /nfc/list-nfc';
+      }
+
+      throw Exception(errorMessage);
     } catch (e) {
-      // Si falla, retornar false (puede ser que el endpoint no exista aún)
-      return false;
+      // Relanzar otros errores con el mensaje original
+      rethrow;
     }
   }
 
