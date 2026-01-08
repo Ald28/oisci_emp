@@ -3,6 +3,6 @@ import { RegisterController } from '../../controllers/services/register.controll
 
 const router = Router()
 
-router.post('/servicios', RegisterController.createServicio)
+router.post('/crear', RegisterController.createServicio)
 
 export default router

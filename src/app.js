@@ -17,6 +17,8 @@ import sedeDeleteRoutes from '../routes/sede/delete.routes.js';
 import nfcListRoutes from '../routes/nfc/list.routes.js';
 import nfcCreateRoutes from '../routes/nfc/create.routes.js';
 
+import servicioCreateRoutes from '../routes/services/register.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -53,5 +55,7 @@ app.use('/sede', sedeDeleteRoutes);
 
 app.use('/nfc', nfcListRoutes);
 app.use('/nfc', nfcCreateRoutes);
+
+app.use('/services', servicioCreateRoutes);
 
 export default app;
