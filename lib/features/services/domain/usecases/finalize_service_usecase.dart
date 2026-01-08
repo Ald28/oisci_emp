@@ -1,21 +1,13 @@
-import '../repositories/services_repository.dart';
+import '../entities/service_entity.dart';
+import '../repositories/service_repository.dart';
 
-/// UseCase: Finalizar servicio + confirmar
+/// Use case: Finalizar servicio
 class FinalizeServiceUseCase {
-  final ServicesRepository repository;
+  final ServiceRepository repository;
 
   FinalizeServiceUseCase(this.repository);
 
-  Future<void> call({
-    required String serviceId,
-    required List<String> completedItems,
-    String? observations,
-  }) async {
-    return await repository.finalizeService(
-      serviceId: serviceId,
-      completedItems: completedItems,
-      observations: observations,
-    );
+  Future<ServiceEntity> call(int servicioId) async {
+    return await repository.finalizeService(servicioId);
   }
 }
-

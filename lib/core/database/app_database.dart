@@ -17,7 +17,12 @@ class AppDatabase {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'oisci_app.db');
 
-    return openDatabase(path, version: 1, onCreate: _onCreate);
+    return openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   /// Crear las tablas necesarias
@@ -111,6 +116,186 @@ class AppDatabase {
         lastSyncAttempt TEXT
       )
     ''');
+
+    // Tabla para servicios
+    await db.execute('''
+      CREATE TABLE servicio (
+        id INTEGER PRIMARY KEY,
+        type TEXT NOT NULL,
+        dateStart TEXT NOT NULL,
+        dateEnd TEXT,
+        sincronizado INTEGER DEFAULT 0,
+        status TEXT NOT NULL,
+        statusValid TEXT NOT NULL,
+        historic TEXT,
+        sedeId INTEGER NOT NULL,
+        userId INTEGER NOT NULL,
+        usuarioCreadorId INTEGER NOT NULL,
+        usuarioActualizadorId INTEGER,
+        createdAt TEXT,
+        updatedAt TEXT,
+        synced INTEGER DEFAULT 1
+      )
+    ''');
+
+    // Índice único para servicio id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_servicio_id ON servicio(id)
+    ''');
+
+    // Tabla para servicio_extintor
+    await db.execute('''
+      CREATE TABLE servicio_extintor (
+        id INTEGER PRIMARY KEY,
+        servicioId INTEGER NOT NULL,
+        extintorId INTEGER NOT NULL,
+        estadoInicial TEXT,
+        estadoFinal TEXT,
+        completado INTEGER DEFAULT 0,
+        observaciones TEXT,
+        usuarioCreadorId INTEGER NOT NULL,
+        usuarioActualizadorId INTEGER,
+        createdAt TEXT,
+        updatedAt TEXT,
+        synced INTEGER DEFAULT 1,
+        FOREIGN KEY (servicioId) REFERENCES servicio(id),
+        FOREIGN KEY (extintorId) REFERENCES extintor(id)
+      )
+    ''');
+
+    // Índice único para servicio_extintor id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_servicio_extintor_id ON servicio_extintor(id)
+    ''');
+
+    // Índice único para (servicioId, extintorId)
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_servicio_extintor_unique ON servicio_extintor(servicioId, extintorId)
+    ''');
+
+    // Tabla para mantenimiento_detalle
+    await db.execute('''
+      CREATE TABLE mantenimiento_detalle (
+        id INTEGER PRIMARY KEY,
+        servicioExtintorId INTEGER NOT NULL,
+        mantenimiento INTEGER DEFAULT 0,
+        recarga INTEGER DEFAULT 0,
+        agenteCarga TEXT,
+        pruebaHidrostatica INTEGER DEFAULT 0,
+        bajaExtintor INTEGER DEFAULT 0,
+        motivoBaja TEXT,
+        pintura INTEGER DEFAULT 0,
+        recargaCartucho INTEGER DEFAULT 0,
+        cambioPartes INTEGER DEFAULT 0,
+        usuarioCreadorId INTEGER NOT NULL,
+        usuarioActualizadorId INTEGER,
+        createdAt TEXT,
+        updatedAt TEXT,
+        synced INTEGER DEFAULT 1,
+        FOREIGN KEY (servicioExtintorId) REFERENCES servicio_extintor(id)
+      )
+    ''');
+
+    // Índice único para mantenimiento_detalle id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_mantenimiento_detalle_id ON mantenimiento_detalle(id)
+    ''');
+
+    // Índice único para servicioExtintorId
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_mantenimiento_detalle_servicio_extintor ON mantenimiento_detalle(servicioExtintorId)
+    ''');
+  }
+
+  /// Migración de la base de datos
+  static Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      // Agregar tablas de servicios
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS servicio (
+          id INTEGER PRIMARY KEY,
+          type TEXT NOT NULL,
+          dateStart TEXT NOT NULL,
+          dateEnd TEXT,
+          sincronizado INTEGER DEFAULT 0,
+          status TEXT NOT NULL,
+          statusValid TEXT NOT NULL,
+          historic TEXT,
+          sedeId INTEGER NOT NULL,
+          userId INTEGER NOT NULL,
+          usuarioCreadorId INTEGER NOT NULL,
+          usuarioActualizadorId INTEGER,
+          createdAt TEXT,
+          updatedAt TEXT,
+          synced INTEGER DEFAULT 1
+        )
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_id ON servicio(id)
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS servicio_extintor (
+          id INTEGER PRIMARY KEY,
+          servicioId INTEGER NOT NULL,
+          extintorId INTEGER NOT NULL,
+          estadoInicial TEXT,
+          estadoFinal TEXT,
+          completado INTEGER DEFAULT 0,
+          observaciones TEXT,
+          usuarioCreadorId INTEGER NOT NULL,
+          usuarioActualizadorId INTEGER,
+          createdAt TEXT,
+          updatedAt TEXT,
+          synced INTEGER DEFAULT 1,
+          FOREIGN KEY (servicioId) REFERENCES servicio(id),
+          FOREIGN KEY (extintorId) REFERENCES extintor(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_extintor_id ON servicio_extintor(id)
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_extintor_unique ON servicio_extintor(servicioId, extintorId)
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS mantenimiento_detalle (
+          id INTEGER PRIMARY KEY,
+          servicioExtintorId INTEGER NOT NULL,
+          mantenimiento INTEGER DEFAULT 0,
+          recarga INTEGER DEFAULT 0,
+          agenteCarga TEXT,
+          pruebaHidrostatica INTEGER DEFAULT 0,
+          bajaExtintor INTEGER DEFAULT 0,
+          motivoBaja TEXT,
+          pintura INTEGER DEFAULT 0,
+          recargaCartucho INTEGER DEFAULT 0,
+          cambioPartes INTEGER DEFAULT 0,
+          usuarioCreadorId INTEGER NOT NULL,
+          usuarioActualizadorId INTEGER,
+          createdAt TEXT,
+          updatedAt TEXT,
+          synced INTEGER DEFAULT 1,
+          FOREIGN KEY (servicioExtintorId) REFERENCES servicio_extintor(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_mantenimiento_detalle_id ON mantenimiento_detalle(id)
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_mantenimiento_detalle_servicio_extintor ON mantenimiento_detalle(servicioExtintorId)
+      ''');
+    }
   }
 
   /// Cerrar la base de datos

@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
       // Verificar si hay credenciales guardadas (email y password)
       final savedEmail = session["email"] as String?;
       final savedPassword = session["password"] as String?;
-
+      
       if (savedEmail == null || savedPassword == null) {
         _msg(
           "No hay sesión guardada. Se requiere conexión a internet para iniciar sesión por primera vez.",
@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
           _msg("Acceso permitido solo para técnicos");
           return;
         }
-
+        
         // Si hay userId y name, usar esos datos
         if (savedUserId != null && savedName != null) {
           if (!mounted) return;
@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
 
-      // Si no hay token pero las credenciales coinciden,
+      // Si no hay token pero las credenciales coinciden, 
       // permitir acceso pero mostrar advertencia de que algunas funciones pueden no estar disponibles
       if (savedRole == "tecnico" && savedUserId != null && savedName != null) {
         // Permitir acceso con datos guardados (aunque el token haya expirado)

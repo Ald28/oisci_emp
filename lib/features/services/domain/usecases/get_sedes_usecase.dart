@@ -1,4 +1,4 @@
-import '../entities/sede.dart';
+import '../entities/sede_entity.dart';
 import '../repositories/sede_repository.dart';
 
 /// Use case: Obtener lista de sedes

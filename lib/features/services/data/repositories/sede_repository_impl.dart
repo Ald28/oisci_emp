@@ -1,6 +1,6 @@
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../domain/repositories/sede_repository.dart';
-import '../../domain/entities/sede.dart';
+import '../../domain/entities/sede_entity.dart';
 import '../datasources/sede_datasource.dart';
 import '../datasources/http_sede_datasource.dart';
 import '../datasources/local_sede_datasource.dart';

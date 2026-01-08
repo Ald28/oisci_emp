@@ -1,7 +1,6 @@
-import '../../domain/entities/extinguisher.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 
 abstract class ExtinguisherDataSource {
   Future<Extinguisher?> searchExtinguisher(String searchTerm);
   Future<Extinguisher> createExtinguisher(Map<String, dynamic> data);
 }
-

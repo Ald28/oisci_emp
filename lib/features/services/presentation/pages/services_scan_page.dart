@@ -15,8 +15,13 @@ import '../../data/repositories/extinguisher_repository_impl.dart';
 /// Compartida para Mantenimiento e Inspección
 class ServicesScanPage extends StatefulWidget {
   final ServiceType serviceType;
+  final int servicioId;
 
-  const ServicesScanPage({super.key, required this.serviceType});
+  const ServicesScanPage({
+    super.key,
+    required this.serviceType,
+    required this.servicioId,
+  });
 
   @override
   State<ServicesScanPage> createState() => _ServicesScanPageState();
@@ -131,6 +136,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             builder: (_) => ServiceDataPage(
               extinguisher: extinguisher,
               serviceType: widget.serviceType,
+              servicioId: widget.servicioId,
             ),
           ),
         );
@@ -143,6 +149,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             builder: (_) => ServiceRegisterPage(
               serviceType: widget.serviceType,
               initialSerial: searchTerm,
+              servicioId: widget.servicioId,
             ),
           ),
         );

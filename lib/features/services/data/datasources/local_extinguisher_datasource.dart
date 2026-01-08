@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/database/app_database.dart';
-import '../../domain/entities/extinguisher.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 import '../models/extinguisher_model.dart';
 import 'extinguisher_datasource.dart';
 

@@ -7,7 +7,7 @@ import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
-import '../../domain/entities/sede.dart';
+import '../../domain/entities/sede_entity.dart';
 import '../../domain/usecases/create_extinguisher_usecase.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
@@ -19,12 +19,14 @@ import 'service_data_page.dart';
 class ServiceRegisterPage extends StatefulWidget {
   final ServiceType serviceType;
   final String?
-  initialSerial; // Número de serie autocompletado desde NFC o búsqueda
+      initialSerial; // Número de serie autocompletado desde NFC o búsqueda
+  final int servicioId;
 
   const ServiceRegisterPage({
     super.key,
     required this.serviceType,
     this.initialSerial,
+    required this.servicioId,
   });
 
   @override
@@ -275,6 +277,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           builder: (_) => ServiceDataPage(
             extinguisher: extinguisher,
             serviceType: widget.serviceType,
+            servicioId: widget.servicioId,
           ),
         ),
       );

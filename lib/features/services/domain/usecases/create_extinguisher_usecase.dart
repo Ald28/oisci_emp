@@ -1,4 +1,4 @@
-import '../entities/extinguisher.dart';
+import '../entities/extinguisher_entity.dart';
 import '../repositories/extinguisher_repository.dart';
 
 /// Use case: Crear un nuevo extintor
@@ -11,4 +11,3 @@ class CreateExtinguisherUseCase {
     return await repository.createExtinguisher(data);
   }
 }
-

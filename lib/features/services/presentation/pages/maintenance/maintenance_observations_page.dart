@@ -3,7 +3,7 @@ import '../../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../core/widgets/secondary_button.dart';
 import '../../../../../core/widgets/floating_label_text_field.dart';
-import '../../../domain/entities/extinguisher.dart';
+import '../../../domain/entities/extinguisher_entity.dart';
 import '../../../domain/entities/service_type.dart';
 import '../services_scan_page.dart';
 
@@ -11,6 +11,8 @@ import '../services_scan_page.dart';
 class MaintenanceObservationsPage extends StatefulWidget {
   final Extinguisher extinguisher;
   final ServiceType serviceType;
+  final int servicioId;
+  final int servicioExtintorId;
   final Map<String, bool> checklistItems;
   final String? rechargeAgent;
   final String? decommissionReason;
@@ -20,6 +22,8 @@ class MaintenanceObservationsPage extends StatefulWidget {
     super.key,
     required this.extinguisher,
     required this.serviceType,
+    required this.servicioId,
+    required this.servicioExtintorId,
     required this.checklistItems,
     this.rechargeAgent,
     this.decommissionReason,
@@ -39,7 +43,10 @@ class _MaintenanceObservationsPageState
     // Navegar al scanner NFC
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => ServicesScanPage(serviceType: widget.serviceType),
+        builder: (_) => ServicesScanPage(
+          serviceType: widget.serviceType,
+          servicioId: widget.servicioId,
+        ),
       ),
       (route) => false, // Eliminar todas las rutas anteriores
     );

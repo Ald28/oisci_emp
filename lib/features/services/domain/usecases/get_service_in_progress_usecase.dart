@@ -1,15 +1,13 @@
-import '../entities/service_order.dart';
-import '../entities/service_type.dart';
-import '../repositories/services_repository.dart';
+import '../entities/service_entity.dart';
+import '../repositories/service_repository.dart';
 
-/// UseCase: Detectar servicio en proceso
+/// Use case: Obtener servicio en proceso por tipo
 class GetServiceInProgressUseCase {
-  final ServicesRepository repository;
+  final ServiceRepository repository;
 
   GetServiceInProgressUseCase(this.repository);
 
-  Future<ServiceOrder?> call(ServiceType type) async {
+  Future<ServiceEntity?> call(String type) async {
     return await repository.getServiceInProgress(type);
   }
 }
-

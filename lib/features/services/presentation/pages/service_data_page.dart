@@ -2,20 +2,94 @@ import 'package:flutter/material.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
-import '../../domain/entities/extinguisher.dart';
+import '../../domain/entities/extinguisher_entity.dart';
+import '../../domain/usecases/add_extinguisher_to_service_usecase.dart';
+import '../../data/repositories/service_repository_impl.dart';
 import 'maintenance/maintenance_checklist_page.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla: Mostrar datos del extintor + Continuar
-class ServiceDataPage extends StatelessWidget {
+class ServiceDataPage extends StatefulWidget {
   final Extinguisher extinguisher;
   final ServiceType serviceType;
+  final int servicioId;
 
   const ServiceDataPage({
     super.key,
     required this.extinguisher,
     required this.serviceType,
+    required this.servicioId,
   });
+
+  @override
+  State<ServiceDataPage> createState() => _ServiceDataPageState();
+}
+
+class _ServiceDataPageState extends State<ServiceDataPage> {
+  bool _isLoading = false;
+
+  late final AddExtinguisherToServiceUseCase _addExtinguisherUseCase =
+      AddExtinguisherToServiceUseCase(ServiceRepositoryImpl());
+
+  Future<void> _handleContinue() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Crear ServicioExtintor (Etapa 2)
+      final serviceExtinguisher = await _addExtinguisherUseCase.call(
+        servicioId: widget.servicioId,
+        extintorId: widget.extinguisher.id,
+        estadoInicial: widget.extinguisher.status, // OPERATIVO o INOPERATIVO
+        observaciones:
+            null, // Se agregará después en la página de observaciones
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navegar a MaintenanceChecklistPage
+      if (widget.serviceType == ServiceType.maintenance) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MaintenanceChecklistPage(
+              extinguisher: widget.extinguisher,
+              serviceType: widget.serviceType,
+              servicioId: widget.servicioId,
+              servicioExtintorId: serviceExtinguisher.id,
+            ),
+          ),
+        );
+      } else {
+        // TODO: Navegar a inspection_checklist_page cuando esté implementado
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Inspección - Próximamente')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error al agregar extintor al servicio: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,73 +133,61 @@ class ServiceDataPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     // Campos de datos del extintor
-                    if (extinguisher.codeNFC != null)
-                      _buildField('Código NFC', extinguisher.codeNFC!),
-                    if (extinguisher.codeNFC != null)
+                    if (widget.extinguisher.codeNFC != null)
+                      _buildField('Código NFC', widget.extinguisher.codeNFC!),
+                    if (widget.extinguisher.codeNFC != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.serialNumber != null)
-                      _buildField('Nro. Serie', extinguisher.serialNumber!),
-                    if (extinguisher.serialNumber != null)
+                    if (widget.extinguisher.serialNumber != null)
+                      _buildField(
+                        'Nro. Serie',
+                        widget.extinguisher.serialNumber!,
+                      ),
+                    if (widget.extinguisher.serialNumber != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.location != null)
-                      _buildField('Ubicación', extinguisher.location!),
-                    if (extinguisher.location != null)
+                    if (widget.extinguisher.location != null)
+                      _buildField('Ubicación', widget.extinguisher.location!),
+                    if (widget.extinguisher.location != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.cylinderNumber != null)
+                    if (widget.extinguisher.cylinderNumber != null)
                       _buildField(
                         'Nro. Cilindro',
-                        extinguisher.cylinderNumber!,
+                        widget.extinguisher.cylinderNumber!,
                       ),
-                    if (extinguisher.cylinderNumber != null)
+                    if (widget.extinguisher.cylinderNumber != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.type != null)
-                      _buildField('Tipo', extinguisher.type!),
-                    if (extinguisher.type != null) const SizedBox(height: 12),
-                    if (extinguisher.agent != null)
-                      _buildField('Agente', extinguisher.agent!),
-                    if (extinguisher.agent != null) const SizedBox(height: 12),
-                    if (extinguisher.capacity != null)
-                      _buildField('Capacidad', extinguisher.capacity!),
-                    if (extinguisher.capacity != null)
+                    if (widget.extinguisher.type != null)
+                      _buildField('Tipo', widget.extinguisher.type!),
+                    if (widget.extinguisher.type != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.status != null)
-                      _buildField('Estado', extinguisher.status!),
-                    if (extinguisher.status != null) const SizedBox(height: 12),
-                    if (extinguisher.sedeName != null)
-                      _buildField('Sede', extinguisher.sedeName!),
-                    if (extinguisher.sedeName != null)
+                    if (widget.extinguisher.agent != null)
+                      _buildField('Agente', widget.extinguisher.agent!),
+                    if (widget.extinguisher.agent != null)
                       const SizedBox(height: 12),
-                    if (extinguisher.createdAt != null)
+                    if (widget.extinguisher.capacity != null)
+                      _buildField('Capacidad', widget.extinguisher.capacity!),
+                    if (widget.extinguisher.capacity != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.status != null)
+                      _buildField('Estado', widget.extinguisher.status!),
+                    if (widget.extinguisher.status != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.sedeName != null)
+                      _buildField('Sede', widget.extinguisher.sedeName!),
+                    if (widget.extinguisher.sedeName != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.createdAt != null)
                       _buildField(
                         'Fecha de Creación',
                         DateFormat(
                           'dd/MM/yyyy',
-                        ).format(extinguisher.createdAt!),
+                        ).format(widget.extinguisher.createdAt!),
                       ),
                     const SizedBox(height: 32),
                     // Botón Continuar
                     PrimaryButton(
                       text: 'Continuar',
-                      onPressed: () {
-                        if (serviceType == ServiceType.maintenance) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MaintenanceChecklistPage(
-                                extinguisher: extinguisher,
-                                serviceType: serviceType,
-                              ),
-                            ),
-                          );
-                        } else {
-                          // TODO: Navegar a inspection_checklist_page cuando esté implementado
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Inspección - Próximamente'),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: _isLoading ? null : _handleContinue,
+                      isLoading: _isLoading,
                     ),
                   ],
                 ),

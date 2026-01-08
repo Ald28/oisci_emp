@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../../core/widgets/primary_button.dart';
-import '../../../domain/entities/extinguisher.dart';
+import '../../../domain/entities/extinguisher_entity.dart';
 import '../../../domain/entities/service_type.dart';
+import '../../../domain/usecases/create_maintenance_detail_usecase.dart';
+import '../../../data/repositories/service_repository_impl.dart';
 import '../../widgets/maintenance_checklist_item.dart';
 import 'widgets/recharge_modal.dart';
 import 'widgets/decommission_modal.dart';
@@ -13,11 +15,15 @@ import 'maintenance_observations_page.dart';
 class MaintenanceChecklistPage extends StatefulWidget {
   final Extinguisher extinguisher;
   final ServiceType serviceType;
+  final int servicioId;
+  final int servicioExtintorId;
 
   const MaintenanceChecklistPage({
     super.key,
     required this.extinguisher,
     required this.serviceType,
+    required this.servicioId,
+    required this.servicioExtintorId,
   });
 
   @override
@@ -41,6 +47,11 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
   String? _rechargeAgent;
   String? _decommissionReason;
   String? _partsChangeDetails;
+
+  bool _isLoading = false;
+
+  late final CreateMaintenanceDetailUseCase _createMaintenanceDetailUseCase =
+      CreateMaintenanceDetailUseCase(ServiceRepositoryImpl());
 
   void _toggleItem(String itemId) {
     setState(() {
@@ -92,21 +103,71 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
     }
   }
 
-  void _handleContinue() {
-    // Navegar a la página de observaciones
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MaintenanceObservationsPage(
-          extinguisher: widget.extinguisher,
-          serviceType: widget.serviceType,
-          checklistItems: _checklistItems,
-          rechargeAgent: _rechargeAgent,
-          decommissionReason: _decommissionReason,
-          partsChangeDetails: _partsChangeDetails,
+  Future<void> _handleContinue() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Mapear los datos del checklist al formato del backend
+      final checklistData = <String, dynamic>{
+        'mantenimiento': _checklistItems['MANTENIMIENTO'] ?? false,
+        'recarga': _checklistItems['RECARGA'] ?? false,
+        'agenteCarga': _rechargeAgent, // Solo si recarga está activa
+        'pruebaHidrostatica': _checklistItems['PRUEBA_HIDRO'] ?? false,
+        'bajaExtintor': _checklistItems['BAJA_EXTINTOR'] ?? false,
+        'motivoBaja': _decommissionReason, // Solo si baja está activa
+        'pintura': _checklistItems['PINTURA'] ?? false,
+        'recargaCartucho': _checklistItems['REC_CARTUCHO'] ?? false,
+        'cambioPartes': _checklistItems['CAMBIO_PARTES'] ?? false,
+      };
+
+      // Crear MantenimientoDetalle (Etapa 3)
+      await _createMaintenanceDetailUseCase.call(
+        servicioExtintorId: widget.servicioExtintorId,
+        checklistData: checklistData,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navegar a la página de observaciones
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MaintenanceObservationsPage(
+            extinguisher: widget.extinguisher,
+            serviceType: widget.serviceType,
+            servicioId: widget.servicioId,
+            servicioExtintorId: widget.servicioExtintorId,
+            checklistItems: _checklistItems,
+            rechargeAgent: _rechargeAgent,
+            decommissionReason: _decommissionReason,
+            partsChangeDetails: _partsChangeDetails,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error al crear detalle de mantenimiento: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -205,7 +266,11 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
             ),
             const SizedBox(height: 32),
             // Botón Continuar
-            PrimaryButton(text: 'Continuar', onPressed: _handleContinue),
+            PrimaryButton(
+              text: 'Continuar',
+              onPressed: _isLoading ? null : _handleContinue,
+              isLoading: _isLoading,
+            ),
           ],
         ),
       ),

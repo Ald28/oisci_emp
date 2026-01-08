@@ -1,6 +1,6 @@
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../domain/repositories/extinguisher_repository.dart';
-import '../../domain/entities/extinguisher.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 import '../datasources/extinguisher_datasource.dart';
 import '../datasources/http_extinguisher_datasource.dart';
 import '../datasources/local_extinguisher_datasource.dart';

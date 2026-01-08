@@ -1,4 +1,4 @@
-import '../../domain/entities/extinguisher.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 
 /// Modelo: Extintor (Data Layer)
 /// Coincide con la respuesta del backend

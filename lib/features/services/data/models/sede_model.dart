@@ -1,4 +1,4 @@
-import '../../domain/entities/sede.dart';
+import '../../domain/entities/sede_entity.dart';
 
 /// Modelo: Sede (Data Layer)
 /// Incluye todos los campos según schema de Prisma
