@@ -1,40 +1,57 @@
 import { prisma } from '../../database/client.mjs'
 
-export const RegisterRepository = {
+export const ServiceRepository = {
 
-    async createServicioWithExtintores({
+    async createService({
         type,
         dateStart,
         sedeId,
         userId,
-        usuarioCreadorId,
-        extintores
+        usuarioCreadorId
     }) {
-        return prisma.$transaction(async (tx) => {
+        return prisma.servicio.create({
+            data: {
+                type,
+                dateStart,
+                status: 'EN_PROCESO',
+                statusValid: 'APROBADO',
 
-            const servicio = await tx.servicio.create({
-                data: {
-                    type,
-                    dateStart,
-                    status: 'EN_PROCESO',
-                    statusValid: 'APROBADO',
-                    sedeId,
-                    userId,
-                    usuarioCreadorId
+                sede: {
+                    connect: { id: sedeId }
+                },
+
+                user: {
+                    connect: { id: userId }
+                },
+
+                usuarioCreador: {
+                    connect: { id: usuarioCreadorId }
                 }
-            })
+            }
+        })
+    },
 
-            await tx.servicioExtintor.createMany({
-                data: extintores.map(e => ({
-                    servicioId: servicio.id,
-                    extintorId: e.extintorId,
-                    estadoInicial: e.estadoInicial,
-                    observaciones: e.observaciones,
-                    usuarioCreadorId
-                }))
-            })
-
-            return servicio
+    async addExtintorToService({
+        servicioId,
+        extintorId,
+        estadoInicial,
+        observaciones,
+        usuarioCreadorId
+    }) {
+        return prisma.servicioExtintor.create({
+            data: {
+                servicio: {
+                    connect: { id: servicioId }
+                },
+                extintor: {
+                    connect: { id: extintorId }
+                },
+                estadoInicial,
+                observaciones,
+                usuarioCreador: {
+                    connect: { id: usuarioCreadorId }
+                }
+            }
         })
     }
 

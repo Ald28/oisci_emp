@@ -19,6 +19,8 @@ import nfcCreateRoutes from '../routes/nfc/create.routes.js';
 
 import servicioCreateRoutes from '../routes/services/register.routes.js';
 
+import mantenimientoRoutes from '../routes/mantenimientoD/mantenimientoDetalle.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -57,5 +59,7 @@ app.use('/nfc', nfcListRoutes);
 app.use('/nfc', nfcCreateRoutes);
 
 app.use('/services', servicioCreateRoutes);
+
+app.use('/mantenimiento', mantenimientoRoutes);
 
 export default app;
