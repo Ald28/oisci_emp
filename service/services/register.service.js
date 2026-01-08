@@ -38,6 +38,20 @@ export const ServiceService = {
         return {
             servicioExtintorId: servicioExtintor.id
         }
+    },
+
+    async finalizeService(servicioId, usuarioId) {
+        const servicio = await ServiceRepository.findById(servicioId)
+
+        if (!servicio) {
+            throw new Error('Servicio no encontrado')
+        }
+
+        if (servicio.status === 'FINALIZADO') {
+            throw new Error('El servicio ya está finalizado')
+        }
+
+        await ServiceRepository.finalizeService(servicioId, usuarioId)
     }
 
 }

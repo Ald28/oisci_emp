@@ -40,6 +40,21 @@ export const ServiceController = {
         } catch (error) {
             res.status(400).json({ message: error.message })
         }
+    },
+
+    async finalizeService(req, res) {
+        try {
+            const { servicioId } = req.params
+            const usuarioId = req.user.sub
+
+            await ServiceService.finalizeService(servicioId, usuarioId)
+
+            res.status(200).json({
+                message: 'Servicio finalizado correctamente'
+            })
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
     }
 
 }

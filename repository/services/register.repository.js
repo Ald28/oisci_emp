@@ -53,6 +53,25 @@ export const ServiceRepository = {
                 }
             }
         })
+    },
+
+    findById(servicioId) {
+        return prisma.servicio.findUnique({
+            where: { id: Number(servicioId) }
+        })
+    },
+
+    finalizeService(servicioId, usuarioId) {
+        return prisma.servicio.update({
+            where: { id: Number(servicioId) },
+            data: {
+                status: 'FINALIZADO',
+                dateEnd: new Date(),
+                usuarioActualizador: {
+                    connect: { id: usuarioId }
+                }
+            }
+        })
     }
 
 }
