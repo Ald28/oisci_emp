@@ -42,7 +42,7 @@ model User {
 
   serviciosCreados      Servicio[] @relation("ServicioUsuarioCreador")
   serviciosActualizados Servicio[] @relation("ServicioUsuarioActualizador")
-  serviciosAsignados    Servicio[]
+  serviciosAsignados    Servicio[] @relation("ServicioAsignado")
 
   createdById   Int?
   createdBy     User?          @relation("UserCreator", fields: [createdById], references: [id])
@@ -56,6 +56,12 @@ model User {
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  serviciosExtintorCreados ServicioExtintor[] @relation("ServicioExtintorUsuarioCreador")
+  serviciosExtintorActualizados ServicioExtintor[] @relation("ServicioExtintorUsuarioActualizador")
+
+  mantenimientosDetalleCreados MantenimientoDetalle[] @relation("MantenimientoDetalleUsuarioCreador")
+  mantenimientosDetalleActualizados MantenimientoDetalle[] @relation("MantenimientoDetalleUsuarioActualizador")
 }
 
 model RefreshToken {
@@ -121,6 +127,8 @@ model Extintor {
 
   sede             Sede @relation(fields: [sedeId], references: [id])
   usuarioCreador   User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+
+  serviciosExtintor ServicioExtintor[]
 }
 
 enum StatusEnum {
@@ -150,7 +158,10 @@ model Servicio {
   sede                Sede  @relation(fields: [sedeId], references: [id])
   usuarioCreador      User  @relation("ServicioUsuarioCreador", fields: [usuarioCreadorId], references: [id])
   usuarioActualizador User? @relation("ServicioUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
-  user                User  @relation(fields: [userId], references: [id])
+  user                User @relation("ServicioAsignado", fields: [userId], references: [id])
+
+  servicioExtintores ServicioExtintor[]
+
   @@unique([sedeId, type, dateStart])
 }
 
@@ -167,4 +178,61 @@ enum ServiceStatus {
 enum ServiceValid {
   APROBADO
   RECHAZADO
+}
+
+model ServicioExtintor {
+  id Int @id @default(autoincrement())
+
+  servicioId Int
+  extintorId Int
+
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+  extintor Extintor @relation(fields: [extintorId], references: [id])
+
+  estadoInicial StatusEnum?
+  estadoFinal   StatusEnum?
+  completado    Boolean @default(false)
+
+  observaciones String? @db.VarChar(255)
+
+  usuarioCreadorId      Int
+  usuarioActualizadorId Int?
+
+  usuarioCreador      User  @relation("ServicioExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+  usuarioActualizador User? @relation("ServicioExtintorUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mantenimientoDetalle MantenimientoDetalle?
+
+  @@unique([servicioId, extintorId])
+}
+
+model MantenimientoDetalle {
+  id Int @id @default(autoincrement())
+
+  servicioExtintorId Int
+  servicioExtintor   ServicioExtintor @relation(fields: [servicioExtintorId], references: [id])
+
+  mantenimiento        Boolean @default(false)
+  recarga              Boolean @default(false)
+  agenteCarga          String? @db.VarChar(45)
+  pruebaHidrostatica   Boolean @default(false)
+  bajaExtintor         Boolean @default(false)
+  motivoBaja           String? @db.VarChar(255)
+  pintura              Boolean @default(false)
+  recargaCartucho      Boolean @default(false)
+  cambioPartes         Boolean @default(false)
+
+  usuarioCreadorId      Int
+  usuarioActualizadorId Int?
+
+  usuarioCreador      User  @relation("MantenimientoDetalleUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+  usuarioActualizador User? @relation("MantenimientoDetalleUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([servicioExtintorId])
 }
