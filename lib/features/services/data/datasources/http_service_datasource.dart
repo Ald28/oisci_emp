@@ -119,14 +119,14 @@ class HttpServiceDataSource {
     }
   }
 
-  /// Actualizar detalle de mantenimiento - PUT /mantenimiento/services/extintores/:servicioExtintorId/mantenimiento
+  /// Actualizar detalle de mantenimiento - PUT /mantenimiento/extintores/:servicioExtintorId/mantenimiento
   Future<MaintenanceDetailModel> updateMaintenanceDetail({
     required int servicioExtintorId,
     required Map<String, dynamic> data,
   }) async {
     try {
       final response = await _dio.put(
-        '/mantenimiento/services/extintores/$servicioExtintorId/mantenimiento',
+        '/mantenimiento/extintores/$servicioExtintorId/mantenimiento',
         data: data,
       );
       final responseData = response.data as Map<String, dynamic>;
@@ -210,10 +210,10 @@ class HttpServiceDataSource {
     }
   }
 
-  /// Obtener servicios EN_PROCESO por usuarioCreadorId - GET /services/in-progress
+  /// Obtener servicios EN_PROCESO por usuarioCreadorId - GET /services/en-proceso
   Future<List<ServiceModel>> getServicesInProgress() async {
     try {
-      final response = await _dio.get('/services/in-progress');
+      final response = await _dio.get('/services/en-proceso');
       final responseData = response.data as Map<String, dynamic>;
 
       // El backend retorna: { data: [...] }
