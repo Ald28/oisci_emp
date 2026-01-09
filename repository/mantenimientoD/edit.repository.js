@@ -1,42 +1,29 @@
 import { prisma } from '../../database/client.mjs'
 
 export const EdiMantenimientoRepository = {
-    update({
-        id,
-        mantenimiento,
-        recarga,
-        agenteCarga,
-        pruebaHidrostatica,
-        bajaExtintor,
-        motivoBaja,
-        pintura,
-        recargaCartucho,
-        cambioPartes,
-        usuarioActualizadorId
-    }) {
+    update(mantenimientoDetalleId, payload, usuarioActualizadorId) {
         return prisma.mantenimientoDetalle.update({
-            where: { id },
+            where: { id: Number(mantenimientoDetalleId) },
             data: {
-                mantenimiento,
-                recarga,
-                agenteCarga,
-                pruebaHidrostatica,
-                bajaExtintor,
-                motivoBaja,
-                pintura,
-                recargaCartucho,
-                cambioPartes,
-
+                mantenimiento: payload.mantenimiento ?? false,
+                recarga: payload.recarga ?? false,
+                agenteCarga: payload.agenteCarga,
+                pruebaHidrostatica: payload.pruebaHidrostatica ?? false,
+                bajaExtintor: payload.bajaExtintor ?? false,
+                motivoBaja: payload.motivoBaja,
+                pintura: payload.pintura ?? false,
+                recargaCartucho: payload.recargaCartucho ?? false,
+                cambioPartes: payload.cambioPartes ?? false,
                 usuarioActualizador: {
                     connect: { id: usuarioActualizadorId }
                 }
             }
         })
     },
-    findServicioExtintorById(servicioExtintorId) {
-        return prisma.servicioExtintor.findUnique({
-            where: { id: Number(servicioExtintorId) },
-            include: { mantenimientoDetalle: true }
+
+    findByServicioExtintorId(servicioExtintorId) {
+        return prisma.mantenimientoDetalle.findUnique({
+            where: { servicioExtintorId: Number(servicioExtintorId) }
         })
-    },
+    }
 }

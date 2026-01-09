@@ -2,27 +2,22 @@ import { EdiMantenimientoRepository } from '../../repository/mantenimientoD/edit
 
 export const MantenimientoDetalleService = {
 
-    async updateChecklist(servicioExtintorId, data, usuarioId) {
+    async updateChecklist(servicioExtintorId, payload, usuarioId) {
+        // Buscar el MantenimientoDetalle por servicioExtintorId
+        const mantenimiento = await EdiMantenimientoRepository.findByServicioExtintorId(
+            servicioExtintorId
+        )
 
-        const servicioExtintor =
-            await EdiMantenimientoRepository.findServicioExtintorById(
-                servicioExtintorId
-            )
-
-        if (!servicioExtintor) {
-            throw new Error('ServicioExtintor no encontrado')
+        if (!mantenimiento) {
+            throw new Error('MantenimientoDetalle no encontrado')
         }
 
-        if (!servicioExtintor.mantenimientoDetalle) {
-            throw new Error('El checklist de mantenimiento no existe')
-        }
-
-        const mantenimientoActualizado =
-            await EdiMantenimientoRepository.update({
-                id: servicioExtintor.mantenimientoDetalle.id,
-                ...data,
-                usuarioActualizadorId: usuarioId
-            })
+        // Actualizar usando el ID del mantenimiento encontrado
+        const mantenimientoActualizado = await EdiMantenimientoRepository.update(
+            mantenimiento.id,
+            payload,
+            usuarioId
+        )
 
         return mantenimientoActualizado
     }
