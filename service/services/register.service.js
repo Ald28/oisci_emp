@@ -51,7 +51,11 @@ export const ServiceService = {
             throw new Error('El servicio ya está finalizado')
         }
 
-        await ServiceRepository.finalizeService(servicioId, usuarioId)
+        const servicioFinalizado = await ServiceRepository.finalizeService(
+            servicioId, usuarioId
+        )
+
+        return servicioFinalizado
     }
 
 }

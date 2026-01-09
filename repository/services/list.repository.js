@@ -21,5 +21,21 @@ export const ListRepository = {
                 createdAt: 'asc'
             }
         })
+    },
+
+    findInProgressByUser(usuarioCreadorId) {
+        return prisma.servicio.findMany({
+            where: {
+                status: 'EN_PROCESO',
+                usuarioCreadorId: Number(usuarioCreadorId)
+            },
+            include: {
+                sede: true,
+                user: true
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
     }
 }

@@ -21,6 +21,7 @@ import servicioCreateRoutes from '../routes/services/register.routes.js';
 import listServicioRoutes from '../routes/services/list.routes.js';
 
 import mantenimientoRoutes from '../routes/mantenimientoD/mantenimientoDetalle.routes.js';
+import editMantenimiento from '../routes/mantenimientoD/edit.routes.js';
 
 dotenv.config();
 
@@ -63,5 +64,6 @@ app.use('/services', servicioCreateRoutes);
 app.use('/services', listServicioRoutes);
 
 app.use('/mantenimiento', mantenimientoRoutes);
+app.use('/mantenimiento', editMantenimiento);
 
 export default app;

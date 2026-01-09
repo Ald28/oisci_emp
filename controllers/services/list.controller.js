@@ -14,5 +14,23 @@ export const ListController = {
         } catch (error) {
             res.status(400).json({ message: error.message })
         }
+    },
+
+    async getInProgress(req, res) {
+        try {
+            const usuarioId = req.user.sub
+
+            const servicios =
+                await ListService.getInProgressByUser(usuarioId)
+
+            res.status(200).json({
+                data: servicios
+            })
+
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
+
     }
+
 }

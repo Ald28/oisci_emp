@@ -10,5 +10,10 @@ export const ListService = {
         }
 
         return ListRepository.findServicioExtintores(servicioId)
+    },
+
+    async getInProgressByUser(usuarioId) {
+        return ListRepository.findInProgressByUser(usuarioId)
     }
+
 }
