@@ -2,11 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/main_drawer.dart';
+import '../widgets/service_notifications_modal.dart';
 import '../../../../core/widgets/action_button_expand.dart';
 import '../../../../core/widgets/sync_progress_banner.dart';
 import '../../../../core/sync/initial_sync_service.dart';
 import '../../../../core/sync/sync_progress_controller.dart';
 import '../../../services/presentation/pages/services_menu_page.dart';
+import '../../../services/domain/entities/service_entity.dart';
+import '../../../services/domain/usecases/get_services_in_progress_usecase.dart';
+import '../../../services/data/repositories/service_repository_impl.dart';
 import '../../../../core/auth/auth_service.dart';
 
 /// Página principal del Home con AppBar y Drawer
@@ -28,6 +32,10 @@ class _HomePageState extends State<HomePage> {
   double _syncProgress = 0.0;
   String? _syncError;
   StreamSubscription<Map<String, dynamic>>? _syncProgressSubscription;
+  List<ServiceEntity> _servicesInProgress = [];
+
+  late final GetServicesInProgressUseCase _getServicesInProgressUseCase =
+      GetServicesInProgressUseCase(ServiceRepositoryImpl());
 
   @override
   void initState() {
@@ -35,6 +43,73 @@ class _HomePageState extends State<HomePage> {
     _loadUserEmail();
     _checkAndSyncInitialData();
     _listenToAutoSyncProgress();
+    _checkServiceInProgress();
+  }
+
+  Future<void> _checkServiceInProgress() async {
+    if (!mounted) return;
+
+    try {
+      final services = await _getServicesInProgressUseCase.call();
+
+      if (mounted) {
+        setState(() {
+          _servicesInProgress = services;
+        });
+      }
+    } catch (e) {
+      // Si hay error, no mostrar notificaciones
+      if (mounted) {
+        setState(() {
+          _servicesInProgress = [];
+        });
+      }
+    }
+  }
+
+  void _handleShowNotifications() {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          ServiceNotificationsModal(servicesInProgress: _servicesInProgress),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    final count = _servicesInProgress.length;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: _handleShowNotifications,
+          tooltip: 'Notificaciones',
+        ),
+        if (count > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                count > 9 ? '9+' : count.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -150,6 +225,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        actions: [_buildNotificationIcon()],
       ),
       drawer: MainDrawer(
         userName: widget.name,
@@ -167,44 +243,52 @@ class _HomePageState extends State<HomePage> {
             ),
           // Contenido principal
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // Mensaje de bienvenida
-                  Text(
-                    'Bienvenido, ${widget.name} 👋',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+            child: RefreshIndicator(
+              onRefresh: _checkServiceInProgress,
+              color: const Color(0xFFE84343),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    // Mensaje de bienvenida
+                    Text(
+                      'Bienvenido, ${widget.name} 👋',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Selecciona la actividad a realizar:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Selecciona la actividad a realizar:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 28),
-                  // Botón de Servicios (ancho completo)
-                  ActionButtonExpand(
-                    icon: Icons.handyman,
-                    title: 'Servicios',
-                    subtitle: 'Gestionar servicios',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ServicesMenuPage()),
-                      );
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 28),
+                    // Botón de Servicios (ancho completo)
+                    ActionButtonExpand(
+                      icon: Icons.handyman,
+                      title: 'Servicios',
+                      subtitle: 'Gestionar servicios',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ServicesMenuPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -80,4 +80,15 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
 
     return await dataSource.createExtinguisher(data);
   }
+
+  @override
+  Future<Extinguisher?> getExtinguisherById(int extintorId) async {
+    // Para obtener por ID, siempre usar el datasource local
+    // ya que el extintor debería estar en la base de datos local
+    if (localDataSource is LocalExtinguisherDataSource) {
+      return await (localDataSource as LocalExtinguisherDataSource)
+          .getExtinguisherById(extintorId);
+    }
+    return null;
+  }
 }

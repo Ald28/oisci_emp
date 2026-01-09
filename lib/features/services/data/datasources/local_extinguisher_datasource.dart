@@ -29,6 +29,20 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     return null;
   }
 
+  /// Obtener extintor por ID
+  Future<Extinguisher?> getExtinguisherById(int extintorId) async {
+    final db = await AppDatabase.database;
+    final result = await db.query(
+      'extintor',
+      where: 'id = ?',
+      whereArgs: [extintorId],
+      limit: 1,
+    );
+
+    if (result.isEmpty) return null;
+    return ExtinguisherModel.fromMap(result.first);
+  }
+
   @override
   Future<Extinguisher> createExtinguisher(Map<String, dynamic> data) async {
     final db = await AppDatabase.database;

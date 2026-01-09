@@ -89,10 +89,12 @@ class ServiceRepositoryImpl implements ServiceRepository {
         final service = await _httpDataSource.finalizeService(servicioId);
         // Actualizar también localmente
         await _localDataSource.finalizeService(servicioId);
+        // Retornar el servicio actualizado del servidor
         return service;
       } catch (e) {
         // Si falla, finalizar solo localmente
         await _localDataSource.finalizeService(servicioId);
+        // Obtener el servicio actualizado de local
         final service = await _localDataSource.getServiceById(servicioId);
         if (service == null) {
           throw Exception('Servicio no encontrado');
@@ -102,11 +104,32 @@ class ServiceRepositoryImpl implements ServiceRepository {
     } else {
       // Sin internet, finalizar solo localmente
       await _localDataSource.finalizeService(servicioId);
+      // Obtener el servicio actualizado de local
       final service = await _localDataSource.getServiceById(servicioId);
       if (service == null) {
         throw Exception('Servicio no encontrado');
       }
       return service;
+    }
+  }
+
+  @override
+  Future<List<ServiceEntity>> getServicesInProgress() async {
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener del servidor
+        final services = await _httpDataSource.getServicesInProgress();
+        // ServiceModel extiende ServiceEntity, así que ya es una entidad
+        return services;
+      } catch (e) {
+        // Si falla, retornar lista vacía (no hay datos locales para esto)
+        return [];
+      }
+    } else {
+      // Sin internet, retornar lista vacía (no hay datos locales para esto)
+      return [];
     }
   }
 
@@ -190,28 +213,65 @@ class ServiceRepositoryImpl implements ServiceRepository {
   Future<List<ServiceExtinguisherEntity>> getServiceExtinguishersByServiceId(
     int servicioId,
   ) async {
-    final results = await _localDataSource.getServiceExtinguishersByServiceId(
-      servicioId,
-    );
-    // Convertir los Maps a ServiceExtinguisherModel
-    // El JOIN puede traer campos adicionales del extintor, pero fromMap solo necesita los campos de servicio_extintor
-    return results.map((map) {
-      // Crear un mapa solo con los campos de servicio_extintor
-      final serviceExtinguisherMap = <String, dynamic>{
-        'id': map['id'] as int,
-        'servicioId': map['servicioId'] as int,
-        'extintorId': map['extintorId'] as int,
-        'estadoInicial': map['estadoInicial'] as String?,
-        'estadoFinal': map['estadoFinal'] as String?,
-        'completado': map['completado'] as int? ?? 0,
-        'observaciones': map['observaciones'] as String?,
-        'usuarioCreadorId': map['usuarioCreadorId'] as int,
-        'usuarioActualizadorId': map['usuarioActualizadorId'] as int?,
-        'createdAt': map['createdAt'] as String?,
-        'updatedAt': map['updatedAt'] as String?,
-      };
-      return ServiceExtinguisherModel.fromMap(serviceExtinguisherMap);
-    }).toList();
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener del servidor
+        final serviceExtinguishers = await _httpDataSource
+            .listServiceExtinguishers(servicioId);
+        // ServiceExtinguisherModel extiende ServiceExtinguisherEntity, así que ya es una entidad
+        return serviceExtinguishers;
+      } catch (e) {
+        // Si falla, obtener de local
+        final results = await _localDataSource
+            .getServiceExtinguishersByServiceId(servicioId);
+        // Convertir los Maps a ServiceExtinguisherModel
+        // El JOIN puede traer campos adicionales del extintor, pero fromMap solo necesita los campos de servicio_extintor
+        return results.map((map) {
+          // Crear un mapa solo con los campos de servicio_extintor
+          final serviceExtinguisherMap = <String, dynamic>{
+            'id': map['id'] as int,
+            'servicioId': map['servicioId'] as int,
+            'extintorId': map['extintorId'] as int,
+            'estadoInicial': map['estadoInicial'] as String?,
+            'estadoFinal': map['estadoFinal'] as String?,
+            'completado': map['completado'] as int? ?? 0,
+            'observaciones': map['observaciones'] as String?,
+            'usuarioCreadorId': map['usuarioCreadorId'] as int,
+            'usuarioActualizadorId': map['usuarioActualizadorId'] as int?,
+            'createdAt': map['createdAt'] as String?,
+            'updatedAt': map['updatedAt'] as String?,
+          };
+          // ServiceExtinguisherModel extiende ServiceExtinguisherEntity, así que ya es una entidad
+          return ServiceExtinguisherModel.fromMap(serviceExtinguisherMap);
+        }).toList();
+      }
+    } else {
+      // Sin internet, obtener solo de local
+      final results = await _localDataSource.getServiceExtinguishersByServiceId(
+        servicioId,
+      );
+      // Convertir los Maps a ServiceExtinguisherModel
+      return results.map((map) {
+        // Crear un mapa solo con los campos de servicio_extintor
+        final serviceExtinguisherMap = <String, dynamic>{
+          'id': map['id'] as int,
+          'servicioId': map['servicioId'] as int,
+          'extintorId': map['extintorId'] as int,
+          'estadoInicial': map['estadoInicial'] as String?,
+          'estadoFinal': map['estadoFinal'] as String?,
+          'completado': map['completado'] as int? ?? 0,
+          'observaciones': map['observaciones'] as String?,
+          'usuarioCreadorId': map['usuarioCreadorId'] as int,
+          'usuarioActualizadorId': map['usuarioActualizadorId'] as int?,
+          'createdAt': map['createdAt'] as String?,
+          'updatedAt': map['updatedAt'] as String?,
+        };
+        // ServiceExtinguisherModel extiende ServiceExtinguisherEntity, así que ya es una entidad
+        return ServiceExtinguisherModel.fromMap(serviceExtinguisherMap);
+      }).toList();
+    }
   }
 
   @override
@@ -257,5 +317,41 @@ class ServiceRepositoryImpl implements ServiceRepository {
     return await _localDataSource.getMaintenanceDetailByServiceExtinguisherId(
       servicioExtintorId,
     );
+  }
+
+  @override
+  Future<MaintenanceDetailEntity> updateMaintenanceDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> checklistData,
+  }) async {
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar actualizar en el servidor
+        final result = await _httpDataSource.updateMaintenanceDetail(
+          servicioExtintorId: servicioExtintorId,
+          data: checklistData,
+        );
+        // También actualizar localmente
+        await _localDataSource.updateMaintenanceDetail(
+          servicioExtintorId: servicioExtintorId,
+          checklistData: checklistData,
+        );
+        return result;
+      } catch (e) {
+        // Si falla HTTP, actualizar solo localmente
+        return await _localDataSource.updateMaintenanceDetail(
+          servicioExtintorId: servicioExtintorId,
+          checklistData: checklistData,
+        );
+      }
+    } else {
+      // Sin conexión, actualizar solo localmente
+      return await _localDataSource.updateMaintenanceDetail(
+        servicioExtintorId: servicioExtintorId,
+        checklistData: checklistData,
+      );
+    }
   }
 }

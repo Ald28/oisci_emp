@@ -366,6 +366,67 @@ class LocalServiceDataSource {
     return MaintenanceDetailModel.fromMap(result.first);
   }
 
+  /// Actualizar MantenimientoDetalle
+  Future<MaintenanceDetailModel> updateMaintenanceDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> checklistData,
+  }) async {
+    final db = await AppDatabase.database;
+    final now = DateTime.now();
+
+    // Buscar el mantenimiento existente
+    final existing = await db.query(
+      'mantenimiento_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (existing.isEmpty) {
+      throw Exception('MantenimientoDetalle no encontrado');
+    }
+
+    final mantenimientoId = existing.first['id'] as int;
+
+    // Actualizar el registro
+    await db.update(
+      'mantenimiento_detalle',
+      {
+        'mantenimiento': (checklistData['mantenimiento'] as bool? ?? false)
+            ? 1
+            : 0,
+        'recarga': (checklistData['recarga'] as bool? ?? false) ? 1 : 0,
+        'agenteCarga': checklistData['agenteCarga'] as String?,
+        'pruebaHidrostatica':
+            (checklistData['pruebaHidrostatica'] as bool? ?? false) ? 1 : 0,
+        'bajaExtintor': (checklistData['bajaExtintor'] as bool? ?? false)
+            ? 1
+            : 0,
+        'motivoBaja': checklistData['motivoBaja'] as String?,
+        'pintura': (checklistData['pintura'] as bool? ?? false) ? 1 : 0,
+        'recargaCartucho': (checklistData['recargaCartucho'] as bool? ?? false)
+            ? 1
+            : 0,
+        'cambioPartes': (checklistData['cambioPartes'] as bool? ?? false)
+            ? 1
+            : 0,
+        'updatedAt': now.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [mantenimientoId],
+    );
+
+    // Obtener el registro actualizado
+    final updated = await db.query(
+      'mantenimiento_detalle',
+      where: 'id = ?',
+      whereArgs: [mantenimientoId],
+      limit: 1,
+    );
+
+    return MaintenanceDetailModel.fromMap(updated.first);
+  }
+
   /// Actualizar MantenimientoDetalle después de sincronización
   Future<void> updateMaintenanceDetailAfterSync({
     required int tempId,

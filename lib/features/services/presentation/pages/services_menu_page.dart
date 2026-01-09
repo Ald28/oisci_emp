@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
+import '../../../home/presentation/widgets/service_notifications_modal.dart';
 import '../../../../core/widgets/action_button_expand.dart';
 import '../../../../core/network/error_handler.dart';
 import '../../domain/entities/service_type.dart';
+import '../../domain/entities/service_entity.dart';
 import '../../domain/entities/sede_entity.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../domain/usecases/create_service_usecase.dart';
+import '../../domain/usecases/get_services_in_progress_usecase.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../../../core/auth/auth_service.dart';
@@ -24,6 +27,7 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
   int? _selectedSedeId;
   List<Sede> _sedes = [];
   bool _isLoadingSedes = false;
+  List<ServiceEntity> _servicesInProgress = [];
 
   late final GetSedesUseCase _getSedesUseCase = GetSedesUseCase(
     SedeRepositoryImpl(),
@@ -31,11 +35,82 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
   late final CreateServiceUseCase _createServiceUseCase = CreateServiceUseCase(
     ServiceRepositoryImpl(),
   );
+  late final GetServicesInProgressUseCase _getServicesInProgressUseCase =
+      GetServicesInProgressUseCase(ServiceRepositoryImpl());
 
   @override
   void initState() {
     super.initState();
     _loadSedes();
+    _checkServiceInProgress();
+  }
+
+  Future<void> _checkServiceInProgress() async {
+    try {
+      final services = await _getServicesInProgressUseCase.call();
+
+      if (mounted) {
+        setState(() {
+          _servicesInProgress = services;
+        });
+      }
+    } catch (e) {
+      // Si hay error, no mostrar notificaciones
+      if (mounted) {
+        setState(() {
+          _servicesInProgress = [];
+        });
+      }
+    }
+  }
+
+  void _handleShowNotifications() {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          ServiceNotificationsModal(servicesInProgress: _servicesInProgress),
+    );
+  }
+
+  Widget _buildNotificationIcon() {
+    final count = _servicesInProgress.length;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: _handleShowNotifications,
+          tooltip: 'Notificaciones',
+        ),
+        if (count > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                count > 9 ? '9+' : count.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _handleRefresh() async {
+    await Future.wait([_loadSedes(), _checkServiceInProgress()]);
   }
 
   Future<void> _loadSedes() async {
@@ -169,49 +244,114 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [_buildNotificationIcon()],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            // Selector de Sede
-            const Text(
-              'Seleccionar sede:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: const Color(0xFFE84343),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              // Alerta de servicio en proceso
+              if (_servicesInProgress.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.green[700]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Tienes un mantenimiento en proceso',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Servicio ID: ${_servicesInProgress.first.id}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (_servicesInProgress.isNotEmpty) {
+                            final service = _servicesInProgress.first;
+                            final serviceType = service.type == 'MANTENIMIENTO'
+                                ? ServiceType.maintenance
+                                : ServiceType.inspection;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ServicesScanPage(
+                                  serviceType: serviceType,
+                                  servicioId: service.id,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Ver'),
+                      ),
+                    ],
+                  ),
+                ),
+              // Selector de Sede
+              const Text(
+                'Seleccionar sede:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildSedeDropdown(),
-            const SizedBox(height: 28),
-            const Text(
-              'Seleccionar el servicio a realizar:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+              const SizedBox(height: 12),
+              _buildSedeDropdown(),
+              const SizedBox(height: 28),
+              const Text(
+                'Seleccionar el servicio a realizar:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
-            // Botones de servicios (ancho completo)
-            ActionButtonExpand(
-              icon: Icons.build,
-              title: 'Mantenimiento',
-              subtitle: 'Gestionar mantenimiento',
-              onTap: () => _handleServiceSelection(ServiceType.maintenance),
-            ),
-            const SizedBox(height: 16),
-            ActionButtonExpand(
-              icon: Icons.search,
-              title: 'Inspección',
-              subtitle: 'Gestionar inspección',
-              onTap: () => _handleServiceSelection(ServiceType.inspection),
-            ),
-          ],
+              const SizedBox(height: 28),
+              // Botones de servicios (ancho completo)
+              ActionButtonExpand(
+                icon: Icons.build,
+                title: 'Mantenimiento',
+                subtitle: 'Gestionar mantenimiento',
+                onTap: () => _handleServiceSelection(ServiceType.maintenance),
+              ),
+              const SizedBox(height: 16),
+              ActionButtonExpand(
+                icon: Icons.search,
+                title: 'Inspección',
+                subtitle: 'Gestionar inspección',
+                onTap: () => _handleServiceSelection(ServiceType.inspection),
+              ),
+            ],
+          ),
         ),
       ),
     );

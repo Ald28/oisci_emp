@@ -5,7 +5,11 @@ import '../../../../../core/widgets/secondary_button.dart';
 import '../../../../../core/widgets/floating_label_text_field.dart';
 import '../../../domain/entities/extinguisher_entity.dart';
 import '../../../domain/entities/service_type.dart';
+import '../../../domain/usecases/update_service_extinguisher_observations_usecase.dart';
+import '../../../data/repositories/service_repository_impl.dart';
 import '../services_scan_page.dart';
+import '../services_menu_page.dart';
+import '../service_extinguisher_list_page.dart';
 
 /// Pantalla: Observaciones de mantenimiento
 class MaintenanceObservationsPage extends StatefulWidget {
@@ -38,26 +42,90 @@ class MaintenanceObservationsPage extends StatefulWidget {
 class _MaintenanceObservationsPageState
     extends State<MaintenanceObservationsPage> {
   final _observationsController = TextEditingController();
+  bool _isSaving = false;
 
-  void _handleReturnToScanner() {
-    // Navegar al scanner NFC
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => ServicesScanPage(
-          serviceType: widget.serviceType,
-          servicioId: widget.servicioId,
+  late final UpdateServiceExtinguisherObservationsUseCase
+  _updateObservationsUseCase = UpdateServiceExtinguisherObservationsUseCase(
+    ServiceRepositoryImpl(),
+  );
+
+  Future<void> _saveObservations() async {
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await _updateObservationsUseCase.call(
+        servicioExtintorId: widget.servicioExtintorId,
+        observaciones: _observationsController.text.trim().isEmpty
+            ? null
+            : _observationsController.text.trim(),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar observaciones: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
-      ),
-      (route) => false, // Eliminar todas las rutas anteriores
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
-  void _handleListAllExtinguishers() {
-    // TODO: Implementar navegación a lista de extintores
-    // Por ahora mostrar un mensaje
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Listar todos los extintores - Próximamente'),
+  Future<void> _handleReturnToScanner() async {
+    // Guardar observaciones antes de navegar
+    await _saveObservations();
+
+    if (!mounted) return;
+
+    // Navegar al scanner NFC para agregar otro extintor
+    // Limpiar el stack hasta la primera ruta (HomePage) y luego construir el stack correcto:
+    // HomePage -> ServicesMenuPage -> ServicesScanPage
+    // Esto asegura que al dar atrás desde ServicesScanPage, se vaya a ServicesMenuPage
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => ServicesMenuPage()),
+      (route) => route.isFirst, // Mantener solo la primera ruta (HomePage)
+    );
+
+    // Esperar al siguiente frame para asegurar que la navegación se complete
+    // antes de hacer push de ServicesScanPage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ServicesScanPage(
+              serviceType: widget.serviceType,
+              servicioId: widget.servicioId,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _handleListAllExtinguishers() async {
+    // Guardar observaciones antes de navegar
+    await _saveObservations();
+
+    if (!mounted) return;
+
+    // Navegar a la página de listado de extintores
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ServiceExtinguisherListPage(
+          servicioId: widget.servicioId,
+          serviceType: widget.serviceType,
+        ),
       ),
     );
   }
@@ -103,16 +171,17 @@ class _MaintenanceObservationsPageState
               maxLines: 10,
             ),
             const SizedBox(height: 32),
-            // Botón: Volver al scanner NFC
+            // Botón: Agregar otro extintor
             SecondaryButton(
-              text: 'Volver al scanner NFC',
-              onPressed: _handleReturnToScanner,
+              text: 'Agregar otro extintor',
+              onPressed: _isSaving ? null : _handleReturnToScanner,
             ),
             const SizedBox(height: 16),
             // Botón: Listar todos los extintores
             PrimaryButton(
               text: 'Listar todos los extintores',
-              onPressed: _handleListAllExtinguishers,
+              onPressed: _isSaving ? null : _handleListAllExtinguishers,
+              isLoading: _isSaving,
             ),
           ],
         ),

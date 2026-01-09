@@ -21,6 +21,9 @@ abstract class ServiceRepository {
   /// Finalizar servicio
   Future<ServiceEntity> finalizeService(int servicioId);
 
+  /// Obtener servicios EN_PROCESO por usuarioCreadorId
+  Future<List<ServiceEntity>> getServicesInProgress();
+
   /// Etapa 2: Agregar extintor a servicio
   Future<ServiceExtinguisherEntity> addExtinguisherToService({
     required int servicioId,
@@ -60,4 +63,9 @@ abstract class ServiceRepository {
   Future<MaintenanceDetailEntity?> getMaintenanceDetailByServiceExtinguisherId(
     int servicioExtintorId,
   );
+
+  Future<MaintenanceDetailEntity> updateMaintenanceDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> checklistData,
+  });
 }

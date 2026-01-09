@@ -119,13 +119,48 @@ class HttpServiceDataSource {
     }
   }
 
-  /// Finalizar servicio - PUT /services/:servicioId/finalize
-  Future<ServiceModel> finalizeService(int servicioId) async {
+  /// Actualizar detalle de mantenimiento - PUT /mantenimiento/services/extintores/:servicioExtintorId/mantenimiento
+  Future<MaintenanceDetailModel> updateMaintenanceDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> data,
+  }) async {
     try {
-      final response = await _dio.put('/services/$servicioId/finalize');
+      final response = await _dio.put(
+        '/mantenimiento/services/extintores/$servicioExtintorId/mantenimiento',
+        data: data,
+      );
       final responseData = response.data as Map<String, dynamic>;
 
-      if (responseData['ok'] == true && responseData['data'] != null) {
+      // El backend retorna: { message: 'Mantenimiento actualizado correctamente', data: ... }
+      if (responseData['data'] != null) {
+        return MaintenanceDetailModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      throw Exception(
+        'Error al actualizar detalle de mantenimiento: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ??
+              'Error al actualizar detalle de mantenimiento',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Finalizar servicio - PUT /services/:servicioId/finalizar
+  Future<ServiceModel> finalizeService(int servicioId) async {
+    try {
+      final response = await _dio.put('/services/$servicioId/finalizar');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { message: 'Servicio finalizado correctamente', data: {...} }
+      if (responseData['data'] != null) {
         return ServiceModel.fromJson(
           responseData['data'] as Map<String, dynamic>,
         );
@@ -138,6 +173,66 @@ class HttpServiceDataSource {
       if (e.response != null) {
         final errorData = e.response!.data as Map<String, dynamic>?;
         throw Exception(errorData?['message'] ?? 'Error al finalizar servicio');
+      }
+      rethrow;
+    }
+  }
+
+  /// Listar ServicioExtintor por servicioId - GET /services/:servicioId/extintores
+  Future<List<ServiceExtinguisherModel>> listServiceExtinguishers(
+    int servicioId,
+  ) async {
+    try {
+      final response = await _dio.get('/services/$servicioId/extintores');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: [...] }
+      // Cada item incluye ServicioExtintor con extintor y mantenimientoDetalle anidados
+      if (responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+        return dataList.map((json) {
+          final jsonMap = json as Map<String, dynamic>;
+          // El backend retorna el ServicioExtintor con campos planos
+          // El objeto extintor anidado no se usa en el modelo actual
+          return ServiceExtinguisherModel.fromJson(jsonMap);
+        }).toList();
+      }
+
+      throw Exception(
+        'Error al listar extintores: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(errorData?['message'] ?? 'Error al listar extintores');
+      }
+      rethrow;
+    }
+  }
+
+  /// Obtener servicios EN_PROCESO por usuarioCreadorId - GET /services/in-progress
+  Future<List<ServiceModel>> getServicesInProgress() async {
+    try {
+      final response = await _dio.get('/services/in-progress');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: [...] }
+      if (responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+        return dataList
+            .map((json) => ServiceModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw Exception(
+        'Error al obtener servicios en proceso: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al obtener servicios en proceso',
+        );
       }
       rethrow;
     }

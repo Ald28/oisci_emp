@@ -8,8 +8,12 @@ import '../widgets/code_search_field.dart';
 import 'service_data_page.dart';
 import 'service_register_page.dart';
 import '../../domain/entities/service_type.dart';
+import '../../domain/entities/service_extinguisher_entity.dart';
 import '../../domain/usecases/search_extinguisher_usecase.dart';
+import '../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
+import '../../data/repositories/service_repository_impl.dart';
+import 'maintenance/widgets/service_extinguisher_cart_modal.dart';
 
 /// Pantalla: NFC + input manual + Buscar
 /// Compartida para Mantenimiento e Inspección
@@ -31,10 +35,105 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isScanning = false;
   bool _isSearching = false;
+  List<ServiceExtinguisherEntity> _serviceExtinguishers = [];
 
-  // Inicializar use case
+  // Inicializar use cases
   late final SearchExtinguisherUseCase _searchUseCase =
       SearchExtinguisherUseCase(ExtinguisherRepositoryImpl());
+  late final GetServiceExtinguishersByServiceIdUseCase
+  _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
+    ServiceRepositoryImpl(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadServiceExtinguishers();
+  }
+
+  Future<void> _loadServiceExtinguishers() async {
+    try {
+      final serviceExtinguishers = await _getServiceExtinguishersUseCase.call(
+        widget.servicioId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _serviceExtinguishers = serviceExtinguishers;
+        });
+      }
+    } catch (e) {
+      // Si hay error, no hacer nada (la lista queda vacía)
+    }
+  }
+
+  Widget _buildCartIconWithBadge() {
+    final count = _serviceExtinguishers.length;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.shopping_cart),
+        if (count > 0)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                count > 9 ? '9+' : count.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showCartModal() async {
+    try {
+      final serviceExtinguishers = await _getServiceExtinguishersUseCase.call(
+        widget.servicioId,
+      );
+
+      if (!mounted) return;
+
+      // Actualizar el estado local
+      setState(() {
+        _serviceExtinguishers = serviceExtinguishers;
+      });
+
+      showDialog(
+        context: context,
+        builder: (context) => ServiceExtinguisherCartModal(
+          serviceExtinguishers: serviceExtinguishers,
+          servicioId: widget.servicioId,
+          serviceType: widget.serviceType,
+        ),
+      ).then((_) {
+        // Recargar cuando se cierra el modal
+        _loadServiceExtinguishers();
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar extintores: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -111,6 +210,40 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     }
 
     await _searchExtinguisher(_codeController.text.trim());
+  }
+
+  Future<void> _handleBackButton(BuildContext context) async {
+    // Mostrar modal de confirmación para salir del servicio de mantenimiento
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Salir del servicio?'),
+        content: const Text(
+          '¿Está seguro de que desea salir del servicio de mantenimiento? Se perderán los cambios no guardados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE84343),
+            ),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldExit != true || !context.mounted) return;
+
+    // Si puede hacer pop, hacerlo normalmente (volver a ServicesMenuPage)
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    // Si no puede hacer pop, no hacer nada (no debería pasar en flujo normal)
   }
 
   Future<void> _searchExtinguisher(String searchTerm) async {
@@ -195,8 +328,15 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         title: 'Servicios',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => _handleBackButton(context),
         ),
+        actions: [
+          IconButton(
+            icon: _buildCartIconWithBadge(),
+            onPressed: _showCartModal,
+            tooltip: 'Ver extintores agregados',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
