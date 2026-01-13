@@ -526,7 +526,6 @@ class LocalServiceDataSource {
       SELECT 
         se.*,
         e.serialNumber,
-        e.codeNFC,
         e.location,
         e.cylinderNumber,
         e.type,

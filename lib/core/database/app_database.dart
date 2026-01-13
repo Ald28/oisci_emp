@@ -74,7 +74,6 @@ class AppDatabase {
     await db.execute('''
       CREATE TABLE extintor (
         id INTEGER PRIMARY KEY,
-        codeNFC TEXT,
         serialNumber TEXT,
         type TEXT,
         capacity TEXT,
@@ -94,10 +93,6 @@ class AppDatabase {
     // Índices para búsquedas rápidas
     await db.execute('''
       CREATE UNIQUE INDEX idx_extintor_id ON extintor(id)
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_extintor_codeNFC ON extintor(codeNFC)
     ''');
 
     await db.execute('''

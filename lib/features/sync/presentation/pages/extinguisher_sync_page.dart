@@ -188,7 +188,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Extintor: ${payload['codeNFC'] ?? payload['serialNumber'] ?? "Sin código"}',
+                'Extintor: ${payload['serialNumber'] ?? "Sin número de serie"}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -325,7 +325,6 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
     final hasError =
         item['lastSyncError'] != null &&
         (item['lastSyncError'] as String).isNotEmpty;
-    final codeNFC = payload['codeNFC'] as String?;
     final serialNumber = payload['serialNumber'] as String?;
     final type = payload['type'] as String?;
     final location = payload['location'] as String?;
@@ -342,7 +341,7 @@ class _ExtinguisherSyncPageState extends State<ExtinguisherSyncPage> {
           ),
         ),
         title: Text(
-          codeNFC ?? serialNumber ?? 'Sin código',
+          serialNumber ?? 'Sin número de serie',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(

@@ -19,7 +19,7 @@ import 'service_data_page.dart';
 class ServiceRegisterPage extends StatefulWidget {
   final ServiceType serviceType;
   final String?
-      initialSerial; // Número de serie autocompletado desde NFC o búsqueda
+  initialSerial; // Número de serie autocompletado desde NFC o búsqueda
   final int servicioId;
 
   const ServiceRegisterPage({
@@ -35,7 +35,6 @@ class ServiceRegisterPage extends StatefulWidget {
 
 class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _codigoNFCController = TextEditingController();
   final _numeroSerieController = TextEditingController();
   final _tipoController = TextEditingController();
   final _capacidadController = TextEditingController();
@@ -70,7 +69,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
   @override
   void dispose() {
-    _codigoNFCController.dispose();
     _numeroSerieController.dispose();
     _tipoController.dispose();
     _capacidadController.dispose();
@@ -134,9 +132,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
     try {
       final data = {
-        'codeNFC': _codigoNFCController.text.trim().isEmpty
-            ? null
-            : _codigoNFCController.text.trim(),
         'serialNumber': _numeroSerieController.text.trim().isEmpty
             ? null
             : _numeroSerieController.text.trim(),
@@ -175,36 +170,24 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         return;
       }
 
-      // Validar unicidad de codeNFC y serialNumber antes de registrar
-      final codeNFC = _codigoNFCController.text.trim().isEmpty
-          ? null
-          : _codigoNFCController.text.trim();
+      // Validar unicidad de serialNumber antes de registrar
       final serialNumber = _numeroSerieController.text.trim().isEmpty
           ? null
           : _numeroSerieController.text.trim();
 
       // Verificar si ya existe en SQLite (tanto sincronizados como pendientes)
       final duplicates = await _localDataSource.checkDuplicates(
-        codeNFC: codeNFC,
         serialNumber: serialNumber,
       );
 
-      if (duplicates['codeNFC'] == true || duplicates['serialNumber'] == true) {
+      if (duplicates['serialNumber'] == true) {
         setState(() {
           _isLoading = false;
         });
 
-        String errorMessage = 'Ya existe un extintor con ';
-        final errors = <String>[];
-        if (duplicates['codeNFC'] == true) {
-          errors.add('el mismo código NFC');
-        }
-        if (duplicates['serialNumber'] == true) {
-          errors.add('el mismo número de serie');
-        }
-        errorMessage += errors.join(' y ');
-        errorMessage +=
-            '.\n\nNota: Tanto el código NFC como el número de serie deben ser únicos. Si continúa, tendrá problemas al sincronizar.';
+        const errorMessage =
+            'Ya existe un extintor con el mismo número de serie.\n\n'
+            'Nota: El número de serie debe ser único. Si continúa, tendrá problemas al sincronizar.';
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -297,17 +280,16 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           (errorMessage.toLowerCase().contains('unique') ||
               errorMessage.toLowerCase().contains('duplicate') ||
               errorMessage.toLowerCase().contains('ya existe') ||
-              errorMessage.toLowerCase().contains('codenfc') ||
               errorMessage.toLowerCase().contains('serialnumber'))) {
         // Error de duplicado desde el backend
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              'Ya existe un extintor con el mismo código NFC o número de serie.\n\n'
-              'Nota: Tanto el código NFC como el número de serie deben ser únicos.',
+              'Ya existe un extintor con el mismo número de serie.\n\n'
+              'Nota: El número de serie debe ser único.',
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            duration: Duration(seconds: 5),
           ),
         );
         return;
@@ -341,8 +323,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       } else if (errorStr.toLowerCase().contains('unique') ||
           errorStr.toLowerCase().contains('duplicate')) {
         errorMessage =
-            'Ya existe un extintor con el mismo código NFC o número de serie.\n\n'
-            'Nota: Tanto el código NFC como el número de serie deben ser únicos.';
+            'Ya existe un extintor con el mismo número de serie.\n\n'
+            'Nota: El número de serie debe ser único.';
       } else {
         errorMessage = 'Error al registrar extintor: ${e.toString()}';
       }
@@ -395,12 +377,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       ),
                       const SizedBox(height: 24),
                       // Campos del formulario
-                      FloatingLabelTextField(
-                        controller: _codigoNFCController,
-                        label: 'Código NFC',
-                        hintText: 'Código NFC',
-                      ),
-                      const SizedBox(height: 12),
                       FloatingLabelTextField(
                         controller: _numeroSerieController,
                         label: 'Nro. Serie',

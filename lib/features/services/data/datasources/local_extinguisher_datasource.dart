@@ -16,8 +16,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // Ahora todos los extintores están en la tabla extintor con synced = 0 o 1
     final result = await db.query(
       'extintor',
-      where: 'codeNFC = ? OR serialNumber = ?',
-      whereArgs: [searchTerm, searchTerm],
+      where: 'serialNumber = ?',
+      whereArgs: [searchTerm],
       limit: 1,
     );
 
@@ -96,7 +96,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // Esto permite que esté disponible para búsqueda offline inmediatamente
     await db.insert('extintor', {
       'id': tempId,
-      'codeNFC': data['codeNFC'] as String?,
       'serialNumber': data['serialNumber'] as String?,
       'type': data['type'] as String?,
       'capacity': data['capacity'] as String?,
@@ -126,7 +125,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // Retornar el Extinguisher con ID temporal
     return ExtinguisherModel(
       id: tempId,
-      codeNFC: data['codeNFC'] as String?,
       serialNumber: data['serialNumber'] as String?,
       type: data['type'] as String?,
       capacity: data['capacity'] as String?,
@@ -148,7 +146,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
     await db.insert('extintor', {
       'id': extinguisher.id,
-      'codeNFC': extinguisher.codeNFC,
       'serialNumber': extinguisher.serialNumber,
       'type': extinguisher.type,
       'capacity': extinguisher.capacity,
@@ -168,36 +165,25 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   /// Actualizar extintor después de sincronización
   /// Busca el extintor temporal (con ID negativo) y lo actualiza con el ID real del servidor
   Future<void> updateExtinguisherAfterSync({
-    String? codeNFC,
     String? serialNumber,
     required ExtinguisherModel extinguisher,
   }) async {
     final db = await AppDatabase.database;
 
     // Construir la condición WHERE
-    String whereClause;
-    List<dynamic> whereArgs;
-
-    if (codeNFC != null && serialNumber != null) {
-      whereClause = '(codeNFC = ? OR serialNumber = ?) AND id < 0';
-      whereArgs = [codeNFC, serialNumber];
-    } else if (codeNFC != null) {
-      whereClause = 'codeNFC = ? AND id < 0';
-      whereArgs = [codeNFC];
-    } else if (serialNumber != null) {
-      whereClause = 'serialNumber = ? AND id < 0';
-      whereArgs = [serialNumber];
-    } else {
-      // Si no hay codeNFC ni serialNumber, no se puede actualizar
+    if (serialNumber == null) {
+      // Si no hay serialNumber, no se puede actualizar
       return;
     }
+
+    final whereClause = 'serialNumber = ? AND id < 0';
+    final whereArgs = [serialNumber];
 
     // Actualizar el registro existente con el ID real y synced = 1
     await db.update(
       'extintor',
       {
         'id': extinguisher.id,
-        'codeNFC': extinguisher.codeNFC,
         'serialNumber': extinguisher.serialNumber,
         'type': extinguisher.type,
         'capacity': extinguisher.capacity,
@@ -235,42 +221,25 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Verificar si existe un extintor con el mismo codeNFC o serialNumber
+  /// Verificar si existe un extintor con el mismo serialNumber
   /// Busca tanto en extintores sincronizados como en pendientes
-  Future<bool> existsExtinguisher({
-    String? codeNFC,
-    String? serialNumber,
-  }) async {
+  Future<bool> existsExtinguisher({String? serialNumber}) async {
     final db = await AppDatabase.database;
 
-    // Validar que al menos uno de los campos esté presente
-    if (codeNFC == null && serialNumber == null) {
+    // Validar que el campo esté presente
+    if (serialNumber == null) {
       return false;
     }
 
     // Buscar en extintores sincronizados
-    if (codeNFC != null) {
-      final result = await db.query(
-        'extintor',
-        where: 'codeNFC = ?',
-        whereArgs: [codeNFC],
-        limit: 1,
-      );
-      if (result.isNotEmpty) {
-        return true;
-      }
-    }
-
-    if (serialNumber != null) {
-      final result = await db.query(
-        'extintor',
-        where: 'serialNumber = ?',
-        whereArgs: [serialNumber],
-        limit: 1,
-      );
-      if (result.isNotEmpty) {
-        return true;
-      }
+    final result = await db.query(
+      'extintor',
+      where: 'serialNumber = ?',
+      whereArgs: [serialNumber],
+      limit: 1,
+    );
+    if (result.isNotEmpty) {
+      return true;
     }
 
     // Buscar en extintores pendientes (sync_queue)
@@ -284,19 +253,10 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       try {
         final payload =
             jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        final pendingCodeNFC = payload['codeNFC'] as String?;
         final pendingSerialNumber = payload['serialNumber'] as String?;
 
-        // Verificar codeNFC
-        if (codeNFC != null &&
-            pendingCodeNFC != null &&
-            pendingCodeNFC == codeNFC) {
-          return true;
-        }
-
         // Verificar serialNumber
-        if (serialNumber != null &&
-            pendingSerialNumber != null &&
+        if (pendingSerialNumber != null &&
             pendingSerialNumber == serialNumber) {
           return true;
         }
@@ -310,45 +270,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   /// Obtener información sobre qué campo está duplicado
-  Future<Map<String, bool>> checkDuplicates({
-    String? codeNFC,
-    String? serialNumber,
-  }) async {
+  Future<Map<String, bool>> checkDuplicates({String? serialNumber}) async {
     final db = await AppDatabase.database;
-    final result = <String, bool>{'codeNFC': false, 'serialNumber': false};
-
-    // Verificar codeNFC en extintores sincronizados
-    if (codeNFC != null && codeNFC.isNotEmpty) {
-      final syncedResult = await db.query(
-        'extintor',
-        where: 'codeNFC = ?',
-        whereArgs: [codeNFC],
-        limit: 1,
-      );
-      if (syncedResult.isNotEmpty) {
-        result['codeNFC'] = true;
-      } else {
-        // Verificar en pendientes
-        final pendingItems = await db.query(
-          'sync_queue',
-          where: 'type = ?',
-          whereArgs: ['CREATE_EXTINGUISHER'],
-        );
-        for (final item in pendingItems) {
-          try {
-            final payload =
-                jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-            final pendingCodeNFC = payload['codeNFC'] as String?;
-            if (pendingCodeNFC != null && pendingCodeNFC == codeNFC) {
-              result['codeNFC'] = true;
-              break;
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-      }
-    }
+    final result = <String, bool>{'serialNumber': false};
 
     // Verificar serialNumber en extintores sincronizados
     if (serialNumber != null && serialNumber.isNotEmpty) {

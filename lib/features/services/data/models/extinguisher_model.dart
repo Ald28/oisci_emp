@@ -5,7 +5,6 @@ import '../../domain/entities/extinguisher_entity.dart';
 class ExtinguisherModel extends Extinguisher {
   const ExtinguisherModel({
     required super.id,
-    super.codeNFC,
     super.serialNumber,
     super.type,
     super.capacity,
@@ -55,7 +54,6 @@ class ExtinguisherModel extends Extinguisher {
 
     return ExtinguisherModel(
       id: json['id'] as int,
-      codeNFC: json['codeNFC'] as String?,
       serialNumber: json['serialNumber'] as String?,
       type: json['type'] as String?,
       capacity: json['capacity'] as String?,
@@ -79,7 +77,6 @@ class ExtinguisherModel extends Extinguisher {
   /// Convertir a JSON para crear/actualizar extintor
   Map<String, dynamic> toJson() {
     return {
-      'codeNFC': codeNFC,
       'serialNumber': serialNumber,
       'type': type,
       'capacity': capacity,
@@ -96,7 +93,6 @@ class ExtinguisherModel extends Extinguisher {
   factory ExtinguisherModel.fromMap(Map<String, dynamic> map) {
     return ExtinguisherModel(
       id: map['id'] as int,
-      codeNFC: map['codeNFC'] as String?,
       serialNumber: map['serialNumber'] as String?,
       type: map['type'] as String?,
       capacity: map['capacity'] as String?,

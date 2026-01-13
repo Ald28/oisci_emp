@@ -19,25 +19,19 @@ class CodeSearchField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Si no puedes escanear la tarjeta ingresa el código o número de serie aquí',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.black87,
-          ),
+          'Si no puedes escanear la tarjeta ingresa el número de serie aquí',
+          style: TextStyle(fontSize: 14, color: Colors.black87),
         ),
         const SizedBox(height: 16),
         // Input field con label flotante reutilizable
         FloatingLabelTextField(
           controller: controller,
-          label: 'Código o Nº de Serie',
-          hintText: 'Código o Nº de Serie',
+          label: 'Nº de Serie',
+          hintText: 'Nº de Serie',
         ),
         const SizedBox(height: 16),
         // Botón Buscar (debajo del input)
-        PrimaryButton(
-          text: 'Buscar',
-          onPressed: onSearch,
-        ),
+        PrimaryButton(text: 'Buscar', onPressed: onSearch),
       ],
     );
   }

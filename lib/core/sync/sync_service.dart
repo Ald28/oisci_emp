@@ -43,20 +43,18 @@ class SyncService {
         // Intentar crear en el servidor y obtener el extintor creado
         final extinguisher = await _httpDataSource.createExtinguisher(data);
 
-        // Buscar el extintor temporal en extintor por codeNFC o serialNumber
+        // Buscar el extintor temporal en extintor por serialNumber
         // para actualizarlo con el ID real del servidor
-        final codeNFC = data['codeNFC'] as String?;
         final serialNumber = data['serialNumber'] as String?;
 
-        if (codeNFC != null || serialNumber != null) {
+        if (serialNumber != null) {
           // Actualizar el registro existente en extintor con el ID real y synced = 1
           await _localDataSource.updateExtinguisherAfterSync(
-            codeNFC: codeNFC,
             serialNumber: serialNumber,
             extinguisher: extinguisher,
           );
         } else {
-          // Si no hay codeNFC ni serialNumber, insertar nuevo (caso raro)
+          // Si no hay serialNumber, insertar nuevo (caso raro)
           await _localDataSource.saveExtinguisher(extinguisher);
         }
 
@@ -125,20 +123,18 @@ class SyncService {
         // Intentar crear en el servidor y obtener el extintor creado
         final extinguisher = await _httpDataSource.createExtinguisher(data);
 
-        // Buscar el extintor temporal en extintor por codeNFC o serialNumber
+        // Buscar el extintor temporal en extintor por serialNumber
         // para actualizarlo con el ID real del servidor
-        final codeNFC = data['codeNFC'] as String?;
         final serialNumber = data['serialNumber'] as String?;
 
-        if (codeNFC != null || serialNumber != null) {
+        if (serialNumber != null) {
           // Actualizar el registro existente en extintor con el ID real y synced = 1
           await _localDataSource.updateExtinguisherAfterSync(
-            codeNFC: codeNFC,
             serialNumber: serialNumber,
             extinguisher: extinguisher,
           );
         } else {
-          // Si no hay codeNFC ni serialNumber, insertar nuevo (caso raro)
+          // Si no hay serialNumber, insertar nuevo (caso raro)
           await _localDataSource.saveExtinguisher(extinguisher);
         }
 
@@ -205,20 +201,18 @@ class SyncService {
       // Intentar crear en el servidor y obtener el extintor creado
       final extinguisher = await _httpDataSource.createExtinguisher(data);
 
-      // Buscar el extintor temporal en extintor por codeNFC o serialNumber
+      // Buscar el extintor temporal en extintor por serialNumber
       // para actualizarlo con el ID real del servidor
-      final codeNFC = data['codeNFC'] as String?;
       final serialNumber = data['serialNumber'] as String?;
 
-      if (codeNFC != null || serialNumber != null) {
+      if (serialNumber != null) {
         // Actualizar el registro existente en extintor con el ID real y synced = 1
         await _localDataSource.updateExtinguisherAfterSync(
-          codeNFC: codeNFC,
           serialNumber: serialNumber,
           extinguisher: extinguisher,
         );
       } else {
-        // Si no hay codeNFC ni serialNumber, insertar nuevo (caso raro)
+        // Si no hay serialNumber, insertar nuevo (caso raro)
         await _localDataSource.saveExtinguisher(extinguisher);
       }
 

@@ -166,15 +166,15 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         return;
       }
 
-      // Usar codeNFC si está disponible, sino usar UID
-      final searchTerm = result.codeNFC ?? result.uid;
+      // Usar serialNumber si está disponible (leído del NDEF), sino usar UID
+      final searchTerm = result.serialNumber ?? result.uid;
 
       // Mostrar mensaje informativo
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result.codeNFC != null
-                ? 'codeNFC leído: ${result.codeNFC}'
+            result.serialNumber != null
+                ? 'Número de serie leído: ${result.serialNumber}'
                 : 'UID leído: ${result.uid}',
           ),
           duration: const Duration(seconds: 2),
@@ -202,9 +202,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   Future<void> _handleManualSearch() async {
     if (_codeController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa un código o número de serie'),
-        ),
+        const SnackBar(content: Text('Por favor ingresa un número de serie')),
       );
       return;
     }

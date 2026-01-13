@@ -133,10 +133,6 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
                     ),
                     const SizedBox(height: 24),
                     // Campos de datos del extintor
-                    if (widget.extinguisher.codeNFC != null)
-                      _buildField('Código NFC', widget.extinguisher.codeNFC!),
-                    if (widget.extinguisher.codeNFC != null)
-                      const SizedBox(height: 12),
                     if (widget.extinguisher.serialNumber != null)
                       _buildField(
                         'Nro. Serie',
