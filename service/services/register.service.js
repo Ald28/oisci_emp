@@ -28,6 +28,7 @@ export const ServiceService = {
         }
 
         const servicioExtintor = await ServiceRepository.addExtintorToService({
+            codeServ: `SERV-${Date.now()}`,
             servicioId: Number(servicioId),
             extintorId: data.extintorId,
             estadoInicial: data.estadoInicial,

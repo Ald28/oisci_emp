@@ -32,6 +32,7 @@ export const ServiceRepository = {
     },
 
     async addExtintorToService({
+        codeServ,
         servicioId,
         extintorId,
         estadoInicial,
@@ -40,6 +41,7 @@ export const ServiceRepository = {
     }) {
         return prisma.servicioExtintor.create({
             data: {
+                codeServ,
                 servicio: {
                     connect: { id: servicioId }
                 },
