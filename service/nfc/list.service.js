@@ -11,6 +11,6 @@ export async function getNFCByIdService(codigoNFC) {
 }
 
 export async function searchExtinguisherService(searchTerm) {
-    const extinguisher = await ListRepository.findByCodeOrSerial(searchTerm);
+    const extinguisher = await ListRepository.findBySerialNumber(searchTerm);
     return extinguisher;
 }

@@ -32,13 +32,10 @@ export const ListRepository = {
         });
     },
 
-    async findByCodeOrSerial(searchTerm) {
+    async findBySerialNumber(searchTerm) {
         return prisma.extintor.findFirst({
             where: {
-                OR: [
-                    { codeNFC: searchTerm },
-                    { serialNumber: searchTerm }
-                ]
+                serialNumber: searchTerm
             },
             include: {
                 usuarioCreador: {

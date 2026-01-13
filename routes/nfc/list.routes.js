@@ -54,7 +54,7 @@ router.get('/list-nfc', listNFCController);
  * @swagger
  * /nfc/search/{searchTerm}:
  *   get:
- *     summary: Buscar extintor por código NFC o número de serie
+ *     summary: Buscar extintor por número de serie
  *     tags:
  *       - NFC
  *     security:
@@ -65,8 +65,8 @@ router.get('/list-nfc', listNFCController);
  *         required: true
  *         schema:
  *           type: string
- *         description: Código NFC o número de serie del extintor
- *         example: "NFC123456"
+ *         description: Número de serie del extintor
+ *         example: "SN123456"
  *     responses:
  *       200:
  *         description: Extintor encontrado
@@ -81,12 +81,9 @@ router.get('/list-nfc', listNFCController);
  *                 data:
  *                   type: object
  *                   properties:
- *                     codigoNFC:
- *                       type: string
- *                       example: "NFC123456"
  *                     numeroSerie:
  *                       type: string
- *                       example: "SERIE98765"
+ *                       example: "SN123456"
  *                     tipo:
  *                       type: string
  *                       example: "Polvo Químico"
