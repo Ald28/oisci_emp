@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../users/presentation/login_page.dart';
 import '../../../sync/presentation/pages/extinguisher_sync_page.dart';
+import '../../../sync/presentation/pages/service_sync_page.dart';
 import '../../../../core/auth/auth_service.dart';
 
 /// Menú lateral (Drawer) del Home
@@ -131,8 +132,18 @@ class _MainDrawerState extends State<MainDrawer> {
                   );
                 },
               ),
-              // Aquí se pueden agregar más submenús en el futuro
-              // _buildSubMenuItem(...),
+              _buildSubMenuItem(
+                context,
+                icon: Icons.build,
+                title: 'Servicios',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ServiceSyncPage()),
+                  );
+                },
+              ),
             ],
           ),
 

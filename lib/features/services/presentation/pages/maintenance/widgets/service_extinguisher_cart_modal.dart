@@ -107,7 +107,10 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
                               ),
                             ),
                             title: Text(
-                              'Extintor ID: ${item.extintorId}',
+                              item.serialNumber != null &&
+                                      item.serialNumber!.isNotEmpty
+                                  ? 'Código: ${item.serialNumber}'
+                                  : 'Extintor ID: ${item.extintorId}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),

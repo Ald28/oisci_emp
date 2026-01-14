@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/auth/auth_service.dart';
 import 'core/sync/extinguisher_sync_service.dart';
+import 'core/sync/service_sync_service.dart';
 import 'core/sync/sede_sync_service.dart';
 import 'core/sync/connectivity_sync_service.dart';
 import 'features/users/presentation/login_page.dart';
@@ -30,6 +31,17 @@ class _AppState extends State<App> {
     try {
       final syncService = ExtinguisherSyncService();
       await syncService.syncPendingExtinguishers();
+    } catch (e) {
+      // Silenciar errores de sincronización en background
+      // No queremos interrumpir el inicio de la app
+    }
+  }
+
+  /// Sincronizar servicios pendientes en background
+  Future<void> _syncPendingServices() async {
+    try {
+      final syncService = ServiceSyncService();
+      await syncService.syncPendingServices();
     } catch (e) {
       // Silenciar errores de sincronización en background
       // No queremos interrumpir el inicio de la app
@@ -100,6 +112,7 @@ class _AppState extends State<App> {
           if (token != null && userId != null && name != null) {
             // Sincronizar datos en background cuando hay sesión activa
             _syncPendingExtinguishers(); // Sincronizar extintores pendientes
+            _syncPendingServices(); // Sincronizar servicios pendientes
             _syncSedes(); // Sincronizar sedes
             _syncExtinguishers(); // Descargar extintores del servidor
             return HomePage(userId: userId, name: name);

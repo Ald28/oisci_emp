@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:sqflite/sqflite.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/database/app_database.dart';
 import '../models/service_model.dart';
@@ -102,6 +103,52 @@ class LocalServiceDataSource {
     return ServiceModel.fromMap(result.first);
   }
 
+  /// Obtener todos los servicios en proceso (para notificaciones offline)
+  Future<List<ServiceModel>> getServicesInProgress() async {
+    final db = await AppDatabase.database;
+    final session = await AuthService.loadSession();
+    final userIdStr = session['userId'] as String?;
+
+    if (userIdStr == null || userIdStr.isEmpty) {
+      return [];
+    }
+
+    final usuarioCreadorId = int.parse(userIdStr);
+    final results = await db.query(
+      'servicio',
+      where: 'status = ? AND usuarioCreadorId = ?',
+      whereArgs: ['EN_PROCESO', usuarioCreadorId],
+      orderBy: 'createdAt DESC',
+    );
+
+    return results.map((map) => ServiceModel.fromMap(map)).toList();
+  }
+
+  /// Guardar servicio sincronizado desde el servidor (sin agregar a sync_queue)
+  Future<void> saveService(ServiceModel service) async {
+    final db = await AppDatabase.database;
+    await db.insert(
+      'servicio',
+      ServiceModel(
+        id: service.id,
+        type: service.type,
+        dateStart: service.dateStart,
+        dateEnd: service.dateEnd,
+        status: service.status,
+        statusValid: service.statusValid,
+        historic: service.historic,
+        sedeId: service.sedeId,
+        userId: service.userId,
+        usuarioCreadorId: service.usuarioCreadorId,
+        usuarioActualizadorId: service.usuarioActualizadorId,
+        createdAt: service.createdAt,
+        updatedAt: service.updatedAt,
+        sincronizado: true,
+      ).toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   /// Actualizar servicio después de sincronización
   Future<void> updateServiceAfterSync({
     required int tempId,
@@ -132,7 +179,11 @@ class LocalServiceDataSource {
   }
 
   /// Finalizar servicio (actualizar status a FINALIZADO y dateEnd)
-  Future<void> finalizeService(int servicioId) async {
+  /// Si addToSyncQueue es true, agrega a sync_queue para sincronización offline
+  Future<void> finalizeService(
+    int servicioId, {
+    bool addToSyncQueue = true,
+  }) async {
     final db = await AppDatabase.database;
     final now = DateTime.now();
     await db.update(
@@ -145,6 +196,18 @@ class LocalServiceDataSource {
       where: 'id = ?',
       whereArgs: [servicioId],
     );
+
+    // Agregar a sync_queue para sincronización offline solo si se solicita
+    if (addToSyncQueue) {
+      await db.insert('sync_queue', {
+        'type': 'FINALIZE_SERVICE',
+        'payload': jsonEncode({'servicioId': servicioId}),
+        'createdAt': now.toIso8601String(),
+        'lastSyncError': null,
+        'syncAttempts': 0,
+        'lastSyncAttempt': null,
+      });
+    }
   }
 
   /// Crear ServicioExtintor (Etapa 2)
@@ -238,6 +301,30 @@ class LocalServiceDataSource {
 
     if (result.isEmpty) return null;
     return ServiceExtinguisherModel.fromMap(result.first);
+  }
+
+  /// Guardar ServicioExtintor sincronizado desde el servidor (sin agregar a sync_queue)
+  Future<void> saveServiceExtinguisher(
+    ServiceExtinguisherModel serviceExtinguisher,
+  ) async {
+    final db = await AppDatabase.database;
+    await db.insert(
+      'servicio_extintor',
+      ServiceExtinguisherModel(
+        id: serviceExtinguisher.id,
+        servicioId: serviceExtinguisher.servicioId,
+        extintorId: serviceExtinguisher.extintorId,
+        estadoInicial: serviceExtinguisher.estadoInicial,
+        estadoFinal: serviceExtinguisher.estadoFinal,
+        completado: serviceExtinguisher.completado,
+        observaciones: serviceExtinguisher.observaciones,
+        usuarioCreadorId: serviceExtinguisher.usuarioCreadorId,
+        usuarioActualizadorId: serviceExtinguisher.usuarioActualizadorId,
+        createdAt: serviceExtinguisher.createdAt,
+        updatedAt: serviceExtinguisher.updatedAt,
+      ).toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   /// Actualizar ServicioExtintor después de sincronización
@@ -367,9 +454,11 @@ class LocalServiceDataSource {
   }
 
   /// Actualizar MantenimientoDetalle
+  /// Si addToSyncQueue es true, agrega a sync_queue para sincronización offline
   Future<MaintenanceDetailModel> updateMaintenanceDetail({
     required int servicioExtintorId,
     required Map<String, dynamic> checklistData,
+    bool addToSyncQueue = true,
   }) async {
     final db = await AppDatabase.database;
     final now = DateTime.now();
@@ -424,7 +513,51 @@ class LocalServiceDataSource {
       limit: 1,
     );
 
+    // Agregar a sync_queue para sincronización offline si el mantenimiento_detalle ya existe en el servidor
+    // (solo agregar si el id es positivo, es decir, ya fue sincronizado antes) y si se solicita
+    if (addToSyncQueue && mantenimientoId > 0) {
+      await db.insert('sync_queue', {
+        'type': 'UPDATE_MAINTENANCE_DETAIL',
+        'payload': jsonEncode({
+          'servicioExtintorId': servicioExtintorId,
+          ...checklistData,
+        }),
+        'createdAt': now.toIso8601String(),
+        'lastSyncError': null,
+        'syncAttempts': 0,
+        'lastSyncAttempt': null,
+      });
+    }
+
     return MaintenanceDetailModel.fromMap(updated.first);
+  }
+
+  /// Guardar MantenimientoDetalle sincronizado desde el servidor (sin agregar a sync_queue)
+  Future<void> saveMaintenanceDetail(
+    MaintenanceDetailModel maintenanceDetail,
+  ) async {
+    final db = await AppDatabase.database;
+    await db.insert(
+      'mantenimiento_detalle',
+      MaintenanceDetailModel(
+        id: maintenanceDetail.id,
+        servicioExtintorId: maintenanceDetail.servicioExtintorId,
+        mantenimiento: maintenanceDetail.mantenimiento,
+        recarga: maintenanceDetail.recarga,
+        agenteCarga: maintenanceDetail.agenteCarga,
+        pruebaHidrostatica: maintenanceDetail.pruebaHidrostatica,
+        bajaExtintor: maintenanceDetail.bajaExtintor,
+        motivoBaja: maintenanceDetail.motivoBaja,
+        pintura: maintenanceDetail.pintura,
+        recargaCartucho: maintenanceDetail.recargaCartucho,
+        cambioPartes: maintenanceDetail.cambioPartes,
+        usuarioCreadorId: maintenanceDetail.usuarioCreadorId,
+        usuarioActualizadorId: maintenanceDetail.usuarioActualizadorId,
+        createdAt: maintenanceDetail.createdAt,
+        updatedAt: maintenanceDetail.updatedAt,
+      ).toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   /// Actualizar MantenimientoDetalle después de sincronización

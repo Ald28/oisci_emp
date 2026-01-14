@@ -41,16 +41,11 @@ class ServiceRepositoryImpl implements ServiceRepository {
       try {
         // Intentar crear en el servidor
         final service = await _httpDataSource.createService(data);
-        // Guardar también localmente
-        await _localDataSource.createService(
-          type: type,
-          dateStart: dateStart,
-          sedeId: sedeId,
-          userId: userId,
-        );
+        // Guardar también localmente (sin agregar a sync_queue)
+        await _localDataSource.saveService(service);
         return service;
       } catch (e) {
-        // Si falla, guardar solo localmente
+        // Si falla, guardar solo localmente (con sync_queue)
         return await _localDataSource.createService(
           type: type,
           dateStart: dateStart,
@@ -59,7 +54,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         );
       }
     } else {
-      // Sin internet, guardar solo localmente
+      // Sin internet, guardar solo localmente (con sync_queue)
       return await _localDataSource.createService(
         type: type,
         dateStart: dateStart,
@@ -87,13 +82,19 @@ class ServiceRepositoryImpl implements ServiceRepository {
       try {
         // Intentar finalizar en el servidor
         final service = await _httpDataSource.finalizeService(servicioId);
-        // Actualizar también localmente
-        await _localDataSource.finalizeService(servicioId);
+        // Actualizar también localmente (sin agregar a sync_queue)
+        await _localDataSource.finalizeService(
+          servicioId,
+          addToSyncQueue: false,
+        );
         // Retornar el servicio actualizado del servidor
         return service;
       } catch (e) {
-        // Si falla, finalizar solo localmente
-        await _localDataSource.finalizeService(servicioId);
+        // Si falla, finalizar solo localmente (con sync_queue)
+        await _localDataSource.finalizeService(
+          servicioId,
+          addToSyncQueue: true,
+        );
         // Obtener el servicio actualizado de local
         final service = await _localDataSource.getServiceById(servicioId);
         if (service == null) {
@@ -102,8 +103,8 @@ class ServiceRepositoryImpl implements ServiceRepository {
         return service;
       }
     } else {
-      // Sin internet, finalizar solo localmente
-      await _localDataSource.finalizeService(servicioId);
+      // Sin internet, finalizar solo localmente (con sync_queue)
+      await _localDataSource.finalizeService(servicioId, addToSyncQueue: true);
       // Obtener el servicio actualizado de local
       final service = await _localDataSource.getServiceById(servicioId);
       if (service == null) {
@@ -124,12 +125,12 @@ class ServiceRepositoryImpl implements ServiceRepository {
         // ServiceModel extiende ServiceEntity, así que ya es una entidad
         return services;
       } catch (e) {
-        // Si falla, retornar lista vacía (no hay datos locales para esto)
-        return [];
+        // Si falla, obtener de local (offline)
+        return await _localDataSource.getServicesInProgress();
       }
     } else {
-      // Sin internet, retornar lista vacía (no hay datos locales para esto)
-      return [];
+      // Sin internet, obtener de local (offline)
+      return await _localDataSource.getServicesInProgress();
     }
   }
 
@@ -152,16 +153,11 @@ class ServiceRepositoryImpl implements ServiceRepository {
         // Intentar crear en el servidor
         final serviceExtinguisher = await _httpDataSource
             .addExtinguisherToService(servicioId: servicioId, data: data);
-        // Guardar también localmente
-        await _localDataSource.createServiceExtinguisher(
-          servicioId: servicioId,
-          extintorId: extintorId,
-          estadoInicial: estadoInicial,
-          observaciones: observaciones,
-        );
+        // Guardar también localmente (sin agregar a sync_queue)
+        await _localDataSource.saveServiceExtinguisher(serviceExtinguisher);
         return serviceExtinguisher;
       } catch (e) {
-        // Si falla, guardar solo localmente
+        // Si falla, guardar solo localmente (con sync_queue)
         return await _localDataSource.createServiceExtinguisher(
           servicioId: servicioId,
           extintorId: extintorId,
@@ -170,7 +166,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         );
       }
     } else {
-      // Sin internet, guardar solo localmente
+      // Sin internet, guardar solo localmente (con sync_queue)
       return await _localDataSource.createServiceExtinguisher(
         servicioId: servicioId,
         extintorId: extintorId,
@@ -227,24 +223,10 @@ class ServiceRepositoryImpl implements ServiceRepository {
         final results = await _localDataSource
             .getServiceExtinguishersByServiceId(servicioId);
         // Convertir los Maps a ServiceExtinguisherModel
-        // El JOIN puede traer campos adicionales del extintor, pero fromMap solo necesita los campos de servicio_extintor
+        // El JOIN incluye campos del extintor (serialNumber, location, etc.)
         return results.map((map) {
-          // Crear un mapa solo con los campos de servicio_extintor
-          final serviceExtinguisherMap = <String, dynamic>{
-            'id': map['id'] as int,
-            'servicioId': map['servicioId'] as int,
-            'extintorId': map['extintorId'] as int,
-            'estadoInicial': map['estadoInicial'] as String?,
-            'estadoFinal': map['estadoFinal'] as String?,
-            'completado': map['completado'] as int? ?? 0,
-            'observaciones': map['observaciones'] as String?,
-            'usuarioCreadorId': map['usuarioCreadorId'] as int,
-            'usuarioActualizadorId': map['usuarioActualizadorId'] as int?,
-            'createdAt': map['createdAt'] as String?,
-            'updatedAt': map['updatedAt'] as String?,
-          };
-          // ServiceExtinguisherModel extiende ServiceExtinguisherEntity, así que ya es una entidad
-          return ServiceExtinguisherModel.fromMap(serviceExtinguisherMap);
+          // El JOIN ya incluye serialNumber y otros campos del extintor
+          return ServiceExtinguisherModel.fromMap(map);
         }).toList();
       }
     } else {
@@ -253,23 +235,10 @@ class ServiceRepositoryImpl implements ServiceRepository {
         servicioId,
       );
       // Convertir los Maps a ServiceExtinguisherModel
+      // El JOIN incluye campos del extintor (serialNumber, location, etc.)
       return results.map((map) {
-        // Crear un mapa solo con los campos de servicio_extintor
-        final serviceExtinguisherMap = <String, dynamic>{
-          'id': map['id'] as int,
-          'servicioId': map['servicioId'] as int,
-          'extintorId': map['extintorId'] as int,
-          'estadoInicial': map['estadoInicial'] as String?,
-          'estadoFinal': map['estadoFinal'] as String?,
-          'completado': map['completado'] as int? ?? 0,
-          'observaciones': map['observaciones'] as String?,
-          'usuarioCreadorId': map['usuarioCreadorId'] as int,
-          'usuarioActualizadorId': map['usuarioActualizadorId'] as int?,
-          'createdAt': map['createdAt'] as String?,
-          'updatedAt': map['updatedAt'] as String?,
-        };
-        // ServiceExtinguisherModel extiende ServiceExtinguisherEntity, así que ya es una entidad
-        return ServiceExtinguisherModel.fromMap(serviceExtinguisherMap);
+        // El JOIN ya incluye serialNumber y otros campos del extintor
+        return ServiceExtinguisherModel.fromMap(map);
       }).toList();
     }
   }
@@ -288,21 +257,18 @@ class ServiceRepositoryImpl implements ServiceRepository {
           servicioExtintorId: servicioExtintorId,
           data: checklistData,
         );
-        // Guardar también localmente
-        await _localDataSource.createMaintenanceDetail(
-          servicioExtintorId: servicioExtintorId,
-          checklistData: checklistData,
-        );
+        // Guardar también localmente (sin agregar a sync_queue)
+        await _localDataSource.saveMaintenanceDetail(maintenanceDetail);
         return maintenanceDetail;
       } catch (e) {
-        // Si falla, guardar solo localmente
+        // Si falla, guardar solo localmente (con sync_queue)
         return await _localDataSource.createMaintenanceDetail(
           servicioExtintorId: servicioExtintorId,
           checklistData: checklistData,
         );
       }
     } else {
-      // Sin internet, guardar solo localmente
+      // Sin internet, guardar solo localmente (con sync_queue)
       return await _localDataSource.createMaintenanceDetail(
         servicioExtintorId: servicioExtintorId,
         checklistData: checklistData,
@@ -333,24 +299,27 @@ class ServiceRepositoryImpl implements ServiceRepository {
           servicioExtintorId: servicioExtintorId,
           data: checklistData,
         );
-        // También actualizar localmente
+        // También actualizar localmente (sin agregar a sync_queue)
         await _localDataSource.updateMaintenanceDetail(
           servicioExtintorId: servicioExtintorId,
           checklistData: checklistData,
+          addToSyncQueue: false,
         );
         return result;
       } catch (e) {
-        // Si falla HTTP, actualizar solo localmente
+        // Si falla HTTP, actualizar solo localmente (con sync_queue)
         return await _localDataSource.updateMaintenanceDetail(
           servicioExtintorId: servicioExtintorId,
           checklistData: checklistData,
+          addToSyncQueue: true,
         );
       }
     } else {
-      // Sin conexión, actualizar solo localmente
+      // Sin conexión, actualizar solo localmente (con sync_queue)
       return await _localDataSource.updateMaintenanceDetail(
         servicioExtintorId: servicioExtintorId,
         checklistData: checklistData,
+        addToSyncQueue: true,
       );
     }
   }
