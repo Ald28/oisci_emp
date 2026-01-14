@@ -210,6 +210,31 @@ class HttpServiceDataSource {
     }
   }
 
+  /// Actualizar observaciones de ServicioExtintor - PATCH /services/servicio-extintor/:servicioExtintorId/observacion
+  Future<ServiceExtinguisherModel> updateServiceExtinguisherObservations({
+    required int servicioExtintorId,
+    required String? observaciones,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        '/services/servicio-extintor/$servicioExtintorId/observacion',
+        data: {'observaciones': observaciones},
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna el ServicioExtintor actualizado
+      return ServiceExtinguisherModel.fromJson(responseData);
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al actualizar observaciones',
+        );
+      }
+      rethrow;
+    }
+  }
+
   /// Obtener servicios EN_PROCESO por usuarioCreadorId - GET /services/en-proceso
   Future<List<ServiceModel>> getServicesInProgress() async {
     try {

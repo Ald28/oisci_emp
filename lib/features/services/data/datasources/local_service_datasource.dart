@@ -633,18 +633,53 @@ class LocalServiceDataSource {
   }
 
   /// Actualizar observaciones de ServicioExtintor
+  /// Si addToSyncQueue es true, agrega a sync_queue para sincronización offline
   Future<void> updateServiceExtinguisherObservations({
     required int servicioExtintorId,
     required String? observaciones,
+    bool addToSyncQueue = true,
   }) async {
     final db = await AppDatabase.database;
     final now = DateTime.now();
+
+    // Verificar si el servicio_extintor existe y obtener su ID
+    final existing = await db.query(
+      'servicio_extintor',
+      where: 'id = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (existing.isEmpty) {
+      throw Exception('ServicioExtintor no encontrado');
+    }
+
+    final seId = existing.first['id'] as int;
+
+    // Actualizar el registro
     await db.update(
       'servicio_extintor',
       {'observaciones': observaciones, 'updatedAt': now.toIso8601String()},
       where: 'id = ?',
       whereArgs: [servicioExtintorId],
     );
+
+    // Agregar a sync_queue para sincronización offline si se solicita
+    // Se agrega incluso si el ID es negativo, porque cuando se sincronice el servicio_extintor,
+    // se actualizará la referencia en sync_queue
+    if (addToSyncQueue) {
+      await db.insert('sync_queue', {
+        'type': 'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS',
+        'payload': jsonEncode({
+          'servicioExtintorId': servicioExtintorId,
+          'observaciones': observaciones,
+        }),
+        'createdAt': now.toIso8601String(),
+        'lastSyncError': null,
+        'syncAttempts': 0,
+        'lastSyncAttempt': null,
+      });
+    }
   }
 
   /// Obtener todos los ServicioExtintor por servicioId (con información del extintor)

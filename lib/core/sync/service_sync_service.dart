@@ -337,6 +337,38 @@ class ServiceSyncService {
         whereArgs: [oldId],
       );
 
+      // Actualizar referencias en sync_queue para FINALIZE_SERVICE
+      // Necesitamos actualizar el payload JSON que contiene servicioId
+      final finalizeItems = await txn.query(
+        'sync_queue',
+        where: 'type = ?',
+        whereArgs: ['FINALIZE_SERVICE'],
+      );
+
+      for (final item in finalizeItems) {
+        try {
+          final payloadStr = item['payload'] as String?;
+          if (payloadStr != null) {
+            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+            final payloadServicioId = payload['servicioId'] as int?;
+
+            // Si el servicioId en el payload coincide con el oldId, actualizarlo
+            if (payloadServicioId == oldId) {
+              payload['servicioId'] = newId;
+              await txn.update(
+                'sync_queue',
+                {'payload': jsonEncode(payload)},
+                where: 'id = ?',
+                whereArgs: [item['id']],
+              );
+            }
+          }
+        } catch (e) {
+          // Si hay error al parsear el JSON, continuar con el siguiente item
+          continue;
+        }
+      }
+
       // Eliminar el registro temporal
       await txn.delete('servicio', where: 'id = ?', whereArgs: [oldId]);
     });
@@ -505,6 +537,39 @@ class ServiceSyncService {
         whereArgs: [oldId],
       );
 
+      // Actualizar referencias en sync_queue para UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS
+      // Necesitamos actualizar el payload JSON que contiene servicioExtintorId
+      final observationItems = await txn.query(
+        'sync_queue',
+        where: 'type = ?',
+        whereArgs: ['UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS'],
+      );
+
+      for (final item in observationItems) {
+        try {
+          final payloadStr = item['payload'] as String?;
+          if (payloadStr != null) {
+            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+            final payloadServicioExtintorId =
+                payload['servicioExtintorId'] as int?;
+
+            // Si el servicioExtintorId en el payload coincide con el oldId, actualizarlo
+            if (payloadServicioExtintorId == oldId) {
+              payload['servicioExtintorId'] = newId;
+              await txn.update(
+                'sync_queue',
+                {'payload': jsonEncode(payload)},
+                where: 'id = ?',
+                whereArgs: [item['id']],
+              );
+            }
+          }
+        } catch (e) {
+          // Si hay error al parsear el JSON, continuar con el siguiente item
+          continue;
+        }
+      }
+
       await txn.delete(
         'servicio_extintor',
         where: 'id = ?',
@@ -614,6 +679,12 @@ class ServiceSyncService {
       'UPDATE_MAINTENANCE_DETAIL',
     );
     allPending.addAll(updateMaintenanceDetails);
+
+    // Obtener actualizaciones de observaciones de servicio_extintor pendientes
+    final updateObservations = await _localDataSource.getPendingSyncItems(
+      'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS',
+    );
+    allPending.addAll(updateObservations);
 
     // Obtener finalizaciones de servicio pendientes
     final finalizeServices = await _localDataSource.getPendingSyncItems(
@@ -907,10 +978,63 @@ class ServiceSyncService {
 
         await _localDataSource.deleteQueueItem(queueId);
         return true;
+      } else if (type == 'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS') {
+        var servicioExtintorId = data['servicioExtintorId'] as int;
+        final observaciones = data['observaciones'] as String?;
+
+        // Mapear servicioExtintorId negativo a positivo si es necesario
+        if (servicioExtintorId < 0) {
+          final realServicioExtintorId = await _findRealServiceExtinguisherId(
+            servicioExtintorId,
+            db,
+          );
+          if (realServicioExtintorId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El servicio_extintor padre aún no está sincronizado',
+            );
+            return false;
+          }
+          servicioExtintorId = realServicioExtintorId;
+        }
+
+        await _httpDataSource.updateServiceExtinguisherObservations(
+          servicioExtintorId: servicioExtintorId,
+          observaciones: observaciones,
+        );
+
+        // Actualizar localmente sin agregar a sync_queue
+        await _localDataSource.updateServiceExtinguisherObservations(
+          servicioExtintorId: servicioExtintorId,
+          observaciones: observaciones,
+          addToSyncQueue: false,
+        );
+
+        await _localDataSource.deleteQueueItem(queueId);
+        return true;
       } else if (type == 'FINALIZE_SERVICE') {
-        final servicioId = data['servicioId'] as int;
+        var servicioId = data['servicioId'] as int;
+
+        // Mapear servicioId negativo a positivo si es necesario
+        if (servicioId < 0) {
+          final realServicioId = await _findRealServiceId(servicioId, db);
+          if (realServicioId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El servicio padre aún no está sincronizado',
+            );
+            return false;
+          }
+          servicioId = realServicioId;
+        }
 
         await _httpDataSource.finalizeService(servicioId);
+
+        // Actualizar también localmente (sin agregar a sync_queue)
+        await _localDataSource.finalizeService(
+          servicioId,
+          addToSyncQueue: false,
+        );
 
         await _localDataSource.deleteQueueItem(queueId);
         return true;

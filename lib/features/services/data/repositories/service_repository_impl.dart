@@ -199,10 +199,37 @@ class ServiceRepositoryImpl implements ServiceRepository {
     required int servicioExtintorId,
     required String? observaciones,
   }) async {
-    await _localDataSource.updateServiceExtinguisherObservations(
-      servicioExtintorId: servicioExtintorId,
-      observaciones: observaciones,
-    );
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar actualizar en el servidor
+        await _httpDataSource.updateServiceExtinguisherObservations(
+          servicioExtintorId: servicioExtintorId,
+          observaciones: observaciones,
+        );
+        // También actualizar localmente (sin agregar a sync_queue)
+        await _localDataSource.updateServiceExtinguisherObservations(
+          servicioExtintorId: servicioExtintorId,
+          observaciones: observaciones,
+          addToSyncQueue: false,
+        );
+      } catch (e) {
+        // Si falla HTTP, actualizar solo localmente (con sync_queue)
+        await _localDataSource.updateServiceExtinguisherObservations(
+          servicioExtintorId: servicioExtintorId,
+          observaciones: observaciones,
+          addToSyncQueue: true,
+        );
+      }
+    } else {
+      // Sin conexión, actualizar solo localmente (con sync_queue)
+      await _localDataSource.updateServiceExtinguisherObservations(
+        servicioExtintorId: servicioExtintorId,
+        observaciones: observaciones,
+        addToSyncQueue: true,
+      );
+    }
   }
 
   @override
