@@ -642,7 +642,7 @@ class LocalServiceDataSource {
     final db = await AppDatabase.database;
     final now = DateTime.now();
 
-    // Verificar si el servicio_extintor existe y obtener su ID
+    // Verificar si el servicio_extintor existe
     final existing = await db.query(
       'servicio_extintor',
       where: 'id = ?',
@@ -653,8 +653,6 @@ class LocalServiceDataSource {
     if (existing.isEmpty) {
       throw Exception('ServicioExtintor no encontrado');
     }
-
-    final seId = existing.first['id'] as int;
 
     // Actualizar el registro
     await db.update(
