@@ -7,5 +7,6 @@ const router = Router()
 router.post('/create', authenticate, authorize(['tecnico']), ServiceController.createService)
 router.post('/create/:servicioId/extintores', authenticate, authorize(['tecnico']), ServiceController.addExtintor)
 router.put('/:servicioId/finalizar', authenticate, authorize(['tecnico']), ServiceController.finalizeService)
+router.patch('/servicio-extintor/:servicioExtintorId/observacion', authenticate, authorize(['tecnico']), ServiceController.updateObservacion)
 
 export default router

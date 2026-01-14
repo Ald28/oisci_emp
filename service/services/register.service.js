@@ -57,6 +57,14 @@ export const ServiceService = {
         )
 
         return servicioFinalizado
+    },
+
+    async registrarObservacion(data) {
+        if (!data.observaciones || data.observaciones.trim() === '') {
+            throw new Error('La observación es obligatoria')
+        }
+
+        return ServiceRepository.updateObservacion(data)
     }
 
 }

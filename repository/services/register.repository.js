@@ -74,6 +74,24 @@ export const ServiceRepository = {
                 }
             }
         })
+    },
+
+    updateObservacion({
+        servicioExtintorId,
+        observaciones,
+        usuarioActualizadorId
+    }) {
+        return prisma.servicioExtintor.update({
+            where: {
+                id: Number(servicioExtintorId)
+            },
+            data: {
+                observaciones,
+                usuarioActualizador: {
+                    connect: { id: usuarioActualizadorId }
+                }
+            }
+        })
     }
 
 }

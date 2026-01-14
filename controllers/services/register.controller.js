@@ -59,6 +59,24 @@ export const ServiceController = {
         } catch (error) {
             res.status(400).json({ message: error.message })
         }
+    },
+
+    async updateObservacion(req, res) {
+        try {
+            const { servicioExtintorId } = req.params
+            const { observaciones } = req.body
+            const usuarioActualizadorId = req.user.sub
+
+            const result = await ServiceService.registrarObservacion({
+                servicioExtintorId,
+                observaciones,
+                usuarioActualizadorId
+            })
+
+            res.json(result)
+        } catch (error) {
+            res.status(400).json({ message: error.message })
+        }
     }
 
 }
