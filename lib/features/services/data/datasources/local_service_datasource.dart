@@ -218,6 +218,17 @@ class LocalServiceDataSource {
     String? observaciones,
   }) async {
     final db = await AppDatabase.database;
+
+    // Verificar si el extintor ya está agregado al servicio
+    final existing = await getServiceExtinguisherByServiceAndExtinguisher(
+      servicioId: servicioId,
+      extintorId: extintorId,
+    );
+
+    if (existing != null) {
+      throw Exception('Este extintor ya está agregado al servicio');
+    }
+
     final session = await AuthService.loadSession();
     final userIdStr = session['userId'] as String?;
 
@@ -229,20 +240,29 @@ class LocalServiceDataSource {
     final now = DateTime.now();
     final tempId = -now.millisecondsSinceEpoch;
 
-    await db.insert('servicio_extintor', {
-      'id': tempId,
-      'servicioId': servicioId,
-      'extintorId': extintorId,
-      'estadoInicial': estadoInicial,
-      'estadoFinal': null,
-      'completado': 0,
-      'observaciones': observaciones,
-      'usuarioCreadorId': usuarioCreadorId,
-      'usuarioActualizadorId': null,
-      'createdAt': now.toIso8601String(),
-      'updatedAt': now.toIso8601String(),
-      'synced': 0,
-    });
+    try {
+      await db.insert('servicio_extintor', {
+        'id': tempId,
+        'servicioId': servicioId,
+        'extintorId': extintorId,
+        'estadoInicial': estadoInicial,
+        'estadoFinal': null,
+        'completado': 0,
+        'observaciones': observaciones,
+        'usuarioCreadorId': usuarioCreadorId,
+        'usuarioActualizadorId': null,
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+        'synced': 0,
+      });
+    } catch (e) {
+      // Capturar error de UNIQUE constraint y lanzar mensaje amigable
+      if (e.toString().contains('UNIQUE constraint') ||
+          e.toString().contains('SQLITE_CONSTRAINT_UNIQUE')) {
+        throw Exception('Este extintor ya está agregado al servicio');
+      }
+      rethrow;
+    }
 
     // Agregar a sync_queue
     await db.insert('sync_queue', {
@@ -669,9 +689,12 @@ class LocalServiceDataSource {
     );
 
     // Agregar a sync_queue para sincronización offline si se solicita
+    // Solo agregar si hay observaciones (no vacías ni null)
     // Se agrega incluso si el ID es negativo, porque cuando se sincronice el servicio_extintor,
     // se actualizará la referencia en sync_queue
-    if (addToSyncQueue) {
+    if (addToSyncQueue &&
+        observaciones != null &&
+        observaciones.trim().isNotEmpty) {
       await db.insert('sync_queue', {
         'type': 'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS',
         'payload': jsonEncode({

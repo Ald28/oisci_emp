@@ -1,4 +1,5 @@
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:dio/dio.dart';
 import '../../domain/repositories/service_repository.dart';
 import '../../domain/entities/service_entity.dart';
 import '../../domain/entities/service_extinguisher_entity.dart';
@@ -148,6 +149,17 @@ class ServiceRepositoryImpl implements ServiceRepository {
       'observaciones': observaciones,
     };
 
+    // Verificar primero si el extintor ya está agregado (tanto online como offline)
+    final existing = await _localDataSource
+        .getServiceExtinguisherByServiceAndExtinguisher(
+          servicioId: servicioId,
+          extintorId: extintorId,
+        );
+
+    if (existing != null) {
+      throw Exception('Este extintor ya está agregado al servicio');
+    }
+
     if (hasInternet) {
       try {
         // Intentar crear en el servidor
@@ -156,8 +168,36 @@ class ServiceRepositoryImpl implements ServiceRepository {
         // Guardar también localmente (sin agregar a sync_queue)
         await _localDataSource.saveServiceExtinguisher(serviceExtinguisher);
         return serviceExtinguisher;
+      } on DioException catch (e) {
+        // Manejar error del backend (puede ser que el extintor ya esté agregado)
+        if (e.response != null) {
+          final statusCode = e.response!.statusCode;
+          final errorData = e.response!.data as Map<String, dynamic>?;
+          final errorMessage = errorData?['message'] as String? ?? '';
+
+          // Si es un error de duplicado o conflicto, lanzar mensaje amigable
+          if (statusCode == 400 ||
+              statusCode == 409 ||
+              errorMessage.toLowerCase().contains('ya está') ||
+              errorMessage.toLowerCase().contains('duplicado') ||
+              errorMessage.toLowerCase().contains('unique') ||
+              errorMessage.toLowerCase().contains('existe')) {
+            throw Exception('Este extintor ya está agregado al servicio');
+          }
+        }
+        // Si falla por otra razón, guardar solo localmente (con sync_queue)
+        return await _localDataSource.createServiceExtinguisher(
+          servicioId: servicioId,
+          extintorId: extintorId,
+          estadoInicial: estadoInicial,
+          observaciones: observaciones,
+        );
       } catch (e) {
-        // Si falla, guardar solo localmente (con sync_queue)
+        // Si el error ya es nuestro mensaje personalizado, relanzarlo
+        if (e.toString().contains('ya está agregado')) {
+          rethrow;
+        }
+        // Si falla por otra razón, guardar solo localmente (con sync_queue)
         return await _localDataSource.createServiceExtinguisher(
           servicioId: servicioId,
           extintorId: extintorId,
@@ -199,6 +239,12 @@ class ServiceRepositoryImpl implements ServiceRepository {
     required int servicioExtintorId,
     required String? observaciones,
   }) async {
+    // Validar que las observaciones no estén vacías
+    // Si están vacías o son null, no hacer nada (no registrar observaciones vacías)
+    if (observaciones == null || observaciones.trim().isEmpty) {
+      return;
+    }
+
     final hasInternet = await _hasInternet();
 
     if (hasInternet) {

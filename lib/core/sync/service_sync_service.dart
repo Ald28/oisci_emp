@@ -3,6 +3,7 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../features/services/data/datasources/local_service_datasource.dart';
 import '../../features/services/data/datasources/http_service_datasource.dart';
+import '../../features/services/data/models/maintenance_detail_model.dart';
 import '../database/app_database.dart';
 
 /// Servicio de sincronización para enviar servicios pendientes al servidor
@@ -174,6 +175,7 @@ class ServiceSyncService {
             db,
             tempMaintenanceDetailId,
             maintenanceDetail.id,
+            maintenanceDetailFromServer: maintenanceDetail,
           );
         }
 
@@ -290,6 +292,43 @@ class ServiceSyncService {
 
     // Por ahora, si el servicio temporal no existe, retornar null
     // y el código que llama manejará el error apropiadamente
+    return null;
+  }
+
+  /// Encontrar el ID real (positivo) de un extintor temporal (negativo)
+  Future<int?> _findRealExtinguisherId(int tempId, Database db) async {
+    // Buscar el extintor temporal
+    final tempExtinguisher = await db.query(
+      'extintor',
+      where: 'id = ?',
+      whereArgs: [tempId],
+      limit: 1,
+    );
+
+    if (tempExtinguisher.isNotEmpty) {
+      // El extintor temporal todavía existe, buscar el sincronizado por serialNumber
+      final serialNumber = tempExtinguisher.first['serialNumber'] as String?;
+
+      if (serialNumber != null) {
+        // Buscar el extintor sincronizado correspondiente (mismo serialNumber, pero ID positivo)
+        final syncedExtinguisher = await db.query(
+          'extintor',
+          where: 'serialNumber = ? AND id > 0',
+          whereArgs: [serialNumber],
+          limit: 1,
+        );
+
+        if (syncedExtinguisher.isNotEmpty) {
+          return syncedExtinguisher.first['id'] as int;
+        }
+      }
+    }
+
+    // Si el extintor temporal ya no existe, significa que fue sincronizado
+    // En ese caso, buscar en servicio_extintor cualquier registro que tenga
+    // extintorId positivo y que haya sido actualizado recientemente
+    // Pero esto no es confiable sin más información, así que retornar null
+    // El código que llama deberá manejar este caso apropiadamente
     return null;
   }
 
@@ -598,11 +637,13 @@ class ServiceSyncService {
   }
 
   /// Actualizar el ID del mantenimiento_detalle de negativo a positivo
+  /// Usa los datos del servidor (maintenanceDetailFromServer) si se proporciona, sino usa los datos locales
   Future<void> _updateMaintenanceDetailId(
     Database db,
     int oldId,
-    int newId,
-  ) async {
+    int newId, {
+    MaintenanceDetailModel? maintenanceDetailFromServer,
+  }) async {
     final tempMaintenanceDetail = await db.query(
       'mantenimiento_detalle',
       where: 'id = ?',
@@ -625,23 +666,68 @@ class ServiceSyncService {
       servicioExtintorId = realServicioExtintorId;
     }
 
+    // Usar datos del servidor si están disponibles, sino usar datos locales
+    final mantenimiento =
+        maintenanceDetailFromServer?.mantenimiento ??
+        ((maintenanceDetailData['mantenimiento'] as int? ?? 0) == 1);
+    final recarga =
+        maintenanceDetailFromServer?.recarga ??
+        ((maintenanceDetailData['recarga'] as int? ?? 0) == 1);
+    final agenteCarga =
+        maintenanceDetailFromServer?.agenteCarga ??
+        maintenanceDetailData['agenteCarga'] as String?;
+    final pruebaHidrostatica =
+        maintenanceDetailFromServer?.pruebaHidrostatica ??
+        ((maintenanceDetailData['pruebaHidrostatica'] as int? ?? 0) == 1);
+    final bajaExtintor =
+        maintenanceDetailFromServer?.bajaExtintor ??
+        ((maintenanceDetailData['bajaExtintor'] as int? ?? 0) == 1);
+    final motivoBaja =
+        maintenanceDetailFromServer?.motivoBaja ??
+        maintenanceDetailData['motivoBaja'] as String?;
+    final pintura =
+        maintenanceDetailFromServer?.pintura ??
+        ((maintenanceDetailData['pintura'] as int? ?? 0) == 1);
+    final recargaCartucho =
+        maintenanceDetailFromServer?.recargaCartucho ??
+        ((maintenanceDetailData['recargaCartucho'] as int? ?? 0) == 1);
+    final cambioPartes =
+        maintenanceDetailFromServer?.cambioPartes ??
+        ((maintenanceDetailData['cambioPartes'] as int? ?? 0) == 1);
+    final detallesCambioPartes =
+        maintenanceDetailFromServer?.detallesCambioPartes ??
+        maintenanceDetailData['detallesCambioPartes'] as String?;
+    final usuarioCreadorId =
+        maintenanceDetailFromServer?.usuarioCreadorId ??
+        maintenanceDetailData['usuarioCreadorId'] as int;
+    final usuarioActualizadorId =
+        maintenanceDetailFromServer?.usuarioActualizadorId ??
+        maintenanceDetailData['usuarioActualizadorId'] as int?;
+    final createdAt = maintenanceDetailFromServer?.createdAt != null
+        ? maintenanceDetailFromServer!.createdAt!.toIso8601String()
+        : maintenanceDetailData['createdAt'] as String?;
+    final updatedAt = maintenanceDetailFromServer?.updatedAt != null
+        ? maintenanceDetailFromServer!.updatedAt!.toIso8601String()
+        : DateTime.now().toIso8601String();
+
     await db.transaction((txn) async {
       await txn.insert('mantenimiento_detalle', {
         'id': newId,
         'servicioExtintorId': servicioExtintorId,
-        'mantenimiento': maintenanceDetailData['mantenimiento'],
-        'recarga': maintenanceDetailData['recarga'],
-        'agenteCarga': maintenanceDetailData['agenteCarga'],
-        'pruebaHidrostatica': maintenanceDetailData['pruebaHidrostatica'],
-        'bajaExtintor': maintenanceDetailData['bajaExtintor'],
-        'motivoBaja': maintenanceDetailData['motivoBaja'],
-        'pintura': maintenanceDetailData['pintura'],
-        'recargaCartucho': maintenanceDetailData['recargaCartucho'],
-        'cambioPartes': maintenanceDetailData['cambioPartes'],
-        'usuarioCreadorId': maintenanceDetailData['usuarioCreadorId'],
-        'usuarioActualizadorId': maintenanceDetailData['usuarioActualizadorId'],
-        'createdAt': maintenanceDetailData['createdAt'],
-        'updatedAt': maintenanceDetailData['updatedAt'],
+        'mantenimiento': mantenimiento ? 1 : 0,
+        'recarga': recarga ? 1 : 0,
+        'agenteCarga': agenteCarga,
+        'pruebaHidrostatica': pruebaHidrostatica ? 1 : 0,
+        'bajaExtintor': bajaExtintor ? 1 : 0,
+        'motivoBaja': motivoBaja,
+        'pintura': pintura ? 1 : 0,
+        'recargaCartucho': recargaCartucho ? 1 : 0,
+        'cambioPartes': cambioPartes ? 1 : 0,
+        'detallesCambioPartes': detallesCambioPartes,
+        'usuarioCreadorId': usuarioCreadorId,
+        'usuarioActualizadorId': usuarioActualizadorId,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
         'synced': 1,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
 
@@ -814,12 +900,14 @@ class ServiceSyncService {
         return true;
       } else if (type == 'CREATE_SERVICE_EXTINGUISHER') {
         var servicioId = data['servicioId'] as int;
+        var extintorId = data['extintorId'] as int;
+
+        // Mapear servicioId negativo a positivo si es necesario
         if (servicioId < 0) {
           final realServicioId = await _findRealServiceId(servicioId, db);
           if (realServicioId == null) {
             // Si no se encuentra por el método normal, buscar por servicio_extintor
             // que tenga servicioId positivo pero que originalmente apuntaba al negativo
-            final extintorId = data['extintorId'] as int;
             final serviceExtinguishers = await db.query(
               'servicio_extintor',
               where: 'extintorId = ? AND servicioId > 0',
@@ -847,11 +935,24 @@ class ServiceSyncService {
           }
         }
 
+        // Mapear extintorId negativo a positivo si es necesario
+        if (extintorId < 0) {
+          final realExtintorId = await _findRealExtinguisherId(extintorId, db);
+          if (realExtintorId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El extintor aún no está sincronizado',
+            );
+            return false;
+          }
+          extintorId = realExtintorId;
+        }
+
         final serviceExtinguisher = await _httpDataSource
             .addExtinguisherToService(
               servicioId: servicioId,
               data: {
-                'extintorId': data['extintorId'],
+                'extintorId': extintorId,
                 'estadoInicial': data['estadoInicial'],
                 'observaciones': data['observaciones'],
               },
@@ -954,6 +1055,7 @@ class ServiceSyncService {
             db,
             tempMaintenanceDetailId,
             maintenanceDetail.id,
+            maintenanceDetailFromServer: maintenanceDetail,
           );
         }
         await _localDataSource.deleteQueueItem(queueId);
@@ -984,6 +1086,13 @@ class ServiceSyncService {
       } else if (type == 'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS') {
         var servicioExtintorId = data['servicioExtintorId'] as int;
         final observaciones = data['observaciones'] as String?;
+
+        // Validar que las observaciones no estén vacías
+        if (observaciones == null || observaciones.trim().isEmpty) {
+          // Si las observaciones están vacías, eliminar de la cola sin sincronizar
+          await _localDataSource.deleteQueueItem(queueId);
+          return true;
+        }
 
         // Mapear servicioExtintorId negativo a positivo si es necesario
         if (servicioExtintorId < 0) {

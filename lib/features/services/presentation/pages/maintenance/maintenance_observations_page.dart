@@ -61,9 +61,8 @@ class _MaintenanceObservationsPageState
   Future<void> _loadExistingObservations() async {
     try {
       // Obtener todos los servicio_extintor del servicio
-      final serviceExtinguishers = await _repository.getServiceExtinguishersByServiceId(
-        widget.servicioId,
-      );
+      final serviceExtinguishers = await _repository
+          .getServiceExtinguishersByServiceId(widget.servicioId);
 
       if (serviceExtinguishers.isEmpty) {
         if (mounted) {
@@ -86,7 +85,8 @@ class _MaintenanceObservationsPageState
         // Si no se encuentra por ID, buscar por extintorId
         serviceExtinguisher = serviceExtinguishers.firstWhere(
           (se) => se.extintorId == widget.extinguisher.id,
-          orElse: () => serviceExtinguishers.first, // Fallback si no se encuentra
+          orElse: () =>
+              serviceExtinguishers.first, // Fallback si no se encuentra
         );
       }
 
@@ -109,6 +109,13 @@ class _MaintenanceObservationsPageState
   Future<void> _saveObservations() async {
     if (_isSaving) return;
 
+    // Solo guardar si hay texto en las observaciones
+    final observacionesText = _observationsController.text.trim();
+    if (observacionesText.isEmpty) {
+      // Si no hay texto, no hacer nada (no registrar observaciones vacías)
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -116,9 +123,7 @@ class _MaintenanceObservationsPageState
     try {
       await _updateObservationsUseCase.call(
         servicioExtintorId: widget.servicioExtintorId,
-        observaciones: _observationsController.text.trim().isEmpty
-            ? null
-            : _observationsController.text.trim(),
+        observaciones: observacionesText,
       );
     } catch (e) {
       if (!mounted) return;
@@ -231,22 +236,22 @@ class _MaintenanceObservationsPageState
                     hintText: 'Ingrese sus observaciones aquí...',
                     maxLines: 10,
                   ),
-            const SizedBox(height: 32),
-            // Botón: Agregar otro extintor
-            SecondaryButton(
-              text: 'Agregar otro extintor',
-              onPressed: _isSaving ? null : _handleReturnToScanner,
+                  const SizedBox(height: 32),
+                  // Botón: Agregar otro extintor
+                  SecondaryButton(
+                    text: 'Agregar otro extintor',
+                    onPressed: _isSaving ? null : _handleReturnToScanner,
+                  ),
+                  const SizedBox(height: 16),
+                  // Botón: Listar todos los extintores
+                  PrimaryButton(
+                    text: 'Listar todos los extintores',
+                    onPressed: _isSaving ? null : _handleListAllExtinguishers,
+                    isLoading: _isSaving,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            // Botón: Listar todos los extintores
-            PrimaryButton(
-              text: 'Listar todos los extintores',
-              onPressed: _isSaving ? null : _handleListAllExtinguishers,
-              isLoading: _isSaving,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

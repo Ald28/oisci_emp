@@ -80,12 +80,19 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
         _isLoading = false;
       });
 
+      // Mostrar mensaje amigable si el extintor ya está agregado
+      final errorMessage = e.toString();
+      final isDuplicateError = errorMessage.contains('ya está agregado');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Error al agregar extintor al servicio: ${e.toString()}',
+            isDuplicateError
+                ? 'Este extintor ya está agregado al servicio. Por favor, escanea o busca otro extintor.'
+                : 'Error al agregar extintor al servicio: ${errorMessage.replaceAll('Exception: ', '')}',
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }

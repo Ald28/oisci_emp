@@ -176,31 +176,88 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       return;
     }
 
-    final whereClause = 'serialNumber = ? AND id < 0';
-    final whereArgs = [serialNumber];
-
-    // Actualizar el registro existente con el ID real y synced = 1
-    await db.update(
+    // Buscar el extintor temporal con ID negativo
+    final tempExtinguisher = await db.query(
       'extintor',
-      {
-        'id': extinguisher.id,
-        'serialNumber': extinguisher.serialNumber,
-        'type': extinguisher.type,
-        'capacity': extinguisher.capacity,
-        'agent': extinguisher.agent,
-        'cylinderNumber': extinguisher.cylinderNumber,
-        'location': extinguisher.location,
-        'status': extinguisher.status,
-        'photo': extinguisher.photo,
-        'sedeId': extinguisher.sedeId,
-        'usuarioCreadorId': extinguisher.usuarioCreadorId,
-        'createdAt': extinguisher.createdAt?.toIso8601String(),
-        'updatedAt': extinguisher.updatedAt?.toIso8601String(),
-        'synced': 1,
-      },
-      where: whereClause,
-      whereArgs: whereArgs,
+      where: 'serialNumber = ? AND id < 0',
+      whereArgs: [serialNumber],
+      limit: 1,
     );
+
+    if (tempExtinguisher.isEmpty) {
+      // No se encontró el extintor temporal, insertar nuevo
+      await saveExtinguisher(extinguisher);
+      return;
+    }
+
+    final oldExtintorId = tempExtinguisher.first['id'] as int;
+    final newExtintorId = extinguisher.id;
+
+    // Actualizar en una transacción para mantener consistencia
+    await db.transaction((txn) async {
+      // Actualizar el registro del extintor con el ID real y synced = 1
+      await txn.update(
+        'extintor',
+        {
+          'id': newExtintorId,
+          'serialNumber': extinguisher.serialNumber,
+          'type': extinguisher.type,
+          'capacity': extinguisher.capacity,
+          'agent': extinguisher.agent,
+          'cylinderNumber': extinguisher.cylinderNumber,
+          'location': extinguisher.location,
+          'status': extinguisher.status,
+          'photo': extinguisher.photo,
+          'sedeId': extinguisher.sedeId,
+          'usuarioCreadorId': extinguisher.usuarioCreadorId,
+          'createdAt': extinguisher.createdAt?.toIso8601String(),
+          'updatedAt': extinguisher.updatedAt?.toIso8601String(),
+          'synced': 1,
+        },
+        where: 'id = ?',
+        whereArgs: [oldExtintorId],
+      );
+
+      // Actualizar referencias en servicio_extintor
+      await txn.update(
+        'servicio_extintor',
+        {'extintorId': newExtintorId},
+        where: 'extintorId = ?',
+        whereArgs: [oldExtintorId],
+      );
+
+      // Actualizar referencias en sync_queue para CREATE_SERVICE_EXTINGUISHER
+      // Necesitamos actualizar el payload JSON que contiene extintorId
+      final serviceExtinguisherItems = await txn.query(
+        'sync_queue',
+        where: 'type = ?',
+        whereArgs: ['CREATE_SERVICE_EXTINGUISHER'],
+      );
+
+      for (final item in serviceExtinguisherItems) {
+        try {
+          final payloadStr = item['payload'] as String?;
+          if (payloadStr != null) {
+            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+            final payloadExtintorId = payload['extintorId'] as int?;
+
+            // Si el extintorId en el payload coincide con el oldExtintorId, actualizarlo
+            if (payloadExtintorId == oldExtintorId) {
+              payload['extintorId'] = newExtintorId;
+              await txn.update(
+                'sync_queue',
+                {'payload': jsonEncode(payload)},
+                where: 'id = ?',
+                whereArgs: [item['id']],
+              );
+            }
+          }
+        } catch (e) {
+          // Si hay error al parsear el JSON, continuar con el siguiente item
+          continue;
+        }
+      }
+    });
   }
 
   /// Obtener extintores pendientes de sincronización
