@@ -23,6 +23,8 @@ import listServicioRoutes from '../routes/services/list.routes.js';
 import mantenimientoRoutes from '../routes/mantenimientoD/mantenimientoDetalle.routes.js';
 import editMantenimiento from '../routes/mantenimientoD/edit.routes.js';
 
+import inspeccionRoutes from '../routes/inspeccionD/inspeccionDetalle.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -65,5 +67,7 @@ app.use('/services', listServicioRoutes);
 
 app.use('/mantenimiento', mantenimientoRoutes);
 app.use('/mantenimiento', editMantenimiento);
+
+app.use('/inspeccion', inspeccionRoutes);
 
 export default app;

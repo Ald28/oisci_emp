@@ -250,9 +250,9 @@ model InspeccionDetalle {
   servicioExtintorId Int
   servicioExtintor   ServicioExtintor @relation(fields: [servicioExtintorId], references: [id])
 
-  foto1Url String? @db.VarChar(45)
-  foto2Url String? @db.VarChar(45)
-  foto3Url String? @db.VarChar(45)
+  foto1Url String? @db.VarChar(255)
+  foto2Url String? @db.VarChar(255)
+  foto3Url String? @db.VarChar(255)
 
   visibilidad   String? @db.VarChar(45)
   visualizacion String? @db.VarChar(45)
