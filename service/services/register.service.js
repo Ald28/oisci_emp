@@ -27,17 +27,28 @@ export const ServiceService = {
             throw new Error('extintorId es obligatorio')
         }
 
-        const servicioExtintor = await ServiceRepository.addExtintorToService({
-            codeServ: `SERV-${Date.now()}`,
-            servicioId: Number(servicioId),
-            extintorId: data.extintorId,
-            estadoInicial: data.estadoInicial,
-            observaciones: data.observaciones,
-            usuarioCreadorId: usuarioId
-        })
+        try {
+            const servicioExtintor = await ServiceRepository.addExtintorToService({
+                codeServ: `SERV-${Date.now()}`,
+                servicioId: Number(servicioId),
+                extintorId: data.extintorId,
+                estadoInicial: data.estadoInicial,
+                observaciones: data.observaciones,
+                usuarioCreadorId: usuarioId
+            })
 
-        return {
-            servicioExtintorId: servicioExtintor.id
+            return {
+                servicioExtintorId: servicioExtintor.id
+            }
+        } catch (error) {
+            // Manejar error de Prisma cuando el extintor ya está agregado
+            if (error.code === 'P2002' || 
+                error.message?.includes('Unique constraint') ||
+                error.message?.includes('duplicate') ||
+                error.message?.includes('ya existe')) {
+                throw new Error('Este extintor ya está agregado al servicio')
+            }
+            throw error
         }
     },
 
