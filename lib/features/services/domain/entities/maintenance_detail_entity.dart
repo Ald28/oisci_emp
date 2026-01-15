@@ -12,6 +12,7 @@ class MaintenanceDetailEntity {
   final bool pintura;
   final bool recargaCartucho;
   final bool cambioPartes;
+  final String? detallesCambioPartes;
   final int usuarioCreadorId;
   final int? usuarioActualizadorId;
   final DateTime? createdAt;
@@ -29,6 +30,7 @@ class MaintenanceDetailEntity {
     this.pintura = false,
     this.recargaCartucho = false,
     this.cambioPartes = false,
+    this.detallesCambioPartes,
     required this.usuarioCreadorId,
     this.usuarioActualizadorId,
     this.createdAt,

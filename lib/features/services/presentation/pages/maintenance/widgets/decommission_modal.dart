@@ -14,17 +14,31 @@ class DecommissionModal extends StatefulWidget {
 
 class _DecommissionModalState extends State<DecommissionModal> {
   final _reasonController = TextEditingController();
+  bool _isButtonEnabled = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialReason != null) {
       _reasonController.text = widget.initialReason!;
+      _isButtonEnabled = widget.initialReason!.trim().isNotEmpty;
+    }
+    // Agregar listener para actualizar el estado del botón cuando cambie el texto
+    _reasonController.addListener(_updateButtonState);
+  }
+
+  void _updateButtonState() {
+    final isEnabled = _reasonController.text.trim().isNotEmpty;
+    if (_isButtonEnabled != isEnabled) {
+      setState(() {
+        _isButtonEnabled = isEnabled;
+      });
     }
   }
 
   @override
   void dispose() {
+    _reasonController.removeListener(_updateButtonState);
     _reasonController.dispose();
     super.dispose();
   }
@@ -61,7 +75,7 @@ class _DecommissionModalState extends State<DecommissionModal> {
             // Botón OK
             PrimaryButton(
               text: 'OK',
-              onPressed: _reasonController.text.trim().isNotEmpty
+              onPressed: _isButtonEnabled
                   ? () {
                       Navigator.of(context).pop(_reasonController.text.trim());
                     }

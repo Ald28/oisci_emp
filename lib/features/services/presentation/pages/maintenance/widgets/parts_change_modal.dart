@@ -17,17 +17,31 @@ class PartsChangeModal extends StatefulWidget {
 
 class _PartsChangeModalState extends State<PartsChangeModal> {
   final _detailsController = TextEditingController();
+  bool _isButtonEnabled = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialDetails != null) {
       _detailsController.text = widget.initialDetails!;
+      _isButtonEnabled = widget.initialDetails!.trim().isNotEmpty;
+    }
+    // Agregar listener para actualizar el estado del botón cuando cambie el texto
+    _detailsController.addListener(_updateButtonState);
+  }
+
+  void _updateButtonState() {
+    final isEnabled = _detailsController.text.trim().isNotEmpty;
+    if (_isButtonEnabled != isEnabled) {
+      setState(() {
+        _isButtonEnabled = isEnabled;
+      });
     }
   }
 
   @override
   void dispose() {
+    _detailsController.removeListener(_updateButtonState);
     _detailsController.dispose();
     super.dispose();
   }
@@ -66,7 +80,7 @@ class _PartsChangeModalState extends State<PartsChangeModal> {
             // Botón OK
             PrimaryButton(
               text: 'OK',
-              onPressed: _detailsController.text.trim().isNotEmpty
+              onPressed: _isButtonEnabled
                   ? () {
                       Navigator.of(context).pop(_detailsController.text.trim());
                     }

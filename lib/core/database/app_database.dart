@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -182,6 +182,7 @@ class AppDatabase {
         pintura INTEGER DEFAULT 0,
         recargaCartucho INTEGER DEFAULT 0,
         cambioPartes INTEGER DEFAULT 0,
+        detallesCambioPartes TEXT,
         usuarioCreadorId INTEGER NOT NULL,
         usuarioActualizadorId INTEGER,
         createdAt TEXT,
@@ -289,6 +290,13 @@ class AppDatabase {
 
       await db.execute('''
         CREATE UNIQUE INDEX IF NOT EXISTS idx_mantenimiento_detalle_servicio_extintor ON mantenimiento_detalle(servicioExtintorId)
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      // Agregar campo detallesCambioPartes a mantenimiento_detalle
+      await db.execute('''
+        ALTER TABLE mantenimiento_detalle ADD COLUMN detallesCambioPartes TEXT
       ''');
     }
   }

@@ -120,8 +120,7 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
           };
           _rechargeAgent = existingDetail.agenteCarga;
           _decommissionReason = existingDetail.motivoBaja;
-          // Para cambioPartes, no hay un campo específico en MaintenanceDetailEntity
-          // Si necesitas almacenar los detalles de cambio de partes, podrías necesitar un campo adicional
+          _partsChangeDetails = existingDetail.detallesCambioPartes;
         });
       }
     } catch (e) {
@@ -209,6 +208,8 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
         'pintura': _checklistItems['PINTURA'] ?? false,
         'recargaCartucho': _checklistItems['REC_CARTUCHO'] ?? false,
         'cambioPartes': _checklistItems['CAMBIO_PARTES'] ?? false,
+        'detallesCambioPartes':
+            _partsChangeDetails, // Solo si cambioPartes está activa
       };
 
       // Crear o actualizar MantenimientoDetalle según corresponda
@@ -441,9 +442,9 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Botón Continuar
+                  // Botón Guardar checklist y continuar
                   PrimaryButton(
-                    text: 'Continuar',
+                    text: 'Guardar checklist y continuar',
                     onPressed: _isLoading ? null : _handleContinue,
                     isLoading: _isLoading,
                   ),

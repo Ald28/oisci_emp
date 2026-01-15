@@ -138,6 +138,7 @@ class ServiceSyncService {
           'pintura': data['pintura'] ?? false,
           'recargaCartucho': data['recargaCartucho'] ?? false,
           'cambioPartes': data['cambioPartes'] ?? false,
+          'detallesCambioPartes': data['detallesCambioPartes'],
         };
 
         final maintenanceDetail = await _httpDataSource.createMaintenanceDetail(
@@ -918,6 +919,7 @@ class ServiceSyncService {
           'pintura': data['pintura'] ?? false,
           'recargaCartucho': data['recargaCartucho'] ?? false,
           'cambioPartes': data['cambioPartes'] ?? false,
+          'detallesCambioPartes': data['detallesCambioPartes'],
         };
 
         final maintenanceDetail = await _httpDataSource.createMaintenanceDetail(
@@ -969,6 +971,7 @@ class ServiceSyncService {
           'pintura': data['pintura'] ?? false,
           'recargaCartucho': data['recargaCartucho'] ?? false,
           'cambioPartes': data['cambioPartes'] ?? false,
+          'detallesCambioPartes': data['detallesCambioPartes'],
         };
 
         await _httpDataSource.updateMaintenanceDetail(

@@ -399,6 +399,7 @@ class LocalServiceDataSource {
           ? 1
           : 0,
       'cambioPartes': (checklistData['cambioPartes'] as bool? ?? false) ? 1 : 0,
+      'detallesCambioPartes': checklistData['detallesCambioPartes'] as String?,
       'usuarioCreadorId': usuarioCreadorId,
       'usuarioActualizadorId': null,
       'createdAt': now.toIso8601String(),
@@ -431,6 +432,7 @@ class LocalServiceDataSource {
       pintura: checklistData['pintura'] as bool? ?? false,
       recargaCartucho: checklistData['recargaCartucho'] as bool? ?? false,
       cambioPartes: checklistData['cambioPartes'] as bool? ?? false,
+      detallesCambioPartes: checklistData['detallesCambioPartes'] as String?,
       usuarioCreadorId: usuarioCreadorId,
       createdAt: now,
       updatedAt: now,
@@ -499,6 +501,8 @@ class LocalServiceDataSource {
         'cambioPartes': (checklistData['cambioPartes'] as bool? ?? false)
             ? 1
             : 0,
+        'detallesCambioPartes':
+            checklistData['detallesCambioPartes'] as String?,
         'updatedAt': now.toIso8601String(),
       },
       where: 'id = ?',
@@ -551,6 +555,7 @@ class LocalServiceDataSource {
         pintura: maintenanceDetail.pintura,
         recargaCartucho: maintenanceDetail.recargaCartucho,
         cambioPartes: maintenanceDetail.cambioPartes,
+        detallesCambioPartes: maintenanceDetail.detallesCambioPartes,
         usuarioCreadorId: maintenanceDetail.usuarioCreadorId,
         usuarioActualizadorId: maintenanceDetail.usuarioActualizadorId,
         createdAt: maintenanceDetail.createdAt,
@@ -580,6 +585,7 @@ class LocalServiceDataSource {
         pintura: maintenanceDetail.pintura,
         recargaCartucho: maintenanceDetail.recargaCartucho,
         cambioPartes: maintenanceDetail.cambioPartes,
+        detallesCambioPartes: maintenanceDetail.detallesCambioPartes,
         usuarioCreadorId: maintenanceDetail.usuarioCreadorId,
         usuarioActualizadorId: maintenanceDetail.usuarioActualizadorId,
         createdAt: maintenanceDetail.createdAt,

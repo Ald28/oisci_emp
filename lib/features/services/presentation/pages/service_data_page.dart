@@ -179,9 +179,9 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
                         ).format(widget.extinguisher.createdAt!),
                       ),
                     const SizedBox(height: 32),
-                    // Botón Continuar
+                    // Botón Agregar extintor y continuar
                     PrimaryButton(
-                      text: 'Continuar',
+                      text: 'Agregar extintor y continuar',
                       onPressed: _isLoading ? null : _handleContinue,
                       isLoading: _isLoading,
                     ),
