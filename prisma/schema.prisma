@@ -230,6 +230,7 @@ model MantenimientoDetalle {
   pintura              Boolean @default(false)
   recargaCartucho      Boolean @default(false)
   cambioPartes         Boolean @default(false)
+  detallesCambioPartes  String? @db.VarChar(255)
 
   usuarioCreadorId      Int
   usuarioActualizadorId Int?

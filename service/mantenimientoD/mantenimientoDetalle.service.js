@@ -24,6 +24,7 @@ export const MantenimientoDetalleService = {
             pintura: payload.pintura ?? false,
             recargaCartucho: payload.recargaCartucho ?? false,
             cambioPartes: payload.cambioPartes ?? false,
+            detallesCambioPartes: payload.detallesCambioPartes,
             usuarioCreadorId: usuarioId
         })
 

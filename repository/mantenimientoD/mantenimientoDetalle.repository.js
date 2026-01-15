@@ -19,6 +19,7 @@ export const MantenimientoDetalleRepository = {
         pintura,
         recargaCartucho,
         cambioPartes,
+        detallesCambioPartes,
         usuarioCreadorId
     }) {
         return prisma.mantenimientoDetalle.create({
@@ -32,6 +33,7 @@ export const MantenimientoDetalleRepository = {
                 pintura,
                 recargaCartucho,
                 cambioPartes,
+                detallesCambioPartes,
 
                 servicioExtintor: {
                     connect: { id: servicioExtintorId }

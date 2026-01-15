@@ -14,6 +14,7 @@ export const EdiMantenimientoRepository = {
                 pintura: payload.pintura ?? false,
                 recargaCartucho: payload.recargaCartucho ?? false,
                 cambioPartes: payload.cambioPartes ?? false,
+                detallesCambioPartes: payload.detallesCambioPartes,
                 usuarioActualizador: {
                     connect: { id: usuarioActualizadorId }
                 }
