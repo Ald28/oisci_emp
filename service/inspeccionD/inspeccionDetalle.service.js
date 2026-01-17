@@ -31,7 +31,40 @@ async function saveInspeccion({ servicioExtintorId, userId, ...data }) {
     })
 }
 
+async function saveInspeccionWithFotos({ servicioExtintorId, files, userId, ...data }) {
+    const fotos = {}
+
+    // Subir fotos si existen
+    if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+            const result = await storage.upload(files[i].buffer, {
+                folder: 'inspecciones',
+            })
+
+            fotos[`foto${i + 1}Url`] = result.url
+        }
+    }
+
+    // Combinar fotos con datos del checklist
+    const fullData = {
+        ...data,
+        ...fotos,
+    }
+
+    return inspeccionRepo.upsertDetalle({
+        servicioExtintorId,
+        data: fullData,
+        userId,
+    })
+}
+
+async function getByServicioExtintorId(servicioExtintorId) {
+    return inspeccionRepo.findByServicioExtintorId(servicioExtintorId)
+}
+
 export default {
     uploadFotos,
     saveInspeccion,
+    saveInspeccionWithFotos,
+    getByServicioExtintorId,
 }

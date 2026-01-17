@@ -14,3 +14,8 @@ export async function searchExtinguisherService(searchTerm) {
     const extinguisher = await ListRepository.findBySerialNumber(searchTerm);
     return extinguisher;
 }
+
+export async function getExtinguisherByIdService(extintorId) {
+    const extinguisher = await ListRepository.findById(extintorId);
+    return extinguisher;
+}

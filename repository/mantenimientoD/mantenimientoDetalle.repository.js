@@ -54,5 +54,11 @@ export const MantenimientoDetalleRepository = {
                 estadoFinal
             }
         })
+    },
+
+    findByServicioExtintorId(servicioExtintorId) {
+        return prisma.mantenimientoDetalle.findUnique({
+            where: { servicioExtintorId: Number(servicioExtintorId) },
+        })
     }
 }

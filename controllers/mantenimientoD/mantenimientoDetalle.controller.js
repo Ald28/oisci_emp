@@ -19,5 +19,28 @@ export const MantenimientoDetalleController = {
                 message: error.message
             })
         }
+    },
+
+    async get(req, res) {
+        try {
+            const { servicioExtintorId } = req.params
+
+            if (!servicioExtintorId) {
+                return res.status(400).json({ message: 'servicioExtintorId es requerido' })
+            }
+
+            const mantenimiento = await MantenimientoDetalleService.getByServicioExtintorId(
+                Number(servicioExtintorId)
+            )
+
+            if (!mantenimiento) {
+                return res.status(404).json({ message: 'Mantenimiento no encontrado' })
+            }
+
+            return res.json({ data: mantenimiento })
+        } catch (error) {
+            console.error(error)
+            return res.status(500).json({ message: error.message })
+        }
     }
 }

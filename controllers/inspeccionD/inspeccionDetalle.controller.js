@@ -30,7 +30,90 @@ export async function createOrUpdateInspeccion(req, res) {
     }
 }
 
+export async function createOrUpdateInspeccionWithFotos(req, res) {
+    try {
+        // Obtener servicioExtintorId desde params o body
+        const servicioExtintorId = req.params.servicioExtintorId 
+            ? Number(req.params.servicioExtintorId)
+            : Number(req.body.servicioExtintorId)
+
+        if (!servicioExtintorId) {
+            return res.status(400).json({ message: 'servicioExtintorId es requerido' })
+        }
+
+        // Obtener archivos (pueden venir como objeto con foto1, foto2, foto3 o como array)
+        const files = []
+        if (req.files) {
+            if (Array.isArray(req.files)) {
+                files.push(...req.files)
+            } else if (req.files.foto1) {
+                files.push(req.files.foto1[0])
+            }
+            if (req.files.foto2) {
+                files.push(req.files.foto2[0])
+            }
+            if (req.files.foto3) {
+                files.push(req.files.foto3[0])
+            }
+        }
+
+        // Parsear datos del checklist desde el campo 'data' si existe
+        let checklistData = {}
+        if (req.body.data) {
+            try {
+                checklistData = typeof req.body.data === 'string' 
+                    ? JSON.parse(req.body.data) 
+                    : req.body.data
+            } catch (e) {
+                // Si no se puede parsear, usar req.body directamente
+                checklistData = req.body
+            }
+        } else {
+            // Si no hay campo 'data', usar req.body directamente (sin servicioExtintorId)
+            const { servicioExtintorId: _, ...rest } = req.body
+            checklistData = rest
+        }
+
+        const inspeccion = await inspeccionService.saveInspeccionWithFotos({
+            servicioExtintorId: servicioExtintorId,
+            files: files,
+            userId: req.user.sub,
+            ...checklistData,
+        })
+
+        res.json({ data: inspeccion })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: error.message })
+    }
+}
+
+export async function getInspeccionByServicioExtintorId(req, res) {
+    try {
+        const { servicioExtintorId } = req.params
+
+        if (!servicioExtintorId) {
+            return res.status(400).json({ message: 'servicioExtintorId es requerido' })
+        }
+
+        const inspeccion = await inspeccionService.getByServicioExtintorId(
+            Number(servicioExtintorId)
+        )
+
+        if (!inspeccion) {
+            return res.status(404).json({ message: 'Inspección no encontrada' })
+        }
+
+        res.json({ data: inspeccion })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: error.message })
+    }
+}
+
 export default {
     uploadFotosInspeccion,
     createOrUpdateInspeccion,
+    createOrUpdateInspeccionWithFotos,
+    getInspeccionByServicioExtintorId,
 }

@@ -1,4 +1,4 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService } from "../../service/nfc/list.service.js";
+import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
@@ -34,5 +34,19 @@ export async function searchExtinguisherController(req, res) {
         }
     } catch (error) {
         res.status(500).json({ ok: false, message: "Error al buscar extintor", error: error.message });
+    }
+}
+
+export async function getExtinguisherByIdController(req, res) {
+    const { extintorId } = req.params;
+    try {
+        const extinguisher = await getExtinguisherByIdService(Number(extintorId));
+        if (extinguisher) {
+            res.status(200).json({ ok: true, data: extinguisher });
+        } else {
+            res.status(404).json({ ok: false, message: "Extintor no encontrado" });
+        }
+    } catch (error) {
+        res.status(500).json({ ok: false, message: "Error al obtener extintor", error: error.message });
     }
 }

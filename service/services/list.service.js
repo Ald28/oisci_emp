@@ -14,6 +14,10 @@ export const ListService = {
 
     async getInProgressByUser(usuarioId) {
         return ListRepository.findInProgressByUser(usuarioId)
+    },
+
+    async getById(servicioId) {
+        return ListRepository.findById(servicioId)
     }
 
 }

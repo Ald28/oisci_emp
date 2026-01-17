@@ -34,5 +34,9 @@ export const MantenimientoDetalleService = {
         )
 
         return mantenimiento
+    },
+
+    async getByServicioExtintorId(servicioExtintorId) {
+        return MantenimientoDetalleRepository.findByServicioExtintorId(servicioExtintorId)
     }
 }

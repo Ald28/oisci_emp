@@ -48,5 +48,21 @@ export const ListRepository = {
                 sede: true
             }
         });
+    },
+
+    async findById(extintorId) {
+        return prisma.extintor.findUnique({
+            where: { id: Number(extintorId) },
+            include: {
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                sede: true
+            }
+        });
     }
 };

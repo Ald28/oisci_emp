@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -116,6 +116,60 @@ router.get('/list-nfc', listNFCController);
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/search/:searchTerm', searchExtinguisherController);
+router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchExtinguisherController);
+
+/**
+ * @swagger
+ * /nfc/{extintorId}:
+ *   get:
+ *     summary: Obtener extintor por ID
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: extintorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del extintor
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Extintor encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     serialNumber:
+ *                       type: string
+ *                     type:
+ *                       type: string
+ *                     capacity:
+ *                       type: string
+ *                     agent:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *       404:
+ *         description: Extintor no encontrado
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisherByIdController);
 
 export default router;

@@ -30,7 +30,14 @@ function upsertDetalle({ servicioExtintorId, data, userId }) {
     })
 }
 
+function findByServicioExtintorId(servicioExtintorId) {
+    return prisma.inspeccionDetalle.findUnique({
+        where: { servicioExtintorId: Number(servicioExtintorId) },
+    })
+}
+
 export default {
     upsertFotos,
     upsertDetalle,
+    findByServicioExtintorId,
 }
