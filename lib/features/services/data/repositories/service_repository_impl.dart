@@ -4,6 +4,7 @@ import '../../domain/repositories/service_repository.dart';
 import '../../domain/entities/service_entity.dart';
 import '../../domain/entities/service_extinguisher_entity.dart';
 import '../../domain/entities/maintenance_detail_entity.dart';
+import '../../domain/entities/inspection_detail_entity.dart';
 import '../datasources/local_service_datasource.dart';
 import '../datasources/http_service_datasource.dart';
 import '../models/service_extinguisher_model.dart';
@@ -67,12 +68,29 @@ class ServiceRepositoryImpl implements ServiceRepository {
 
   @override
   Future<ServiceEntity?> getServiceById(int id) async {
-    return await _localDataSource.getServiceById(id);
-  }
+    final hasInternet = await _hasInternet();
 
-  @override
-  Future<ServiceEntity?> getServiceInProgress(String type) async {
-    return await _localDataSource.getServiceInProgress(type);
+    if (hasInternet) {
+      try {
+        // Intentar obtener del servidor
+        final service = await _httpDataSource.getServiceById(id);
+
+        if (service != null) {
+          // Guardar también localmente para sincronización
+          await _localDataSource.saveService(service);
+          return service;
+        }
+
+        // Si no se encuentra en el servidor, intentar desde local
+        return await _localDataSource.getServiceById(id);
+      } catch (e) {
+        // Si falla HTTP, obtener de local
+        return await _localDataSource.getServiceById(id);
+      }
+    } else {
+      // Sin internet, obtener solo de local
+      return await _localDataSource.getServiceById(id);
+    }
   }
 
   @override
@@ -123,6 +141,12 @@ class ServiceRepositoryImpl implements ServiceRepository {
       try {
         // Intentar obtener del servidor
         final services = await _httpDataSource.getServicesInProgress();
+
+        // Guardar también localmente para uso offline
+        for (final service in services) {
+          await _localDataSource.saveService(service);
+        }
+
         // ServiceModel extiende ServiceEntity, así que ya es una entidad
         return services;
       } catch (e) {
@@ -353,9 +377,34 @@ class ServiceRepositoryImpl implements ServiceRepository {
   Future<MaintenanceDetailEntity?> getMaintenanceDetailByServiceExtinguisherId(
     int servicioExtintorId,
   ) async {
-    return await _localDataSource.getMaintenanceDetailByServiceExtinguisherId(
-      servicioExtintorId,
-    );
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener del servidor
+        final maintenanceDetail = await _httpDataSource
+            .getMaintenanceDetailByServiceExtinguisherId(servicioExtintorId);
+
+        if (maintenanceDetail != null) {
+          // Guardar también localmente para sincronización
+          await _localDataSource.saveMaintenanceDetail(maintenanceDetail);
+          return maintenanceDetail;
+        }
+
+        // Si no se encuentra en el servidor, intentar desde local
+        return await _localDataSource
+            .getMaintenanceDetailByServiceExtinguisherId(servicioExtintorId);
+      } catch (e) {
+        // Si falla HTTP, obtener de local
+        return await _localDataSource
+            .getMaintenanceDetailByServiceExtinguisherId(servicioExtintorId);
+      }
+    } else {
+      // Sin internet, obtener solo de local
+      return await _localDataSource.getMaintenanceDetailByServiceExtinguisherId(
+        servicioExtintorId,
+      );
+    }
   }
 
   @override
@@ -392,6 +441,119 @@ class ServiceRepositoryImpl implements ServiceRepository {
       return await _localDataSource.updateMaintenanceDetail(
         servicioExtintorId: servicioExtintorId,
         checklistData: checklistData,
+        addToSyncQueue: true,
+      );
+    }
+  }
+
+  @override
+  Future<InspectionDetailEntity> createInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
+  }) async {
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar crear en el servidor
+        final inspectionDetail = await _httpDataSource.createInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          data: inspectionData,
+        );
+        // Guardar también localmente con las URLs del servidor (sin agregar a sync_queue)
+        // Las URLs vienen del servidor después de subir las imágenes
+        await _localDataSource.saveInspectionDetail(inspectionDetail);
+        return inspectionDetail;
+      } catch (e) {
+        // Si falla, guardar solo localmente (con sync_queue)
+        return await _localDataSource.createInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          inspectionData: inspectionData,
+        );
+      }
+    } else {
+      // Sin internet, guardar solo localmente (con sync_queue)
+      return await _localDataSource.createInspectionDetail(
+        servicioExtintorId: servicioExtintorId,
+        inspectionData: inspectionData,
+      );
+    }
+  }
+
+  @override
+  Future<InspectionDetailEntity?> getInspectionDetailByServiceExtinguisherId(
+    int servicioExtintorId,
+  ) async {
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener del servidor
+        final inspectionDetail = await _httpDataSource
+            .getInspectionDetailByServiceExtinguisherId(servicioExtintorId);
+
+        if (inspectionDetail != null) {
+          // Guardar también localmente para sincronización
+          await _localDataSource.saveInspectionDetail(inspectionDetail);
+          return inspectionDetail;
+        }
+
+        // Si no se encuentra en el servidor, intentar desde local
+        return await _localDataSource
+            .getInspectionDetailByServiceExtinguisherId(servicioExtintorId);
+      } catch (e) {
+        // Si falla HTTP, obtener de local
+        return await _localDataSource
+            .getInspectionDetailByServiceExtinguisherId(servicioExtintorId);
+      }
+    } else {
+      // Sin internet, obtener solo de local
+      return await _localDataSource.getInspectionDetailByServiceExtinguisherId(
+        servicioExtintorId,
+      );
+    }
+  }
+
+  @override
+  Future<InspectionDetailEntity> updateInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
+  }) async {
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar actualizar en el servidor
+        final result = await _httpDataSource.updateInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          data: inspectionData,
+        );
+        // También actualizar localmente con los datos del servidor (incluyendo URLs de imágenes)
+        // (sin agregar a sync_queue)
+        await _localDataSource.updateInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          inspectionData: {
+            ...inspectionData,
+            'foto1Url': result.foto1Url,
+            'foto2Url': result.foto2Url,
+            'foto3Url': result.foto3Url,
+          },
+          addToSyncQueue: false,
+        );
+        return result;
+      } catch (e) {
+        // Si falla HTTP, actualizar solo localmente (con sync_queue)
+        return await _localDataSource.updateInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          inspectionData: inspectionData,
+          addToSyncQueue: true,
+        );
+      }
+    } else {
+      // Sin conexión, actualizar solo localmente (con sync_queue)
+      return await _localDataSource.updateInspectionDetail(
+        servicioExtintorId: servicioExtintorId,
+        inspectionData: inspectionData,
         addToSyncQueue: true,
       );
     }

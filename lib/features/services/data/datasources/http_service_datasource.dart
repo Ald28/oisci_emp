@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/service_model.dart';
 import '../models/service_extinguisher_model.dart';
 import '../models/maintenance_detail_model.dart';
+import '../models/inspection_detail_model.dart';
 
 /// DataSource HTTP para servicios
 class HttpServiceDataSource {
@@ -81,6 +84,39 @@ class HttpServiceDataSource {
       if (e.response != null) {
         final errorData = e.response!.data as Map<String, dynamic>?;
         throw Exception(errorData?['message'] ?? 'Error al agregar extintor');
+      }
+      rethrow;
+    }
+  }
+
+  /// Obtener detalle de mantenimiento - GET /mantenimiento/services/extintores/:servicioExtintorId/mantenimiento
+  Future<MaintenanceDetailModel?> getMaintenanceDetailByServiceExtinguisherId(
+    int servicioExtintorId,
+  ) async {
+    try {
+      final response = await _dio.get(
+        '/mantenimiento/services/extintores/$servicioExtintorId/mantenimiento',
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: ... }
+      if (responseData['data'] != null) {
+        return MaintenanceDetailModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // No encontrado, retornar null
+        return null;
+      }
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al obtener detalle de mantenimiento',
+        );
       }
       rethrow;
     }
@@ -235,6 +271,33 @@ class HttpServiceDataSource {
     }
   }
 
+  /// Obtener servicio por ID - GET /services/:servicioId
+  Future<ServiceModel?> getServiceById(int servicioId) async {
+    try {
+      final response = await _dio.get('/services/$servicioId');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: ... }
+      if (responseData['data'] != null) {
+        return ServiceModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // No encontrado, retornar null
+        return null;
+      }
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(errorData?['message'] ?? 'Error al obtener servicio');
+      }
+      rethrow;
+    }
+  }
+
   /// Obtener servicios EN_PROCESO por usuarioCreadorId - GET /services/en-proceso
   Future<List<ServiceModel>> getServicesInProgress() async {
     try {
@@ -257,6 +320,202 @@ class HttpServiceDataSource {
         final errorData = e.response!.data as Map<String, dynamic>?;
         throw Exception(
           errorData?['message'] ?? 'Error al obtener servicios en proceso',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Crear detalle de inspección - POST /inspeccion/services/extintores/:servicioExtintorId/inspeccion
+  Future<InspectionDetailModel> createInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      // Separar fotos (File) del resto de datos
+      final File? foto1 = data.remove('foto1') as File?;
+      final File? foto2 = data.remove('foto2') as File?;
+      final File? foto3 = data.remove('foto3') as File?;
+
+      // Crear FormData para multipart
+      final formData = FormData();
+
+      // Agregar servicioExtintorId
+      formData.fields.add(
+        MapEntry('servicioExtintorId', servicioExtintorId.toString()),
+      );
+
+      // Agregar fotos si existen
+      if (foto1 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto1',
+            await MultipartFile.fromFile(foto1.path, filename: 'foto1.jpg'),
+          ),
+        );
+      }
+      if (foto2 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto2',
+            await MultipartFile.fromFile(foto2.path, filename: 'foto2.jpg'),
+          ),
+        );
+      }
+      if (foto3 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto3',
+            await MultipartFile.fromFile(foto3.path, filename: 'foto3.jpg'),
+          ),
+        );
+      }
+
+      // Agregar datos del checklist como JSON stringificado
+      formData.fields.add(MapEntry('data', jsonEncode(data)));
+
+      // Usar timeout extendido para peticiones con imágenes
+      final response = await _dio.post(
+        '/inspeccion/services/extintores/$servicioExtintorId/inspeccion',
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(
+            seconds: 120,
+          ), // 2 minutos para subir imágenes
+          sendTimeout: const Duration(
+            seconds: 120,
+          ), // 2 minutos para enviar imágenes
+        ),
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: ... }
+      if (responseData['data'] != null) {
+        return InspectionDetailModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      throw Exception(
+        'Error al crear detalle de inspección: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al crear detalle de inspección',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Obtener detalle de inspección - GET /inspeccion/services/extintores/:servicioExtintorId/inspeccion
+  Future<InspectionDetailModel?> getInspectionDetailByServiceExtinguisherId(
+    int servicioExtintorId,
+  ) async {
+    try {
+      final response = await _dio.get(
+        '/inspeccion/services/extintores/$servicioExtintorId/inspeccion',
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: ... }
+      if (responseData['data'] != null) {
+        return InspectionDetailModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // No encontrado, retornar null
+        return null;
+      }
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al obtener detalle de inspección',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Actualizar detalle de inspección - PUT /inspeccion/extintores/:servicioExtintorId/inspeccion
+  Future<InspectionDetailModel> updateInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      // Separar fotos (File) del resto de datos
+      final File? foto1 = data.remove('foto1') as File?;
+      final File? foto2 = data.remove('foto2') as File?;
+      final File? foto3 = data.remove('foto3') as File?;
+
+      // Crear FormData para multipart
+      final formData = FormData();
+
+      // Agregar fotos si existen
+      if (foto1 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto1',
+            await MultipartFile.fromFile(foto1.path, filename: 'foto1.jpg'),
+          ),
+        );
+      }
+      if (foto2 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto2',
+            await MultipartFile.fromFile(foto2.path, filename: 'foto2.jpg'),
+          ),
+        );
+      }
+      if (foto3 != null) {
+        formData.files.add(
+          MapEntry(
+            'foto3',
+            await MultipartFile.fromFile(foto3.path, filename: 'foto3.jpg'),
+          ),
+        );
+      }
+
+      // Agregar datos del checklist como JSON stringificado
+      formData.fields.add(MapEntry('data', jsonEncode(data)));
+
+      // Usar timeout extendido para peticiones con imágenes
+      final response = await _dio.put(
+        '/inspeccion/extintores/$servicioExtintorId/inspeccion',
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(
+            seconds: 120,
+          ), // 2 minutos para subir imágenes
+          sendTimeout: const Duration(
+            seconds: 120,
+          ), // 2 minutos para enviar imágenes
+        ),
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: ... }
+      if (responseData['data'] != null) {
+        return InspectionDetailModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      throw Exception(
+        'Error al actualizar detalle de inspección: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        throw Exception(
+          errorData?['message'] ?? 'Error al actualizar detalle de inspección',
         );
       }
       rethrow;

@@ -9,15 +9,15 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   @override
   Future<ExtinguisherModel?> searchExtinguisher(String searchTerm) async {
     try {
-      final response = await _dio.get(
-        '/nfc/search/$searchTerm',
-      );
+      final response = await _dio.get('/nfc/search/$searchTerm');
 
       // El backend retorna: { ok: true, data: {...} } o { ok: false, message: "..." }
       final responseData = response.data as Map<String, dynamic>;
-      
+
       if (responseData['ok'] == true && responseData['data'] != null) {
-        return ExtinguisherModel.fromJson(responseData['data'] as Map<String, dynamic>);
+        return ExtinguisherModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
       }
 
       // No encontrado
@@ -33,20 +33,49 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   @override
-  Future<ExtinguisherModel> createExtinguisher(Map<String, dynamic> data) async {
+  Future<ExtinguisherModel?> getExtinguisherById(int extintorId) async {
     try {
-      final response = await _dio.post(
-        '/nfc/create-extintor',
-        data: data,
-      );
+      final response = await _dio.get('/nfc/$extintorId');
 
+      // El backend retorna: { ok: true, data: {...} } o { ok: false, message: "..." }
       final responseData = response.data as Map<String, dynamic>;
-      
+
       if (responseData['ok'] == true && responseData['data'] != null) {
-        return ExtinguisherModel.fromJson(responseData['data'] as Map<String, dynamic>);
+        return ExtinguisherModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
       }
 
-      throw Exception('Error al crear extintor: ${responseData['message'] ?? 'Error desconocido'}');
+      // No encontrado
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Extintor no encontrado
+        return null;
+      }
+      // Otro error, relanzar
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ExtinguisherModel> createExtinguisher(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await _dio.post('/nfc/create-extintor', data: data);
+
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['ok'] == true && responseData['data'] != null) {
+        return ExtinguisherModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      throw Exception(
+        'Error al crear extintor: ${responseData['message'] ?? 'Error desconocido'}',
+      );
     } on DioException catch (e) {
       if (e.response != null) {
         final errorData = e.response!.data as Map<String, dynamic>?;
@@ -56,4 +85,3 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
     }
   }
 }
-

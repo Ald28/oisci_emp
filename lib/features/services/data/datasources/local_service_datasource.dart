@@ -5,6 +5,7 @@ import '../../../../core/database/app_database.dart';
 import '../models/service_model.dart';
 import '../models/service_extinguisher_model.dart';
 import '../models/maintenance_detail_model.dart';
+import '../models/inspection_detail_model.dart';
 
 /// DataSource local usando SQLite para almacenar servicios
 class LocalServiceDataSource {
@@ -736,5 +737,238 @@ class LocalServiceDataSource {
     );
 
     return results;
+  }
+
+  /// Crear InspeccionDetalle (offline - agrega a sync_queue)
+  Future<InspectionDetailModel> createInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
+  }) async {
+    final db = await AppDatabase.database;
+    final session = await AuthService.loadSession();
+    final userIdStr = session['userId'] as String?;
+
+    if (userIdStr == null || userIdStr.isEmpty) {
+      throw Exception('No se encontró el ID del usuario en la sesión');
+    }
+
+    final usuarioCreadorId = int.parse(userIdStr);
+    final now = DateTime.now();
+    final tempId = -now.millisecondsSinceEpoch;
+
+    await db.insert('inspeccion_detalle', {
+      'id': tempId,
+      'servicioExtintorId': servicioExtintorId,
+      'foto1Url': inspectionData['foto1Url'] as String?,
+      'foto2Url': inspectionData['foto2Url'] as String?,
+      'foto3Url': inspectionData['foto3Url'] as String?,
+      'foto1Path': inspectionData['foto1Path'] as String?,
+      'foto2Path': inspectionData['foto2Path'] as String?,
+      'foto3Path': inspectionData['foto3Path'] as String?,
+      'visibilidad': inspectionData['visibilidad'] as String?,
+      'visualizacion': inspectionData['visualizacion'] as String?,
+      'accesibilidad': inspectionData['accesibilidad'] as String?,
+      'altura': inspectionData['altura'] as String?,
+      'situacion': inspectionData['situacion'] as String?,
+      'conservacion': inspectionData['conservacion'] as String?,
+      'inscripciones': inspectionData['inscripciones'] as String?,
+      'recorrido': inspectionData['recorrido'] as String?,
+      'peso': inspectionData['peso'] as String?,
+      'observaciones': inspectionData['observaciones'] as String?,
+      'usuarioCreadorId': usuarioCreadorId,
+      'usuarioActualizadorId': null,
+      'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'synced': 0,
+    });
+
+    // Agregar a sync_queue
+    await db.insert('sync_queue', {
+      'type': 'CREATE_INSPECTION_DETAIL',
+      'payload': jsonEncode({
+        'servicioExtintorId': servicioExtintorId,
+        ...inspectionData,
+      }),
+      'createdAt': now.toIso8601String(),
+      'lastSyncError': null,
+      'syncAttempts': 0,
+      'lastSyncAttempt': null,
+    });
+
+    return InspectionDetailModel(
+      id: tempId,
+      servicioExtintorId: servicioExtintorId,
+      foto1Url: inspectionData['foto1Url'] as String?,
+      foto2Url: inspectionData['foto2Url'] as String?,
+      foto3Url: inspectionData['foto3Url'] as String?,
+      visibilidad: inspectionData['visibilidad'] as String?,
+      visualizacion: inspectionData['visualizacion'] as String?,
+      accesibilidad: inspectionData['accesibilidad'] as String?,
+      altura: inspectionData['altura'] as String?,
+      situacion: inspectionData['situacion'] as String?,
+      conservacion: inspectionData['conservacion'] as String?,
+      inscripciones: inspectionData['inscripciones'] as String?,
+      recorrido: inspectionData['recorrido'] as String?,
+      peso: inspectionData['peso'] as String?,
+      observaciones: inspectionData['observaciones'] as String?,
+      usuarioCreadorId: usuarioCreadorId,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Obtener InspeccionDetalle por servicioExtintorId
+  Future<InspectionDetailModel?> getInspectionDetailByServiceExtinguisherId(
+    int servicioExtintorId,
+  ) async {
+    final db = await AppDatabase.database;
+    final result = await db.query(
+      'inspeccion_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (result.isEmpty) return null;
+    return InspectionDetailModel.fromMap(result.first);
+  }
+
+  /// Actualizar InspeccionDetalle
+  /// Si addToSyncQueue es true, agrega a sync_queue para sincronización offline
+  Future<InspectionDetailModel> updateInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
+    bool addToSyncQueue = true,
+  }) async {
+    final db = await AppDatabase.database;
+    final now = DateTime.now();
+
+    // Buscar la inspección existente
+    final existing = await db.query(
+      'inspeccion_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (existing.isEmpty) {
+      throw Exception('InspeccionDetalle no encontrado');
+    }
+
+    final inspeccionId = existing.first['id'] as int;
+
+    // Actualizar el registro
+    await db.update(
+      'inspeccion_detalle',
+      {
+        'foto1Url': inspectionData['foto1Url'] as String?,
+        'foto2Url': inspectionData['foto2Url'] as String?,
+        'foto3Url': inspectionData['foto3Url'] as String?,
+        'foto1Path': inspectionData['foto1Path'] as String?,
+        'foto2Path': inspectionData['foto2Path'] as String?,
+        'foto3Path': inspectionData['foto3Path'] as String?,
+        'visibilidad': inspectionData['visibilidad'] as String?,
+        'visualizacion': inspectionData['visualizacion'] as String?,
+        'accesibilidad': inspectionData['accesibilidad'] as String?,
+        'altura': inspectionData['altura'] as String?,
+        'situacion': inspectionData['situacion'] as String?,
+        'conservacion': inspectionData['conservacion'] as String?,
+        'inscripciones': inspectionData['inscripciones'] as String?,
+        'recorrido': inspectionData['recorrido'] as String?,
+        'peso': inspectionData['peso'] as String?,
+        'observaciones': inspectionData['observaciones'] as String?,
+        'updatedAt': now.toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [inspeccionId],
+    );
+
+    // Obtener el registro actualizado
+    final updated = await db.query(
+      'inspeccion_detalle',
+      where: 'id = ?',
+      whereArgs: [inspeccionId],
+      limit: 1,
+    );
+
+    // Agregar a sync_queue para sincronización offline si la inspección ya existe en el servidor
+    // (solo agregar si el id es positivo, es decir, ya fue sincronizado antes) y si se solicita
+    if (addToSyncQueue && inspeccionId > 0) {
+      await db.insert('sync_queue', {
+        'type': 'UPDATE_INSPECTION_DETAIL',
+        'payload': jsonEncode({
+          'servicioExtintorId': servicioExtintorId,
+          ...inspectionData,
+        }),
+        'createdAt': now.toIso8601String(),
+        'lastSyncError': null,
+        'syncAttempts': 0,
+        'lastSyncAttempt': null,
+      });
+    }
+
+    return InspectionDetailModel.fromMap(updated.first);
+  }
+
+  /// Guardar InspeccionDetalle sincronizado desde el servidor (sin agregar a sync_queue)
+  Future<void> saveInspectionDetail(
+    InspectionDetailModel inspectionDetail,
+  ) async {
+    final db = await AppDatabase.database;
+    // Obtener paths locales existentes si hay (para preservarlos)
+    final existing = await db.query(
+      'inspeccion_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [inspectionDetail.servicioExtintorId],
+      limit: 1,
+    );
+
+    String? foto1Path;
+    String? foto2Path;
+    String? foto3Path;
+
+    if (existing.isNotEmpty) {
+      foto1Path = existing.first['foto1Path'] as String?;
+      foto2Path = existing.first['foto2Path'] as String?;
+      foto3Path = existing.first['foto3Path'] as String?;
+    }
+
+    final map = inspectionDetail.toMap();
+    // Preservar paths locales si existen (solo en modo offline)
+    // Si hay URLs del servidor, no preservar paths locales
+    if (foto1Path != null && inspectionDetail.foto1Url == null) {
+      map['foto1Path'] = foto1Path;
+    }
+    if (foto2Path != null && inspectionDetail.foto2Url == null) {
+      map['foto2Path'] = foto2Path;
+    }
+    if (foto3Path != null && inspectionDetail.foto3Url == null) {
+      map['foto3Path'] = foto3Path;
+    }
+
+    // Asegurar que las URLs se guarden correctamente
+    map['foto1Url'] = inspectionDetail.foto1Url;
+    map['foto2Url'] = inspectionDetail.foto2Url;
+    map['foto3Url'] = inspectionDetail.foto3Url;
+
+    await db.insert(
+      'inspeccion_detalle',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Actualizar InspeccionDetalle después de sincronización
+  Future<void> updateInspectionDetailAfterSync({
+    required int tempId,
+    required InspectionDetailModel inspectionDetail,
+  }) async {
+    final db = await AppDatabase.database;
+    await db.update(
+      'inspeccion_detalle',
+      inspectionDetail.toMap(),
+      where: 'id = ?',
+      whereArgs: [tempId],
+    );
   }
 }

@@ -30,6 +30,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   /// Obtener extintor por ID
+  @override
   Future<Extinguisher?> getExtinguisherById(int extintorId) async {
     final db = await AppDatabase.database;
     final result = await db.query(

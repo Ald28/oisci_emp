@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -201,6 +201,46 @@ class AppDatabase {
     await db.execute('''
       CREATE UNIQUE INDEX idx_mantenimiento_detalle_servicio_extintor ON mantenimiento_detalle(servicioExtintorId)
     ''');
+
+    // Tabla para inspeccion_detalle
+    await db.execute('''
+      CREATE TABLE inspeccion_detalle (
+        id INTEGER PRIMARY KEY,
+        servicioExtintorId INTEGER NOT NULL,
+        foto1Url TEXT,
+        foto2Url TEXT,
+        foto3Url TEXT,
+        foto1Path TEXT,
+        foto2Path TEXT,
+        foto3Path TEXT,
+        visibilidad TEXT,
+        visualizacion TEXT,
+        accesibilidad TEXT,
+        altura TEXT,
+        situacion TEXT,
+        conservacion TEXT,
+        inscripciones TEXT,
+        recorrido TEXT,
+        peso TEXT,
+        observaciones TEXT,
+        usuarioCreadorId INTEGER NOT NULL,
+        usuarioActualizadorId INTEGER,
+        createdAt TEXT,
+        updatedAt TEXT,
+        synced INTEGER DEFAULT 1,
+        FOREIGN KEY (servicioExtintorId) REFERENCES servicio_extintor(id)
+      )
+    ''');
+
+    // Índice único para inspeccion_detalle id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_inspeccion_detalle_id ON inspeccion_detalle(id)
+    ''');
+
+    // Índice único para servicioExtintorId
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_inspeccion_detalle_servicio_extintor ON inspeccion_detalle(servicioExtintorId)
+    ''');
   }
 
   /// Migración de la base de datos
@@ -297,6 +337,56 @@ class AppDatabase {
       // Agregar campo detallesCambioPartes a mantenimiento_detalle
       await db.execute('''
         ALTER TABLE mantenimiento_detalle ADD COLUMN detallesCambioPartes TEXT
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      // Agregar tabla inspeccion_detalle
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS inspeccion_detalle (
+          id INTEGER PRIMARY KEY,
+          servicioExtintorId INTEGER NOT NULL,
+          foto1Url TEXT,
+          foto2Url TEXT,
+          foto3Url TEXT,
+          visibilidad TEXT,
+          visualizacion TEXT,
+          accesibilidad TEXT,
+          altura TEXT,
+          situacion TEXT,
+          conservacion TEXT,
+          inscripciones TEXT,
+          recorrido TEXT,
+          peso TEXT,
+          observaciones TEXT,
+          usuarioCreadorId INTEGER NOT NULL,
+          usuarioActualizadorId INTEGER,
+          createdAt TEXT,
+          updatedAt TEXT,
+          synced INTEGER DEFAULT 1,
+          FOREIGN KEY (servicioExtintorId) REFERENCES servicio_extintor(id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_inspeccion_detalle_id ON inspeccion_detalle(id)
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_inspeccion_detalle_servicio_extintor ON inspeccion_detalle(servicioExtintorId)
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      // Agregar campos para paths locales de imágenes en inspeccion_detalle
+      await db.execute('''
+        ALTER TABLE inspeccion_detalle ADD COLUMN foto1Path TEXT
+      ''');
+      await db.execute('''
+        ALTER TABLE inspeccion_detalle ADD COLUMN foto2Path TEXT
+      ''');
+      await db.execute('''
+        ALTER TABLE inspeccion_detalle ADD COLUMN foto3Path TEXT
       ''');
     }
   }

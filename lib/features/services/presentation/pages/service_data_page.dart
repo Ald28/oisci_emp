@@ -6,6 +6,7 @@ import '../../domain/entities/extinguisher_entity.dart';
 import '../../domain/usecases/add_extinguisher_to_service_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import 'maintenance/maintenance_checklist_page.dart';
+import 'inspection/inspection_checklist_page.dart';
 import 'package:intl/intl.dart';
 
 /// Pantalla: Mostrar datos del extintor + Continuar
@@ -54,7 +55,7 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
         _isLoading = false;
       });
 
-      // Navegar a MaintenanceChecklistPage
+      // Navegar a la página correspondiente según el tipo de servicio
       if (widget.serviceType == ServiceType.maintenance) {
         Navigator.push(
           context,
@@ -68,9 +69,16 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
           ),
         );
       } else {
-        // TODO: Navegar a inspection_checklist_page cuando esté implementado
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inspección - Próximamente')),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InspectionChecklistPage(
+              extinguisher: widget.extinguisher,
+              serviceType: widget.serviceType,
+              servicioId: widget.servicioId,
+              servicioExtintorId: serviceExtinguisher.id,
+            ),
+          ),
         );
       }
     } catch (e) {

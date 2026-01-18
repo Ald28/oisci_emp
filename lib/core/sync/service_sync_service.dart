@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../features/services/data/datasources/local_service_datasource.dart';
 import '../../features/services/data/datasources/http_service_datasource.dart';
 import '../../features/services/data/models/maintenance_detail_model.dart';
+import '../../features/services/data/models/inspection_detail_model.dart';
 import '../database/app_database.dart';
 
 /// Servicio de sincronización para enviar servicios pendientes al servidor
@@ -176,6 +178,115 @@ class ServiceSyncService {
             tempMaintenanceDetailId,
             maintenanceDetail.id,
             maintenanceDetailFromServer: maintenanceDetail,
+          );
+        }
+
+        // Eliminar de la cola
+        await _localDataSource.deleteQueueItem(item['id'] as int);
+        syncedCount++;
+      } catch (e) {
+        await _localDataSource.updateSyncError(item['id'] as int, e.toString());
+      }
+    }
+
+    // Paso 4: Sincronizar CREATE_INSPECTION_DETAIL
+    final pendingInspectionDetails = await _localDataSource.getPendingSyncItems(
+      'CREATE_INSPECTION_DETAIL',
+    );
+    for (final item in pendingInspectionDetails) {
+      try {
+        final data =
+            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+        var servicioExtintorId = data['servicioExtintorId'] as int;
+
+        // Mapear servicioExtintorId negativo a positivo si es necesario
+        if (servicioExtintorId < 0) {
+          final realServicioExtintorId = await _findRealServiceExtinguisherId(
+            servicioExtintorId,
+            db,
+          );
+          if (realServicioExtintorId == null) {
+            // El servicio_extintor padre aún no está sincronizado, esperar
+            continue;
+          }
+          servicioExtintorId = realServicioExtintorId;
+        }
+
+        // Convertir paths locales a Files si existen
+        File? foto1File;
+        File? foto2File;
+        File? foto3File;
+
+        final foto1Path = data['foto1Path'] as String?;
+        final foto2Path = data['foto2Path'] as String?;
+        final foto3Path = data['foto3Path'] as String?;
+
+        if (foto1Path != null && File(foto1Path).existsSync()) {
+          foto1File = File(foto1Path);
+        }
+        if (foto2Path != null && File(foto2Path).existsSync()) {
+          foto2File = File(foto2Path);
+        }
+        if (foto3Path != null && File(foto3Path).existsSync()) {
+          foto3File = File(foto3Path);
+        }
+
+        final inspectionData = <String, dynamic>{
+          'foto1Url': data['foto1Url'] as String?,
+          'foto2Url': data['foto2Url'] as String?,
+          'foto3Url': data['foto3Url'] as String?,
+          'visibilidad': data['visibilidad'],
+          'visualizacion': data['visualizacion'],
+          'accesibilidad': data['accesibilidad'],
+          'altura': data['altura'],
+          'situacion': data['situacion'],
+          'conservacion': data['conservacion'],
+          'inscripciones': data['inscripciones'],
+          'recorrido': data['recorrido'],
+          'peso': data['peso'],
+          'observaciones': data['observaciones'],
+        };
+
+        // Agregar Files si existen (se subirán junto con el checklist)
+        if (foto1File != null) inspectionData['foto1'] = foto1File;
+        if (foto2File != null) inspectionData['foto2'] = foto2File;
+        if (foto3File != null) inspectionData['foto3'] = foto3File;
+
+        final inspectionDetail = await _httpDataSource.createInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          data: inspectionData,
+        );
+
+        // Buscar el inspeccion_detalle temporal usando el servicioExtintorId original (negativo) del payload
+        final originalServicioExtintorId = data['servicioExtintorId'] as int;
+        int? tempInspectionDetailId = await _findTempInspectionDetailId(
+          originalServicioExtintorId, // Usar el ID original del payload
+          db,
+        );
+
+        // Si no se encuentra con servicioExtintorId negativo (porque ya fue actualizado por _updateServiceExtinguisherId),
+        // buscar con el servicioExtintorId positivo mapeado
+        if (tempInspectionDetailId == null &&
+            servicioExtintorId > 0 &&
+            originalServicioExtintorId < 0) {
+          final idWithPositive = await db.query(
+            'inspeccion_detalle',
+            where: 'servicioExtintorId = ? AND id < 0',
+            whereArgs: [servicioExtintorId],
+            limit: 1,
+          );
+          if (idWithPositive.isNotEmpty) {
+            tempInspectionDetailId = idWithPositive.first['id'] as int;
+          }
+        }
+
+        if (tempInspectionDetailId != null) {
+          // Actualizar inspeccion_detalle: reemplazar ID negativo con positivo
+          await _updateInspectionDetailId(
+            db,
+            tempInspectionDetailId,
+            inspectionDetail.id,
+            inspectionDetailFromServer: inspectionDetail,
           );
         }
 
@@ -544,6 +655,7 @@ class ServiceSyncService {
 
     final serviceExtinguisherData = tempServiceExtinguisher.first;
     var servicioId = serviceExtinguisherData['servicioId'] as int;
+    var extintorId = serviceExtinguisherData['extintorId'] as int;
 
     // Mapear servicioId si es negativo
     if (servicioId < 0) {
@@ -552,11 +664,21 @@ class ServiceSyncService {
       servicioId = realServicioId;
     }
 
+    // Mapear extintorId si es negativo (el extintor puede haberse sincronizado antes)
+    if (extintorId < 0) {
+      final realExtintorId = await _findRealExtinguisherId(extintorId, db);
+      if (realExtintorId != null) {
+        extintorId = realExtintorId;
+      }
+      // Si no se encuentra el extintor sincronizado, mantener el ID negativo
+      // (el extintor aún no se ha sincronizado)
+    }
+
     await db.transaction((txn) async {
       await txn.insert('servicio_extintor', {
         'id': newId,
         'servicioId': servicioId,
-        'extintorId': serviceExtinguisherData['extintorId'],
+        'extintorId': extintorId,
         'estadoInicial': serviceExtinguisherData['estadoInicial'],
         'estadoFinal': serviceExtinguisherData['estadoFinal'],
         'completado': serviceExtinguisherData['completado'],
@@ -577,6 +699,14 @@ class ServiceSyncService {
         whereArgs: [oldId],
       );
 
+      // Actualizar referencias en inspeccion_detalle
+      await txn.update(
+        'inspeccion_detalle',
+        {'servicioExtintorId': newId},
+        where: 'servicioExtintorId = ?',
+        whereArgs: [oldId],
+      );
+
       // Actualizar referencias en sync_queue para UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS
       // Necesitamos actualizar el payload JSON que contiene servicioExtintorId
       final observationItems = await txn.query(
@@ -586,6 +716,39 @@ class ServiceSyncService {
       );
 
       for (final item in observationItems) {
+        try {
+          final payloadStr = item['payload'] as String?;
+          if (payloadStr != null) {
+            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+            final payloadServicioExtintorId =
+                payload['servicioExtintorId'] as int?;
+
+            // Si el servicioExtintorId en el payload coincide con el oldId, actualizarlo
+            if (payloadServicioExtintorId == oldId) {
+              payload['servicioExtintorId'] = newId;
+              await txn.update(
+                'sync_queue',
+                {'payload': jsonEncode(payload)},
+                where: 'id = ?',
+                whereArgs: [item['id']],
+              );
+            }
+          }
+        } catch (e) {
+          // Si hay error al parsear el JSON, continuar con el siguiente item
+          continue;
+        }
+      }
+
+      // Actualizar referencias en sync_queue para CREATE_INSPECTION_DETAIL y UPDATE_INSPECTION_DETAIL
+      // Necesitamos actualizar el payload JSON que contiene servicioExtintorId
+      final inspectionItems = await txn.query(
+        'sync_queue',
+        where: 'type IN (?, ?)',
+        whereArgs: ['CREATE_INSPECTION_DETAIL', 'UPDATE_INSPECTION_DETAIL'],
+      );
+
+      for (final item in inspectionItems) {
         try {
           final payloadStr = item['payload'] as String?;
           if (payloadStr != null) {
@@ -739,6 +902,146 @@ class ServiceSyncService {
     });
   }
 
+  /// Buscar InspeccionDetalle temporal por servicioExtintorId
+  Future<int?> _findTempInspectionDetailId(
+    int servicioExtintorId,
+    Database db,
+  ) async {
+    final result = await db.query(
+      'inspeccion_detalle',
+      where: 'servicioExtintorId = ? AND id < 0',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return result.first['id'] as int;
+    }
+    return null;
+  }
+
+  /// Actualizar ID de InspeccionDetalle después de sincronización
+  Future<void> _updateInspectionDetailId(
+    Database db,
+    int oldId,
+    int newId, {
+    InspectionDetailModel? inspectionDetailFromServer,
+  }) async {
+    final tempInspectionDetail = await db.query(
+      'inspeccion_detalle',
+      where: 'id = ?',
+      whereArgs: [oldId],
+      limit: 1,
+    );
+
+    if (tempInspectionDetail.isEmpty) return;
+
+    final inspectionDetailData = tempInspectionDetail.first;
+    var servicioExtintorId = inspectionDetailData['servicioExtintorId'] as int;
+
+    // Mapear servicioExtintorId si es negativo
+    if (servicioExtintorId < 0) {
+      final realServicioExtinguisherId = await _findRealServiceExtinguisherId(
+        servicioExtintorId,
+        db,
+      );
+      if (realServicioExtinguisherId == null) return;
+      servicioExtintorId = realServicioExtinguisherId;
+    }
+
+    // Usar datos del servidor si están disponibles, sino usar datos locales
+    final foto1Url =
+        inspectionDetailFromServer?.foto1Url ??
+        inspectionDetailData['foto1Url'] as String?;
+    final foto2Url =
+        inspectionDetailFromServer?.foto2Url ??
+        inspectionDetailData['foto2Url'] as String?;
+    final foto3Url =
+        inspectionDetailFromServer?.foto3Url ??
+        inspectionDetailData['foto3Url'] as String?;
+    final visibilidad =
+        inspectionDetailFromServer?.visibilidad ??
+        inspectionDetailData['visibilidad'] as String?;
+    final visualizacion =
+        inspectionDetailFromServer?.visualizacion ??
+        inspectionDetailData['visualizacion'] as String?;
+    final accesibilidad =
+        inspectionDetailFromServer?.accesibilidad ??
+        inspectionDetailData['accesibilidad'] as String?;
+    final altura =
+        inspectionDetailFromServer?.altura ??
+        inspectionDetailData['altura'] as String?;
+    final situacion =
+        inspectionDetailFromServer?.situacion ??
+        inspectionDetailData['situacion'] as String?;
+    final conservacion =
+        inspectionDetailFromServer?.conservacion ??
+        inspectionDetailData['conservacion'] as String?;
+    final inscripciones =
+        inspectionDetailFromServer?.inscripciones ??
+        inspectionDetailData['inscripciones'] as String?;
+    final recorrido =
+        inspectionDetailFromServer?.recorrido ??
+        inspectionDetailData['recorrido'] as String?;
+    final peso =
+        inspectionDetailFromServer?.peso ??
+        inspectionDetailData['peso'] as String?;
+    final observaciones =
+        inspectionDetailFromServer?.observaciones ??
+        inspectionDetailData['observaciones'] as String?;
+    final usuarioCreadorId =
+        inspectionDetailFromServer?.usuarioCreadorId ??
+        inspectionDetailData['usuarioCreadorId'] as int;
+    final usuarioActualizadorId =
+        inspectionDetailFromServer?.usuarioActualizadorId ??
+        inspectionDetailData['usuarioActualizadorId'] as int?;
+    final createdAt = inspectionDetailFromServer?.createdAt != null
+        ? inspectionDetailFromServer!.createdAt!.toIso8601String()
+        : inspectionDetailData['createdAt'] as String?;
+    final updatedAt = inspectionDetailFromServer?.updatedAt != null
+        ? inspectionDetailFromServer!.updatedAt!.toIso8601String()
+        : DateTime.now().toIso8601String();
+
+    // Obtener paths locales del registro temporal (si existen)
+    final foto1Path = inspectionDetailData['foto1Path'] as String?;
+    final foto2Path = inspectionDetailData['foto2Path'] as String?;
+    final foto3Path = inspectionDetailData['foto3Path'] as String?;
+
+    await db.transaction((txn) async {
+      await txn.insert('inspeccion_detalle', {
+        'id': newId,
+        'servicioExtintorId': servicioExtintorId,
+        'foto1Url': foto1Url,
+        'foto2Url': foto2Url,
+        'foto3Url': foto3Url,
+        'foto1Path': foto1Path,
+        'foto2Path': foto2Path,
+        'foto3Path': foto3Path,
+        'visibilidad': visibilidad,
+        'visualizacion': visualizacion,
+        'accesibilidad': accesibilidad,
+        'altura': altura,
+        'situacion': situacion,
+        'conservacion': conservacion,
+        'inscripciones': inscripciones,
+        'recorrido': recorrido,
+        'peso': peso,
+        'observaciones': observaciones,
+        'usuarioCreadorId': usuarioCreadorId,
+        'usuarioActualizadorId': usuarioActualizadorId,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+        'synced': 1,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+      await txn.delete(
+        'inspeccion_detalle',
+        where: 'id = ?',
+        whereArgs: [oldId],
+      );
+    });
+  }
+
   /// Obtener todos los servicios pendientes
   Future<List<Map<String, dynamic>>> getPendingServices() async {
     final allPending = <Map<String, dynamic>>[];
@@ -772,6 +1075,18 @@ class ServiceSyncService {
       'UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS',
     );
     allPending.addAll(updateObservations);
+
+    // Obtener inspecciones_detalle pendientes
+    final inspectionDetails = await _localDataSource.getPendingSyncItems(
+      'CREATE_INSPECTION_DETAIL',
+    );
+    allPending.addAll(inspectionDetails);
+
+    // Obtener actualizaciones de inspeccion_detalle pendientes
+    final updateInspectionDetails = await _localDataSource.getPendingSyncItems(
+      'UPDATE_INSPECTION_DETAIL',
+    );
+    allPending.addAll(updateInspectionDetails);
 
     // Obtener finalizaciones de servicio pendientes
     final finalizeServices = await _localDataSource.getPendingSyncItems(
@@ -1119,6 +1434,181 @@ class ServiceSyncService {
         await _localDataSource.updateServiceExtinguisherObservations(
           servicioExtintorId: servicioExtintorId,
           observaciones: observaciones,
+          addToSyncQueue: false,
+        );
+
+        await _localDataSource.deleteQueueItem(queueId);
+        return true;
+      } else if (type == 'CREATE_INSPECTION_DETAIL') {
+        final originalServicioExtintorId = data['servicioExtintorId'] as int;
+        var servicioExtintorId = originalServicioExtintorId;
+
+        if (servicioExtintorId < 0) {
+          final realServicioExtinguisherId =
+              await _findRealServiceExtinguisherId(servicioExtintorId, db);
+          if (realServicioExtinguisherId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El servicio_extintor padre aún no está sincronizado',
+            );
+            return false;
+          }
+          servicioExtintorId = realServicioExtinguisherId;
+        }
+
+        // Convertir paths locales a Files si existen
+        File? foto1File;
+        File? foto2File;
+        File? foto3File;
+
+        final foto1Path = data['foto1Path'] as String?;
+        final foto2Path = data['foto2Path'] as String?;
+        final foto3Path = data['foto3Path'] as String?;
+
+        if (foto1Path != null && File(foto1Path).existsSync()) {
+          foto1File = File(foto1Path);
+        }
+        if (foto2Path != null && File(foto2Path).existsSync()) {
+          foto2File = File(foto2Path);
+        }
+        if (foto3Path != null && File(foto3Path).existsSync()) {
+          foto3File = File(foto3Path);
+        }
+
+        final inspectionData = <String, dynamic>{
+          'foto1Url': data['foto1Url'] as String?,
+          'foto2Url': data['foto2Url'] as String?,
+          'foto3Url': data['foto3Url'] as String?,
+          'visibilidad': data['visibilidad'],
+          'visualizacion': data['visualizacion'],
+          'accesibilidad': data['accesibilidad'],
+          'altura': data['altura'],
+          'situacion': data['situacion'],
+          'conservacion': data['conservacion'],
+          'inscripciones': data['inscripciones'],
+          'recorrido': data['recorrido'],
+          'peso': data['peso'],
+          'observaciones': data['observaciones'],
+        };
+
+        // Agregar Files si existen (se subirán junto con el checklist)
+        if (foto1File != null) inspectionData['foto1'] = foto1File;
+        if (foto2File != null) inspectionData['foto2'] = foto2File;
+        if (foto3File != null) inspectionData['foto3'] = foto3File;
+
+        final inspectionDetail = await _httpDataSource.createInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          data: inspectionData,
+        );
+
+        // Buscar el inspeccion_detalle temporal usando el servicioExtintorId original (negativo) del payload
+        int? tempInspectionDetailId = await _findTempInspectionDetailId(
+          originalServicioExtintorId, // Usar el ID original del payload
+          db,
+        );
+
+        // Si no se encuentra con servicioExtintorId negativo (porque ya fue actualizado por _updateServiceExtinguisherId),
+        // buscar con el servicioExtintorId positivo mapeado
+        if (tempInspectionDetailId == null &&
+            servicioExtintorId > 0 &&
+            originalServicioExtintorId < 0) {
+          final idWithPositive = await db.query(
+            'inspeccion_detalle',
+            where: 'servicioExtintorId = ? AND id < 0',
+            whereArgs: [servicioExtintorId],
+            limit: 1,
+          );
+          if (idWithPositive.isNotEmpty) {
+            tempInspectionDetailId = idWithPositive.first['id'] as int;
+          }
+        }
+
+        if (tempInspectionDetailId != null) {
+          await _updateInspectionDetailId(
+            db,
+            tempInspectionDetailId,
+            inspectionDetail.id,
+            inspectionDetailFromServer: inspectionDetail,
+          );
+        }
+        await _localDataSource.deleteQueueItem(queueId);
+        return true;
+      } else if (type == 'UPDATE_INSPECTION_DETAIL') {
+        var servicioExtintorId = data['servicioExtintorId'] as int;
+
+        // Mapear servicioExtintorId negativo a positivo si es necesario
+        if (servicioExtintorId < 0) {
+          final realServicioExtinguisherId =
+              await _findRealServiceExtinguisherId(servicioExtintorId, db);
+          if (realServicioExtinguisherId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El servicio_extintor padre aún no está sincronizado',
+            );
+            return false;
+          }
+          servicioExtintorId = realServicioExtinguisherId;
+        }
+
+        // Convertir paths locales a Files si existen
+        File? foto1File;
+        File? foto2File;
+        File? foto3File;
+
+        final foto1Path = data['foto1Path'] as String?;
+        final foto2Path = data['foto2Path'] as String?;
+        final foto3Path = data['foto3Path'] as String?;
+
+        if (foto1Path != null && File(foto1Path).existsSync()) {
+          foto1File = File(foto1Path);
+        }
+        if (foto2Path != null && File(foto2Path).existsSync()) {
+          foto2File = File(foto2Path);
+        }
+        if (foto3Path != null && File(foto3Path).existsSync()) {
+          foto3File = File(foto3Path);
+        }
+
+        final inspectionData = <String, dynamic>{
+          'foto1Url': data['foto1Url'] as String?,
+          'foto2Url': data['foto2Url'] as String?,
+          'foto3Url': data['foto3Url'] as String?,
+          'visibilidad': data['visibilidad'],
+          'visualizacion': data['visualizacion'],
+          'accesibilidad': data['accesibilidad'],
+          'altura': data['altura'],
+          'situacion': data['situacion'],
+          'conservacion': data['conservacion'],
+          'inscripciones': data['inscripciones'],
+          'recorrido': data['recorrido'],
+          'peso': data['peso'],
+          'observaciones': data['observaciones'],
+        };
+
+        // Agregar Files si existen (se subirán junto con el checklist)
+        if (foto1File != null) inspectionData['foto1'] = foto1File;
+        if (foto2File != null) inspectionData['foto2'] = foto2File;
+        if (foto3File != null) inspectionData['foto3'] = foto3File;
+
+        final updatedInspectionDetail = await _httpDataSource
+            .updateInspectionDetail(
+              servicioExtintorId: servicioExtintorId,
+              data: inspectionData,
+            );
+
+        // Actualizar localmente con las URLs del servidor
+        await _localDataSource.updateInspectionDetail(
+          servicioExtintorId: servicioExtintorId,
+          inspectionData: {
+            ...inspectionData,
+            'foto1Url': updatedInspectionDetail.foto1Url,
+            'foto2Url': updatedInspectionDetail.foto2Url,
+            'foto3Url': updatedInspectionDetail.foto3Url,
+            // Limpiar paths locales después de sincronizar (ya no son necesarios)
+            'foto1Path': null,
+            'foto2Path': null,
+            'foto3Path': null,
+          },
           addToSyncQueue: false,
         );
 

@@ -1,6 +1,7 @@
 import '../entities/service_entity.dart';
 import '../entities/service_extinguisher_entity.dart';
 import '../entities/maintenance_detail_entity.dart';
+import '../entities/inspection_detail_entity.dart';
 
 /// Contrato del repositorio de servicios
 abstract class ServiceRepository {
@@ -14,9 +15,6 @@ abstract class ServiceRepository {
 
   /// Obtener servicio por ID
   Future<ServiceEntity?> getServiceById(int id);
-
-  /// Obtener servicio en proceso por tipo
-  Future<ServiceEntity?> getServiceInProgress(String type);
 
   /// Finalizar servicio
   Future<ServiceEntity> finalizeService(int servicioId);
@@ -67,5 +65,22 @@ abstract class ServiceRepository {
   Future<MaintenanceDetailEntity> updateMaintenanceDetail({
     required int servicioExtintorId,
     required Map<String, dynamic> checklistData,
+  });
+
+  /// Crear detalle de inspección
+  Future<InspectionDetailEntity> createInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
+  });
+
+  /// Obtener InspeccionDetalle por servicioExtintorId
+  Future<InspectionDetailEntity?> getInspectionDetailByServiceExtinguisherId(
+    int servicioExtintorId,
+  );
+
+  /// Actualizar InspeccionDetalle
+  Future<InspectionDetailEntity> updateInspectionDetail({
+    required int servicioExtintorId,
+    required Map<String, dynamic> inspectionData,
   });
 }

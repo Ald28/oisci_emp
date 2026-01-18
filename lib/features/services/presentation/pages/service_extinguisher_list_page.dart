@@ -9,6 +9,7 @@ import '../../domain/usecases/get_extinguisher_by_id_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import 'maintenance/maintenance_checklist_page.dart';
+import 'inspection/inspection_checklist_page.dart';
 
 /// Página: Lista de ServicioExtintor (Carrito)
 class ServiceExtinguisherListPage extends StatefulWidget {
@@ -230,21 +231,41 @@ class _ServiceExtinguisherListPageState
       if (extinguisher == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error: No se pudo encontrar el extintor'),
+          SnackBar(
+            content: Text(
+              'Error: No se pudo encontrar el extintor (ID: ${item.extintorId}). '
+              'Puede que el extintor aún no esté sincronizado.',
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
         return;
       }
 
-      // Solo navegar si es mantenimiento (inspección no está implementado)
+      // Navegar a la página correspondiente según el tipo de servicio
+      if (!mounted) return;
+
       if (widget.serviceType == ServiceType.maintenance) {
-        if (!mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => MaintenanceChecklistPage(
+              extinguisher: extinguisher,
+              serviceType: widget.serviceType,
+              servicioId: widget.servicioId,
+              servicioExtintorId: item.id,
+            ),
+          ),
+        ).then((_) {
+          // Recargar cuando se regresa
+          _loadServiceExtinguishers();
+        });
+      } else if (widget.serviceType == ServiceType.inspection) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InspectionChecklistPage(
               extinguisher: extinguisher,
               serviceType: widget.serviceType,
               servicioId: widget.servicioId,
@@ -262,8 +283,12 @@ class _ServiceExtinguisherListPageState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar extintor: ${e.toString()}'),
+          content: Text(
+            'Error al cargar extintor: ${e.toString()}\n'
+            'Extintor ID: ${item.extintorId}',
+          ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }

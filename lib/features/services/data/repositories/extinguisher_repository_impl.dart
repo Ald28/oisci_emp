@@ -5,6 +5,7 @@ import '../datasources/extinguisher_datasource.dart';
 import '../datasources/http_extinguisher_datasource.dart';
 import '../datasources/local_extinguisher_datasource.dart';
 import '../models/extinguisher_model.dart';
+import '../../../../core/database/app_database.dart';
 
 class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
   final ExtinguisherDataSource? remoteDataSource;
@@ -83,12 +84,75 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
 
   @override
   Future<Extinguisher?> getExtinguisherById(int extintorId) async {
-    // Para obtener por ID, siempre usar el datasource local
-    // ya que el extintor debería estar en la base de datos local
-    if (localDataSource is LocalExtinguisherDataSource) {
-      return await (localDataSource as LocalExtinguisherDataSource)
-          .getExtinguisherById(extintorId);
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    // Si hay internet, buscar primero en el servidor
+    if (hasInternet) {
+      try {
+        final remoteDataSource = await _getDataSource(preferLocal: false);
+        if (remoteDataSource is HttpExtinguisherDataSource) {
+          final extinguisher = await remoteDataSource.getExtinguisherById(
+            extintorId,
+          );
+
+          // Si se encontró en el servidor, guardarlo localmente para uso offline
+          if (extinguisher != null &&
+              localDataSource is LocalExtinguisherDataSource) {
+            await (localDataSource as LocalExtinguisherDataSource)
+                .saveExtinguisher(extinguisher);
+            return extinguisher;
+          }
+
+          // Si no se encontró en el servidor (404), buscar en local
+          // (puede ser un extintor creado offline que aún no se sincronizó)
+        }
+      } catch (e) {
+        // Si falla HTTP (excepto 404), continuar con búsqueda local
+        // El error se puede loggear pero no se lanza para permitir fallback
+      }
     }
+
+    // Si no hay internet o no se encontró en el servidor, buscar en local
+    if (localDataSource is LocalExtinguisherDataSource) {
+      // Primero intentar buscar directamente por ID
+      var localExtinguisher =
+          await (localDataSource as LocalExtinguisherDataSource)
+              .getExtinguisherById(extintorId);
+
+      // Si no se encuentra y el ID es negativo, buscar el extintor sincronizado
+      // que corresponde a este ID negativo (el extintor puede haberse sincronizado)
+      if (localExtinguisher == null && extintorId < 0) {
+        // Buscar el extintor temporal para obtener su serialNumber
+        // Usar AppDatabase directamente para acceder a la base de datos
+        final db = await AppDatabase.database;
+        final tempResult = await db.query(
+          'extintor',
+          where: 'id = ?',
+          whereArgs: [extintorId],
+          limit: 1,
+        );
+
+        if (tempResult.isNotEmpty) {
+          // Si encontramos el temporal, buscar el sincronizado por serialNumber
+          final serialNumber = tempResult.first['serialNumber'] as String?;
+          if (serialNumber != null) {
+            final syncedExtinguisher =
+                await (localDataSource as LocalExtinguisherDataSource)
+                    .searchExtinguisher(serialNumber);
+            if (syncedExtinguisher != null && syncedExtinguisher.id > 0) {
+              localExtinguisher = syncedExtinguisher;
+            }
+          }
+        }
+      }
+
+      // Si se encuentra en local, retornarlo
+      if (localExtinguisher != null) {
+        return localExtinguisher;
+      }
+    }
+
+    // No se encontró ni en servidor ni en local
     return null;
   }
 }

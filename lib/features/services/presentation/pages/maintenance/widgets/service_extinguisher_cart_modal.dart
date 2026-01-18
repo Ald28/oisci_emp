@@ -4,6 +4,7 @@ import '../../../../domain/entities/service_type.dart';
 import '../../../../data/repositories/extinguisher_repository_impl.dart';
 import '../../../../domain/usecases/get_extinguisher_by_id_usecase.dart';
 import '../maintenance_checklist_page.dart';
+import '../../inspection/inspection_checklist_page.dart';
 
 /// Modal: Carrito de extintores agregados al servicio
 class ServiceExtinguisherCartModal extends StatelessWidget {
@@ -185,21 +186,38 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
       if (extinguisher == null) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error: No se pudo encontrar el extintor'),
+          SnackBar(
+            content: Text(
+              'Error: No se pudo encontrar el extintor (ID: ${item.extintorId}). '
+              'Puede que el extintor aún no esté sincronizado.',
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
         return;
       }
 
-      // Solo navegar si es mantenimiento (inspección no está implementado)
+      // Navegar a la página correspondiente según el tipo de servicio
+      if (!context.mounted) return;
+
       if (serviceType == ServiceType.maintenance) {
-        if (!context.mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => MaintenanceChecklistPage(
+              extinguisher: extinguisher,
+              serviceType: serviceType,
+              servicioId: servicioId,
+              servicioExtintorId: item.id,
+            ),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InspectionChecklistPage(
               extinguisher: extinguisher,
               serviceType: serviceType,
               servicioId: servicioId,
@@ -214,8 +232,12 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al cargar extintor: ${e.toString()}'),
+          content: Text(
+            'Error al cargar extintor: ${e.toString()}\n'
+            'Extintor ID: ${item.extintorId}',
+          ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
