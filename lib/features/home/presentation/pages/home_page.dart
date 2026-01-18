@@ -11,6 +11,7 @@ import '../../../services/presentation/pages/services_menu_page.dart';
 import '../../../services/domain/entities/service_entity.dart';
 import '../../../services/domain/usecases/get_services_in_progress_usecase.dart';
 import '../../../services/data/repositories/service_repository_impl.dart';
+import '../../../client_statistics/presentation/pages/client_selection_page.dart';
 import '../../../../core/auth/auth_service.dart';
 
 /// Página principal del Home con AppBar y Drawer
@@ -284,6 +285,21 @@ class _HomePageState extends State<HomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => ServicesMenuPage()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Botón de Estadísticas por Cliente (ancho completo)
+                    ActionButtonExpand(
+                      icon: Icons.bar_chart,
+                      title: 'Estadísticas por cliente',
+                      subtitle: 'Ver estadísticas por cliente',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ClientSelectionPage(),
+                          ),
                         );
                       },
                     ),

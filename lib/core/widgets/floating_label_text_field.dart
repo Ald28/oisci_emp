@@ -10,6 +10,7 @@ class FloatingLabelTextField extends StatefulWidget {
   final int? maxLines;
   final int? maxLength;
   final String? Function(String?)? validator;
+  final Widget? prefixIcon;
 
   const FloatingLabelTextField({
     super.key,
@@ -21,6 +22,7 @@ class FloatingLabelTextField extends StatefulWidget {
     this.maxLines = 1,
     this.maxLength,
     this.validator,
+    this.prefixIcon,
   });
 
   @override
@@ -68,25 +70,24 @@ class _FloatingLabelTextFieldState extends State<FloatingLabelTextField> {
             maxLength: widget.maxLength,
             validator: widget.validator,
             decoration: InputDecoration(
-              hintText: showLabelOnTop ? null : (widget.hintText ?? widget.label),
-              hintStyle: TextStyle(
-                color: Colors.grey[400],
-              ),
+              hintText: showLabelOnTop
+                  ? null
+                  : (widget.hintText ?? widget.label),
+              hintStyle: TextStyle(color: Colors.grey[400]),
               filled: true,
               fillColor: const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: _isFocused ? const Color(0xFFE84343) : Colors.grey[300]!,
+                  color: _isFocused
+                      ? const Color(0xFFE84343)
+                      : Colors.grey[300]!,
                   width: _isFocused ? 2 : 1,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
+                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -95,6 +96,7 @@ class _FloatingLabelTextFieldState extends State<FloatingLabelTextField> {
                   width: 2,
                 ),
               ),
+              prefixIcon: widget.prefixIcon,
               contentPadding: const EdgeInsets.fromLTRB(12, 18, 12, 14),
               counterText: '',
             ),
@@ -119,7 +121,9 @@ class _FloatingLabelTextFieldState extends State<FloatingLabelTextField> {
                   widget.label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: _isFocused ? const Color(0xFFE84343) : Colors.grey[700],
+                    color: _isFocused
+                        ? const Color(0xFFE84343)
+                        : Colors.grey[700],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -130,4 +134,3 @@ class _FloatingLabelTextFieldState extends State<FloatingLabelTextField> {
     );
   }
 }
-
