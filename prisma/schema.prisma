@@ -65,6 +65,10 @@ model User {
 
   inspeccionesDetalleCreados      InspeccionDetalle[] @relation("InspeccionDetalleUsuarioCreador")
   inspeccionesDetalleActualizados InspeccionDetalle[] @relation("InspeccionDetalleUsuarioActualizador")
+
+  reportesCreados      Reporte[] @relation("ReporteUsuarioCreador")
+  reportesActualizados Reporte[] @relation("ReporteUsuarioActualizador")
+  reportesAprobados    Reporte[] @relation("ReporteAprobador")
 }
 
 model RefreshToken {
@@ -90,6 +94,47 @@ model Client {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   sedes       Sede[]
+}
+
+model Reporte {
+  id Int @id @default(autoincrement())
+
+  servicioId Int
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
+
+  tipo ReporteTipo
+
+  fechaEmision DateTime?
+
+  emitido ReporteEmitido @default(NO)
+
+  frecuencia String? @db.VarChar(45)
+
+  aprobadoPorId Int?
+  aprobadoPor   User? @relation("ReporteAprobador", fields: [aprobadoPorId], references: [id])
+
+  archivoPdfUrl String? @db.VarChar(255)
+
+  usuarioCreadorId Int
+  usuarioCreador   User @relation("ReporteUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+
+  usuarioActualizadorId Int?
+  usuarioActualizador   User? @relation("ReporteUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([servicioId])
+}
+
+enum ReporteTipo {
+  FOTO
+  INSPECCION
+}
+
+enum ReporteEmitido {
+  SI
+  NO
 }
 
 model Sede {

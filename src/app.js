@@ -45,6 +45,24 @@ app.get('/', (req, res) => {
     });
 });
 
+app.use((req, res, next) => {
+    const start = Date.now()
+
+    res.on('finish', () => {
+        const duration = Date.now() - start
+        console.log(`
+🌐 HTTP REQUEST
+Method: ${req.method}
+URL: ${req.originalUrl}
+Status: ${res.statusCode}
+Total time: ${duration} ms
+`)
+    })
+
+    next()
+})
+
+
 // 📌 Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
