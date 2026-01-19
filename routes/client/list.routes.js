@@ -26,7 +26,7 @@ const router = Router()
  *         description: Lista de clientes
  */
 
-router.get('/clients', authenticate, authorize(['admin']), listClients)
+router.get('/clients', authenticate, authorize(['admin','tecnico']), listClients)
 
 export default router
 
