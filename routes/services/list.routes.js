@@ -81,7 +81,7 @@ router.get('/en-proceso', authenticate, authorize(['tecnico']), ListController.g
  *       403:
  *         description: No autorizado
  */
-router.get('/:servicioId/extintores',authenticate,authorize(['tecnico']),ListController.listServicioExtintores)
+router.get('/:servicioId/extintores', authenticate, authorize(['tecnico']), ListController.listServicioExtintores)
 
 /**
  * @swagger
@@ -131,5 +131,88 @@ router.get('/:servicioId/extintores',authenticate,authorize(['tecnico']),ListCon
  *         description: Error interno del servidor
  */
 router.get('/:servicioId', authenticate, authorize(['tecnico']), ListController.getById)
+
+/**
+ * @swagger
+ * /services/serv-sede/{sedeId}:
+ *   get:
+ *     summary: Obtener servicios por sede
+ *     description: Lista todos los servicios asociados a una sede específica
+ *     tags:
+ *       - Services
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sedeId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la sede
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Lista de servicios de la sede
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       type:
+ *                         type: string
+ *                         example: MANTENIMIENTO
+ *                       dateStart:
+ *                         type: string
+ *                         format: date-time
+ *                       dateEnd:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       status:
+ *                         type: string
+ *                         example: EN_PROCESO
+ *                       sede:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name_sede:
+ *                             type: string
+ *                       user:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
+ *                       usuarioCreador:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
+ *       400:
+ *         description: sedeId inválido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/serv-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), ListController.getBySede)
 
 export default router

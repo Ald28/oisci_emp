@@ -64,5 +64,24 @@ export const ListRepository = {
                 sede: true
             }
         });
-    }
+    },
+
+    async findBySedeId(sedeId) {
+        return prisma.extintor.findMany({
+            where: {
+                sedeId: sedeId,
+            },
+            orderBy: {
+                id: 'asc',
+            },
+            include: {
+                sede: {
+                    select: {
+                        id: true,
+                        name_sede: true,
+                    },
+                },
+            },
+        });
+    },
 };

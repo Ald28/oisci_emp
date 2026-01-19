@@ -18,6 +18,14 @@ export const ListService = {
 
     async getById(servicioId) {
         return ListRepository.findById(servicioId)
+    },
+
+    async getBySedeId(sedeId) {
+        if (isNaN(Number(sedeId))) {
+            throw new Error('sedeId inválido')
+        }
+
+        return ListRepository.findBySedeId(sedeId)
     }
 
 }

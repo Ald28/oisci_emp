@@ -61,6 +61,36 @@ export const ListController = {
             console.error(error)
             res.status(500).json({ message: error.message })
         }
+    },
+
+    async getBySede(req, res) {
+        try {
+            const { sedeId } = req.params
+
+            if (!sedeId) {
+                return res.status(400).json({
+                    message: 'sedeId es requerido'
+                })
+            }
+
+            const sedeIdNum = Number(sedeId)
+            if (isNaN(sedeIdNum)) {
+                return res.status(400).json({
+                    message: 'sedeId debe ser un número válido'
+                })
+            }
+
+            const servicios = await ListService.getBySedeId(sedeIdNum)
+
+            return res.status(200).json({
+                data: servicios
+            })
+
+        } catch (error) {
+            return res.status(500).json({
+                message: error.message
+            })
+        }
     }
 
 }

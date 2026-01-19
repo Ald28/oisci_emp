@@ -1,7 +1,7 @@
 import { ListRepository } from "../../repository/nfc/list.repository.js";
 
 export async function listNFCService() {
-    const nfcList =  await ListRepository.listAll();
+    const nfcList = await ListRepository.listAll();
     return nfcList;
 }
 
@@ -18,4 +18,9 @@ export async function searchExtinguisherService(searchTerm) {
 export async function getExtinguisherByIdService(extintorId) {
     const extinguisher = await ListRepository.findById(extintorId);
     return extinguisher;
+}
+
+export async function getExtintoresBySedeService(sedeId) {
+    const extintores = await ListRepository.findBySedeId(sedeId);
+    return extintores;
 }

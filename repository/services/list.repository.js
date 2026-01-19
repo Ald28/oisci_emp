@@ -37,5 +37,42 @@ export const ListRepository = {
                 createdAt: 'desc'
             }
         })
-    }
+    },
+
+    findBySedeId(sedeId) {
+        return prisma.servicio.findMany({
+            where: {
+                sedeId: Number(sedeId)
+            },
+            include: {
+                sede: {
+                    select: {
+                        id: true,
+                        name_sede: true
+                    }
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        userCode: true,
+                        roleId: true,
+                        active: true
+                    }
+                },
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        userCode: true
+                    }
+                }
+            },
+            orderBy: {
+                dateStart: 'desc'
+            }
+        })
+    },
 }
