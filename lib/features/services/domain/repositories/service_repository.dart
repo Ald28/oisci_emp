@@ -62,6 +62,9 @@ abstract class ServiceRepository {
     int servicioExtintorId,
   );
 
+  /// Obtener servicios por sedeId
+  Future<List<ServiceEntity>> getServicesBySedeId(int sedeId);
+
   Future<MaintenanceDetailEntity> updateMaintenanceDetail({
     required int servicioExtintorId,
     required Map<String, dynamic> checklistData,

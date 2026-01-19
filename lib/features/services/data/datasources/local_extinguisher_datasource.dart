@@ -395,4 +395,18 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       );
     }
   }
+
+  /// Obtener extintores por sedeId
+  @override
+  Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
+    final db = await AppDatabase.database;
+    final results = await db.query(
+      'extintor',
+      where: 'sedeId = ?',
+      whereArgs: [sedeId],
+      orderBy: 'serialNumber ASC',
+    );
+
+    return results.map((map) => ExtinguisherModel.fromMap(map)).toList();
+  }
 }

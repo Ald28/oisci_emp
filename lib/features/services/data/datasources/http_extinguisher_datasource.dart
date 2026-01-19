@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 import 'extinguisher_datasource.dart';
 import '../models/extinguisher_model.dart';
 
@@ -83,5 +84,12 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
+    // Por ahora, retornar lista vacía ya que no hay endpoint en el backend
+    // Los datos se obtendrán desde la base de datos local
+    return [];
   }
 }

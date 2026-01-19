@@ -971,4 +971,17 @@ class LocalServiceDataSource {
       whereArgs: [tempId],
     );
   }
+
+  /// Obtener servicios por sedeId
+  Future<List<ServiceModel>> getServicesBySedeId(int sedeId) async {
+    final db = await AppDatabase.database;
+    final results = await db.query(
+      'servicio',
+      where: 'sedeId = ?',
+      whereArgs: [sedeId],
+      orderBy: 'dateStart DESC',
+    );
+
+    return results.map((map) => ServiceModel.fromMap(map)).toList();
+  }
 }

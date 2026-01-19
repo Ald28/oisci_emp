@@ -2,14 +2,19 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../domain/repositories/client_repository.dart';
 import '../datasources/client_datasource.dart';
 import '../datasources/http_client_datasource.dart';
+import '../datasources/local_client_datasource.dart';
+import '../models/client_model.dart';
 
 /// Implementación del repositorio de clientes
 class ClientRepositoryImpl implements ClientRepository {
   final ClientDataSource _httpDataSource;
+  final LocalClientDataSource _localDataSource;
 
   ClientRepositoryImpl({
     ClientDataSource? httpDataSource,
-  }) : _httpDataSource = httpDataSource ?? HttpClientDataSource();
+    LocalClientDataSource? localDataSource,
+  }) : _httpDataSource = httpDataSource ?? HttpClientDataSource(),
+       _localDataSource = localDataSource ?? LocalClientDataSource();
 
   Future<bool> _hasInternet() async {
     return await InternetConnectionChecker().hasConnection;
@@ -26,34 +31,43 @@ class ClientRepositoryImpl implements ClientRepository {
     if (hasInternet) {
       try {
         // Intentar obtener del servidor
-        return await _httpDataSource.searchClients(
+        final result = await _httpDataSource.searchClients(
           search: search,
           page: page,
           pageSize: pageSize,
         );
+
+        // Guardar los clientes obtenidos localmente para uso offline
+        final clientsList = result['data'] as List<dynamic>;
+        if (clientsList.isNotEmpty) {
+          // Los clientes ya vienen como ClientModel del HttpClientDataSource
+          // Solo necesitamos extraerlos y guardarlos
+          final clients = clientsList.whereType<ClientModel>().toList();
+
+          if (clients.isNotEmpty) {
+            // Guardar los clientes obtenidos en local (merge, no reemplazar todos)
+            // Esto permite que estén disponibles offline sin perder otros clientes
+            await _localDataSource.saveClients(clients, replaceAll: false);
+          }
+        }
+
+        // Retornar el resultado tal cual (ya contiene ClientModel en data)
+        return result;
       } catch (e) {
-        // Si falla, retornar lista vacía (los clientes no se guardan offline)
-        return {
-          'data': <dynamic>[],
-          'pagination': {
-            'page': page,
-            'pageSize': pageSize,
-            'total': 0,
-            'totalPages': 0,
-          },
-        };
+        // Si falla, intentar obtener de SQLite
+        return await _localDataSource.searchClients(
+          search: search,
+          page: page,
+          pageSize: pageSize,
+        );
       }
     } else {
-      // Sin internet, retornar lista vacía
-      return {
-        'data': <dynamic>[],
-        'pagination': {
-          'page': page,
-          'pageSize': pageSize,
-          'total': 0,
-          'totalPages': 0,
-        },
-      };
+      // Sin internet, obtener de SQLite
+      return await _localDataSource.searchClients(
+        search: search,
+        page: page,
+        pageSize: pageSize,
+      );
     }
   }
 }

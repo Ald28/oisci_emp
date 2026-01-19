@@ -558,4 +558,11 @@ class ServiceRepositoryImpl implements ServiceRepository {
       );
     }
   }
+
+  @override
+  Future<List<ServiceEntity>> getServicesBySedeId(int sedeId) async {
+    // Obtener desde la base de datos local ya que los datos están sincronizados
+    final services = await _localDataSource.getServicesBySedeId(sedeId);
+    return services;
+  }
 }

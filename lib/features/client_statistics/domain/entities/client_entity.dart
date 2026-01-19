@@ -1,3 +1,5 @@
+import '../../../services/domain/entities/sede_entity.dart';
+
 /// Entidad: Cliente (Domain Layer)
 class ClientEntity {
   final int id;
@@ -10,6 +12,7 @@ class ClientEntity {
   final bool active;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<Sede>? sedes;
 
   const ClientEntity({
     required this.id,
@@ -22,5 +25,6 @@ class ClientEntity {
     required this.active,
     this.createdAt,
     this.updatedAt,
+    this.sedes,
   });
 }

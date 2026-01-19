@@ -155,4 +155,14 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
     // No se encontró ni en servidor ni en local
     return null;
   }
+
+  @override
+  Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
+    // Obtener desde la base de datos local ya que los datos están sincronizados
+    if (localDataSource is LocalExtinguisherDataSource) {
+      return await (localDataSource as LocalExtinguisherDataSource)
+          .getExtinguishersBySedeId(sedeId);
+    }
+    return [];
+  }
 }

@@ -4,6 +4,7 @@ import 'core/auth/auth_service.dart';
 import 'core/sync/extinguisher_sync_service.dart';
 import 'core/sync/service_sync_service.dart';
 import 'core/sync/sede_sync_service.dart';
+import 'core/sync/client_sync_service.dart';
 import 'core/sync/connectivity_sync_service.dart';
 import 'features/users/presentation/login_page.dart';
 import 'features/home/presentation/pages/home_page.dart';
@@ -69,6 +70,17 @@ class _AppState extends State<App> {
     }
   }
 
+  /// Descargar clientes del servidor y guardar localmente
+  Future<void> _syncClients() async {
+    try {
+      final clientSyncService = ClientSyncService();
+      await clientSyncService.syncClients();
+    } catch (e) {
+      // Silenciar errores de sincronización en background
+      // Los clientes se pueden cargar desde local si falla
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +127,7 @@ class _AppState extends State<App> {
             _syncPendingServices(); // Sincronizar servicios pendientes
             _syncSedes(); // Sincronizar sedes
             _syncExtinguishers(); // Descargar extintores del servidor
+            _syncClients(); // Descargar clientes del servidor
             return HomePage(userId: userId, name: name);
           }
 

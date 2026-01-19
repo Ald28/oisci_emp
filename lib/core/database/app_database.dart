@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -241,6 +241,37 @@ class AppDatabase {
     await db.execute('''
       CREATE UNIQUE INDEX idx_inspeccion_detalle_servicio_extintor ON inspeccion_detalle(servicioExtintorId)
     ''');
+
+    // Tabla para almacenar clientes
+    await db.execute('''
+      CREATE TABLE client (
+        id INTEGER PRIMARY KEY,
+        clientCode TEXT NOT NULL,
+        razonSocial TEXT NOT NULL,
+        ruc TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        userId INTEGER NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        createdAt TEXT,
+        updatedAt TEXT
+      )
+    ''');
+
+    // Índice único para client id
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_client_id ON client(id)
+    ''');
+
+    // Índice para búsqueda rápida por RUC
+    await db.execute('''
+      CREATE INDEX idx_client_ruc ON client(ruc)
+    ''');
+
+    // Índice para búsqueda rápida por razón social
+    await db.execute('''
+      CREATE INDEX idx_client_razon_social ON client(razonSocial)
+    ''');
   }
 
   /// Migración de la base de datos
@@ -387,6 +418,36 @@ class AppDatabase {
       ''');
       await db.execute('''
         ALTER TABLE inspeccion_detalle ADD COLUMN foto3Path TEXT
+      ''');
+    }
+
+    if (oldVersion < 6) {
+      // Agregar tabla de clientes
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS client (
+          id INTEGER PRIMARY KEY,
+          clientCode TEXT NOT NULL,
+          razonSocial TEXT NOT NULL,
+          ruc TEXT NOT NULL,
+          phone TEXT,
+          address TEXT,
+          userId INTEGER NOT NULL,
+          active INTEGER NOT NULL DEFAULT 1,
+          createdAt TEXT,
+          updatedAt TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_client_id ON client(id)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_client_ruc ON client(ruc)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_client_razon_social ON client(razonSocial)
       ''');
     }
   }

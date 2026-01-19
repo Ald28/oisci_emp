@@ -5,6 +5,8 @@ import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../domain/entities/client_entity.dart';
 import '../../domain/usecases/search_clients_usecase.dart';
 import '../../data/repositories/client_repository_impl.dart';
+import '../../data/models/client_model.dart';
+import '../../../services/domain/entities/sede_entity.dart';
 import 'client_statistics_page.dart';
 
 /// Página: Selección de Cliente para ver estadísticas
@@ -23,6 +25,8 @@ class _ClientSelectionPageState extends State<ClientSelectionPage> {
   int _currentPage = 1;
   int _totalPages = 1;
   bool _hasMore = true;
+  final Map<int, bool> _expandedClients =
+      {}; // Para rastrear qué clientes están expandidos
 
   late final SearchClientsUseCase _searchClientsUseCase = SearchClientsUseCase(
     ClientRepositoryImpl(),
@@ -82,7 +86,19 @@ class _ClientSelectionPageState extends State<ClientSelectionPage> {
       if (mounted) {
         setState(() {
           final clientsList = result['data'] as List<dynamic>;
-          final clients = clientsList.cast<ClientEntity>().toList();
+          // Los clientes pueden venir como ClientModel o ClientEntity
+          final clients = clientsList
+              .map((item) {
+                if (item is ClientEntity) {
+                  return item;
+                } else if (item is Map<String, dynamic>) {
+                  // Si viene como Map, convertir a ClientModel
+                  return ClientModel.fromJson(item);
+                }
+                return null;
+              })
+              .whereType<ClientEntity>()
+              .toList();
 
           if (loadMore) {
             _clients.addAll(clients);
@@ -116,10 +132,111 @@ class _ClientSelectionPageState extends State<ClientSelectionPage> {
     }
   }
 
-  void _handleClientTap(ClientEntity client) {
+  void _handleClientTap(ClientEntity client, {Sede? sede}) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ClientStatisticsPage(client: client)),
+      MaterialPageRoute(
+        builder: (_) => ClientStatisticsPage(client: client, sede: sede),
+      ),
+    );
+  }
+
+  /// Construir el contenido de la tarjeta del cliente
+  Widget _buildClientCardContent(ClientEntity client) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nombre del cliente
+          Row(
+            children: [
+              Icon(Icons.person, size: 18, color: Colors.grey[700]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  client.razonSocial,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Construir tarjeta de sede (hijo del cliente)
+  Widget _buildSedeCard(Sede sede, ClientEntity client) {
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+      ),
+      child: InkWell(
+        onTap: () => _handleClientTap(client, sede: sede),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.business, size: 20, color: Colors.grey[600]),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            sede.nameSede,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        if (sede.city.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${sede.city})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sede.address,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFFE84343),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -201,6 +318,73 @@ class _ClientSelectionPageState extends State<ClientSelectionPage> {
                       }
 
                       final client = _filteredClients[index];
+                      final clientModel = client is ClientModel ? client : null;
+                      final hasSedes =
+                          clientModel?.sedes != null &&
+                          clientModel!.sedes!.isNotEmpty;
+
+                      // Si el cliente tiene sedes, mostrar como expandible
+                      if (hasSedes) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 0,
+                          clipBehavior: Clip.antiAlias,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.grey[300]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            childrenPadding: const EdgeInsets.only(bottom: 8),
+                            dense: true,
+                            trailing: Icon(
+                              _expandedClients[client.id] == true
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              color: const Color(0xFFE84343),
+                              size: 20,
+                            ),
+                            onExpansionChanged: (expanded) {
+                              setState(() {
+                                _expandedClients[client.id] = expanded;
+                              });
+                            },
+                            title: Row(
+                              children: [
+                                Icon(
+                                  Icons.person,
+                                  size: 18,
+                                  color: Colors.grey[700],
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    client.razonSocial,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            children: clientModel.sedes!
+                                .map((sede) => _buildSedeCard(sede, client))
+                                .toList(),
+                          ),
+                        );
+                      }
+
+                      // Si no tiene sedes, mostrar como tarjeta normal
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 0,
@@ -211,68 +395,7 @@ class _ClientSelectionPageState extends State<ClientSelectionPage> {
                         child: InkWell(
                           onTap: () => _handleClientTap(client),
                           borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: const Color(0xFFE84343),
-                                  child: Text(
-                                    client.razonSocial.isNotEmpty
-                                        ? client.razonSocial[0].toUpperCase()
-                                        : 'C',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        client.razonSocial,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'RUC: ${client.ruc}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[700],
-                                        ),
-                                      ),
-                                      if (client.address.isNotEmpty) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          client.address,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: Color(0xFFE84343),
-                                ),
-                              ],
-                            ),
-                          ),
+                          child: _buildClientCardContent(client),
                         ),
                       );
                     },

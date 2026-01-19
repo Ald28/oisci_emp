@@ -3,6 +3,7 @@ import 'widgets/auth_card.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/sync/sede_sync_service.dart';
 import '../../../core/sync/extinguisher_sync_service.dart';
+import '../../../core/sync/client_sync_service.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../users/data/user_repository_impl.dart';
 import '../../users/data/datasources/user_remote_datasource.dart';
@@ -43,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
       // Verificar si hay credenciales guardadas (email y password)
       final savedEmail = session["email"] as String?;
       final savedPassword = session["password"] as String?;
-      
+
       if (savedEmail == null || savedPassword == null) {
         _msg(
           "No hay sesión guardada. Se requiere conexión a internet para iniciar sesión por primera vez.",
@@ -69,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           _msg("Acceso permitido solo para técnicos");
           return;
         }
-        
+
         // Si hay userId y name, usar esos datos
         if (savedUserId != null && savedName != null) {
           if (!mounted) return;
@@ -83,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
 
-      // Si no hay token pero las credenciales coinciden, 
+      // Si no hay token pero las credenciales coinciden,
       // permitir acceso pero mostrar advertencia de que algunas funciones pueden no estar disponibles
       if (savedRole == "tecnico" && savedUserId != null && savedName != null) {
         // Permitir acceso con datos guardados (aunque el token haya expirado)
@@ -130,6 +131,7 @@ class _LoginPageState extends State<LoginPage> {
       // Si ya hay datos, sincronizar en background
       _syncSedesInBackground();
       _syncExtinguishersInBackground();
+      _syncClientsInBackground();
 
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -164,6 +166,15 @@ class _LoginPageState extends State<LoginPage> {
     ExtinguisherSyncService().syncExtinguishers().then((success) {
       // Silenciar errores de sincronización en background
       // Los extintores se pueden cargar desde local si falla
+    });
+  }
+
+  /// Descargar clientes en background después del login
+  void _syncClientsInBackground() {
+    // Ejecutar en background sin bloquear la UI
+    ClientSyncService().syncClients().then((success) {
+      // Silenciar errores de sincronización en background
+      // Los clientes se pueden cargar desde local si falla
     });
   }
 
