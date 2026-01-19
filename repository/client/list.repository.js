@@ -38,6 +38,20 @@ export const ListClients = {
                             role: true,
                         },
                     },
+                    sedes: {
+                        where: {
+                            active: true,
+                        },
+                        select: {
+                            id: true,
+                            name_sede: true,
+                            address: true,
+                            city: true,
+                            manager_name: true,
+                            manager_phone: true,
+                            manager_email: true,
+                        }
+                    }
                 },
             }),
             prisma.client.count({ where }),
