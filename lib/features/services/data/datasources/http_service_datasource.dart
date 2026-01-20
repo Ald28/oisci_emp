@@ -521,4 +521,30 @@ class HttpServiceDataSource {
       rethrow;
     }
   }
+
+  /// Obtener servicios por sedeId - GET /services/serv-sede/:sedeId
+  Future<List<ServiceModel>> getServicesBySedeId(int sedeId) async {
+    try {
+      final response = await _dio.get('/services/serv-sede/$sedeId');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: [...] }
+      if (responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+        return dataList
+            .map((json) => ServiceModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      // Si no hay datos, retornar lista vacía
+      return [];
+    } on DioException catch (e) {
+      // Si el backend retorna 404 u otro error controlado, devolvemos lista vacía
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      // Para otros errores, relanzar para que el repositorio pueda manejar fallback
+      rethrow;
+    }
+  }
 }

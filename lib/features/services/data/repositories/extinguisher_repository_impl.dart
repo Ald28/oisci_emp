@@ -158,11 +158,36 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
 
   @override
   Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
-    // Obtener desde la base de datos local ya que los datos están sincronizados
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    // Si hay internet, intentar obtener primero desde el backend
+    if (hasInternet && remoteDataSource is HttpExtinguisherDataSource) {
+      try {
+        final remoteExtinguishers =
+            await (remoteDataSource as HttpExtinguisherDataSource)
+                .getExtinguishersBySedeId(sedeId);
+
+        // Guardar/actualizar también localmente para uso offline
+        if (localDataSource is LocalExtinguisherDataSource &&
+            remoteExtinguishers.isNotEmpty) {
+          for (final ext in remoteExtinguishers) {
+            await (localDataSource as LocalExtinguisherDataSource)
+                .saveExtinguisher(ext as ExtinguisherModel);
+          }
+        }
+
+        return remoteExtinguishers;
+      } catch (_) {
+        // Si falla HTTP, continuamos con la lectura local como fallback
+      }
+    }
+
+    // Sin internet o si falló el request, obtener desde la base de datos local
     if (localDataSource is LocalExtinguisherDataSource) {
       return await (localDataSource as LocalExtinguisherDataSource)
           .getExtinguishersBySedeId(sedeId);
     }
+
     return [];
   }
 }

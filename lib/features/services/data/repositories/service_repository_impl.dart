@@ -561,8 +561,30 @@ class ServiceRepositoryImpl implements ServiceRepository {
 
   @override
   Future<List<ServiceEntity>> getServicesBySedeId(int sedeId) async {
-    // Obtener desde la base de datos local ya que los datos están sincronizados
-    final services = await _localDataSource.getServicesBySedeId(sedeId);
-    return services;
+    final hasInternet = await _hasInternet();
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener desde el servidor
+        final remoteServices = await _httpDataSource.getServicesBySedeId(
+          sedeId,
+        );
+
+        // Guardar también localmente para uso offline
+        if (remoteServices.isNotEmpty) {
+          for (final service in remoteServices) {
+            await _localDataSource.saveService(service);
+          }
+        }
+
+        return remoteServices;
+      } catch (_) {
+        // Si falla HTTP, continuar con la lectura local como fallback
+      }
+    }
+
+    // Sin internet o si falló el request, obtener desde SQLite
+    final localServices = await _localDataSource.getServicesBySedeId(sedeId);
+    return localServices;
   }
 }
