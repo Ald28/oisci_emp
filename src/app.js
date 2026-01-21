@@ -80,6 +80,9 @@ app.use('/sede', sedeDeleteRoutes);
 app.use('/nfc', nfcListRoutes);
 app.use('/nfc', nfcCreateRoutes);
 
+app.use('/statistics', nfcListRoutes);
+app.use('/statistics', listServicioRoutes)
+
 app.use('/services', servicioCreateRoutes);
 app.use('/services', listServicioRoutes);
 

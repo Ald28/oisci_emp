@@ -75,4 +75,29 @@ export const ListRepository = {
             }
         })
     },
+
+    async getBySedeAndYear(sedeId, year) {
+        const start = new Date(`${year}-01-01`)
+        const end = new Date(`${year}-12-31T23:59:59`)
+
+        return prisma.servicio.findMany({
+            where: {
+                sedeId: Number(sedeId),
+                dateStart: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+            include: {
+                servicioExtintores: {
+                    include: {
+                        mantenimientoDetalle: true,
+                        extintor: {
+                            select: { status: true }
+                        }
+                    }
+                }
+            }
+        })
+    }
 }

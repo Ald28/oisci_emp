@@ -1,4 +1,4 @@
-import { ListService } from '../../service/services/list.service.js'
+import { ListService, getServiciosStatsBySedeYearService } from '../../service/services/list.service.js'
 
 export const ListController = {
     async listServicioExtintores(req, res) {
@@ -93,4 +93,33 @@ export const ListController = {
         }
     }
 
+}
+
+export async function getServiciosStatsBySedeYearController(req, res) {
+    try {
+        const sedeId = Number(req.params.sedeId)
+        const year = Number(req.query.year)
+
+        if (isNaN(sedeId) || isNaN(year)) {
+            return res.status(400).json({
+                ok: false,
+                message: 'sedeId o year inválido'
+            })
+        }
+
+        const stats =
+            await getServiciosStatsBySedeYearService(sedeId, year)
+
+        return res.status(200).json({
+            ok: true,
+            data: stats
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            message: 'Error al obtener estadísticas de servicios',
+            error: error.message
+        })
+    }
 }

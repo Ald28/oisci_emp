@@ -1,4 +1,4 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService } from "../../service/nfc/list.service.js";
+import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService,getExtintoresStatsBySedeService } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
@@ -73,6 +73,33 @@ export async function getExtintoresBySedeController(req, res) {
         return res.status(500).json({
             ok: false,
             message: error.message,
+        });
+    }
+}
+
+export async function getExtintoresStatsBySedeController(req, res) {
+    try {
+        const sedeId = Number(req.params.sedeId);
+
+        if (isNaN(sedeId)) {
+            return res.status(400).json({
+                ok: false,
+                message: 'sedeId inválido',
+            });
+        }
+
+        const stats = await getExtintoresStatsBySedeService(sedeId);
+
+        return res.status(200).json({
+            ok: true,
+            data: stats,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            message: 'Error al obtener estadísticas',
+            error: error.message,
         });
     }
 }

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { ListController } from '../../controllers/services/list.controller.js'
+import { ListController, getServiciosStatsBySedeYearController } from '../../controllers/services/list.controller.js'
 import { authenticate, authorize } from '../../middleware/auth.middleware.js'
 
 const router = Router()
@@ -214,5 +214,8 @@ router.get('/:servicioId', authenticate, authorize(['tecnico']), ListController.
  *         description: Error interno del servidor
  */
 router.get('/serv-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), ListController.getBySede)
+
+router.get('/servicios/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getServiciosStatsBySedeYearController)
+/* /servicios/sede/1?year=2026 */
 
 export default router

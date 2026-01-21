@@ -84,4 +84,17 @@ export const ListRepository = {
             },
         });
     },
+
+    async getBySede(sedeId) {
+        return prisma.extintor.findMany({
+            where: {
+                sedeId: Number(sedeId),
+            },
+            select: {
+                type: true,
+                agent: true,
+                status: true,
+            },
+        });
+    },
 };

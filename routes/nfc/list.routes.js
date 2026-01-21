@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -246,5 +246,7 @@ router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisher
  */
 
 router.get('/ext-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresBySedeController);
+
+router.get( '/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresStatsBySedeController);
 
 export default router;
