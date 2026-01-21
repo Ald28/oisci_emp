@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 6,
+      version: 6, // Mantener versión 6, no necesitamos nuevas tablas
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );

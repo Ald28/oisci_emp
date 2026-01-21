@@ -41,17 +41,17 @@ class InspectionChecklistPage extends StatefulWidget {
 
 class _InspectionChecklistPageState extends State<InspectionChecklistPage>
     with SingleTickerProviderStateMixin {
-  // Estado de los items del checklist (SI/NO)
-  Map<String, String?> _checklistItems = {
-    'VISIBILIDAD': null,
-    'SEÑALIZACIÓN': null,
-    'ACCESIBILIDAD': null,
-    'ALTURA': null,
-    'SITUACIÓN': null,
-    'ESTADO_DE_CONSERVACIÓN': null,
-    'INSCRIPCIONES': null,
-    'RECORRIDO': null,
-    'PESO': null,
+  // Estado de los items del checklist (true/false)
+  Map<String, bool> _checklistItems = {
+    'VISIBILIDAD': false,
+    'SEÑALIZACIÓN': false,
+    'ACCESIBILIDAD': false,
+    'ALTURA': false,
+    'SITUACIÓN': false,
+    'ESTADO_DE_CONSERVACIÓN': false,
+    'INSCRIPCIONES': false,
+    'RECORRIDO': false,
+    'PESO': false,
   };
 
   // Estado de las fotos
@@ -146,16 +146,17 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
         setState(() {
           _hasExistingInspection = true;
           // Cargar los datos existentes en el estado
+          // Convertir 'SI'/'NO'/null a booleanos: 'SI' -> true, 'NO' o null -> false
           _checklistItems = {
-            'VISIBILIDAD': existingDetail.visibilidad,
-            'SEÑALIZACIÓN': existingDetail.visualizacion,
-            'ACCESIBILIDAD': existingDetail.accesibilidad,
-            'ALTURA': existingDetail.altura,
-            'SITUACIÓN': existingDetail.situacion,
-            'ESTADO_DE_CONSERVACIÓN': existingDetail.conservacion,
-            'INSCRIPCIONES': existingDetail.inscripciones,
-            'RECORRIDO': existingDetail.recorrido,
-            'PESO': existingDetail.peso,
+            'VISIBILIDAD': existingDetail.visibilidad == 'SI',
+            'SEÑALIZACIÓN': existingDetail.visualizacion == 'SI',
+            'ACCESIBILIDAD': existingDetail.accesibilidad == 'SI',
+            'ALTURA': existingDetail.altura == 'SI',
+            'SITUACIÓN': existingDetail.situacion == 'SI',
+            'ESTADO_DE_CONSERVACIÓN': existingDetail.conservacion == 'SI',
+            'INSCRIPCIONES': existingDetail.inscripciones == 'SI',
+            'RECORRIDO': existingDetail.recorrido == 'SI',
+            'PESO': existingDetail.peso == 'SI',
           };
 
           // Lógica: Si hay internet Y hay URL → usar URL (Cloudinary)
@@ -228,17 +229,9 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
     }
   }
 
-  void _toggleItem(String itemId) {
+  void _toggleItem(String itemId, bool value) {
     setState(() {
-      final currentValue = _checklistItems[itemId];
-      // Alternar: null -> SI -> NO -> null
-      if (currentValue == null) {
-        _checklistItems[itemId] = 'SI';
-      } else if (currentValue == 'SI') {
-        _checklistItems[itemId] = 'NO';
-      } else {
-        _checklistItems[itemId] = null;
-      }
+      _checklistItems[itemId] = value;
     });
   }
 
@@ -298,16 +291,19 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
 
     try {
       // Mapear los datos del checklist al formato del backend
+      // Convertir booleanos a 'SI'/'NO': true -> 'SI', false -> 'NO'
       final inspectionData = <String, dynamic>{
-        'visibilidad': _checklistItems['VISIBILIDAD'],
-        'visualizacion': _checklistItems['SEÑALIZACIÓN'],
-        'accesibilidad': _checklistItems['ACCESIBILIDAD'],
-        'altura': _checklistItems['ALTURA'],
-        'situacion': _checklistItems['SITUACIÓN'],
-        'conservacion': _checklistItems['ESTADO_DE_CONSERVACIÓN'],
-        'inscripciones': _checklistItems['INSCRIPCIONES'],
-        'recorrido': _checklistItems['RECORRIDO'],
-        'peso': _checklistItems['PESO'],
+        'visibilidad': _checklistItems['VISIBILIDAD'] == true ? 'SI' : 'NO',
+        'visualizacion': _checklistItems['SEÑALIZACIÓN'] == true ? 'SI' : 'NO',
+        'accesibilidad': _checklistItems['ACCESIBILIDAD'] == true ? 'SI' : 'NO',
+        'altura': _checklistItems['ALTURA'] == true ? 'SI' : 'NO',
+        'situacion': _checklistItems['SITUACIÓN'] == true ? 'SI' : 'NO',
+        'conservacion': _checklistItems['ESTADO_DE_CONSERVACIÓN'] == true
+            ? 'SI'
+            : 'NO',
+        'inscripciones': _checklistItems['INSCRIPCIONES'] == true ? 'SI' : 'NO',
+        'recorrido': _checklistItems['RECORRIDO'] == true ? 'SI' : 'NO',
+        'peso': _checklistItems['PESO'] == true ? 'SI' : 'NO',
         'observaciones':
             null, // Se agregará después en la página de observaciones
       };
@@ -525,48 +521,55 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                       children: [
                         InspectionChecklistItem(
                           title: 'VISIBILIDAD',
-                          value: _checklistItems['VISIBILIDAD'],
-                          onTap: () => _toggleItem('VISIBILIDAD'),
+                          value: _checklistItems['VISIBILIDAD'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('VISIBILIDAD', value),
                         ),
                         InspectionChecklistItem(
                           title: 'SEÑALIZACIÓN',
-                          value: _checklistItems['SEÑALIZACIÓN'],
-                          onTap: () => _toggleItem('SEÑALIZACIÓN'),
+                          value: _checklistItems['SEÑALIZACIÓN'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('SEÑALIZACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'ACCESIBILIDAD',
-                          value: _checklistItems['ACCESIBILIDAD'],
-                          onTap: () => _toggleItem('ACCESIBILIDAD'),
+                          value: _checklistItems['ACCESIBILIDAD'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('ACCESIBILIDAD', value),
                         ),
                         InspectionChecklistItem(
                           title: 'ALTURA',
-                          value: _checklistItems['ALTURA'],
-                          onTap: () => _toggleItem('ALTURA'),
+                          value: _checklistItems['ALTURA'] ?? false,
+                          onChanged: (value) => _toggleItem('ALTURA', value),
                         ),
                         InspectionChecklistItem(
                           title: 'SITUACIÓN',
-                          value: _checklistItems['SITUACIÓN'],
-                          onTap: () => _toggleItem('SITUACIÓN'),
+                          value: _checklistItems['SITUACIÓN'] ?? false,
+                          onChanged: (value) => _toggleItem('SITUACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'ESTADO DE CONSERVACIÓN',
-                          value: _checklistItems['ESTADO_DE_CONSERVACIÓN'],
-                          onTap: () => _toggleItem('ESTADO_DE_CONSERVACIÓN'),
+                          value:
+                              _checklistItems['ESTADO_DE_CONSERVACIÓN'] ??
+                              false,
+                          onChanged: (value) =>
+                              _toggleItem('ESTADO_DE_CONSERVACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'INSCRIPCIONES',
-                          value: _checklistItems['INSCRIPCIONES'],
-                          onTap: () => _toggleItem('INSCRIPCIONES'),
+                          value: _checklistItems['INSCRIPCIONES'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('INSCRIPCIONES', value),
                         ),
                         InspectionChecklistItem(
                           title: 'RECORRIDO',
-                          value: _checklistItems['RECORRIDO'],
-                          onTap: () => _toggleItem('RECORRIDO'),
+                          value: _checklistItems['RECORRIDO'] ?? false,
+                          onChanged: (value) => _toggleItem('RECORRIDO', value),
                         ),
                         InspectionChecklistItem(
                           title: 'PESO',
-                          value: _checklistItems['PESO'],
-                          onTap: () => _toggleItem('PESO'),
+                          value: _checklistItems['PESO'] ?? false,
+                          onChanged: (value) => _toggleItem('PESO', value),
                         ),
                       ],
                     ),

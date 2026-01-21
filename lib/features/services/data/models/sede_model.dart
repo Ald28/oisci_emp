@@ -3,9 +3,6 @@ import '../../domain/entities/sede_entity.dart';
 /// Modelo: Sede (Data Layer)
 /// Incluye todos los campos según schema de Prisma
 class SedeModel extends Sede {
-  final String? managerName;
-  final String? managerPhone;
-  final String? managerEmail;
   final int? clientId;
 
   const SedeModel({
@@ -14,9 +11,9 @@ class SedeModel extends Sede {
     required super.address,
     required super.city,
     required super.active,
-    this.managerName,
-    this.managerPhone,
-    this.managerEmail,
+    super.managerName,
+    super.managerPhone,
+    super.managerEmail,
     this.clientId,
   });
 

@@ -4,11 +4,13 @@ import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../domain/entities/client_entity.dart';
 import '../../../services/domain/entities/sede_entity.dart';
 import '../../../services/domain/entities/extinguisher_entity.dart';
-import '../../../services/domain/entities/service_entity.dart';
 import '../../domain/usecases/get_extinguishers_by_sede_usecase.dart';
-import '../../domain/usecases/get_services_by_sede_usecase.dart';
+import '../../domain/usecases/get_extinguisher_stats_usecase.dart';
+import '../../domain/usecases/get_service_stats_usecase.dart';
 import '../../../services/data/repositories/extinguisher_repository_impl.dart';
-import '../../../services/data/repositories/service_repository_impl.dart';
+import '../../data/repositories/statistics_repository_impl.dart';
+import '../../domain/entities/extinguisher_stats_entity.dart';
+import '../../domain/entities/service_stats_entity.dart';
 import 'equipment_detail_page.dart';
 
 /// Página: Estadísticas del Cliente
@@ -27,11 +29,13 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
   late TabController _tabController;
 
   List<Extinguisher> _extinguishers = [];
-  List<ServiceEntity> _services = [];
+  ExtinguisherStatsEntity? _extinguisherStats;
+  ServiceStatsEntity? _serviceStats;
   bool _isLoading = true;
 
   late final GetExtinguishersBySedeUseCase _getExtinguishersUseCase;
-  late final GetServicesBySedeUseCase _getServicesUseCase;
+  late final GetExtinguisherStatsUseCase _getExtinguisherStatsUseCase;
+  late final GetServiceStatsUseCase _getServiceStatsUseCase;
 
   @override
   void initState() {
@@ -41,7 +45,12 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     _getExtinguishersUseCase = GetExtinguishersBySedeUseCase(
       ExtinguisherRepositoryImpl(),
     );
-    _getServicesUseCase = GetServicesBySedeUseCase(ServiceRepositoryImpl());
+    _getExtinguisherStatsUseCase = GetExtinguisherStatsUseCase(
+      StatisticsRepositoryImpl(),
+    );
+    _getServiceStatsUseCase = GetServiceStatsUseCase(
+      StatisticsRepositoryImpl(),
+    );
 
     _loadData();
   }
@@ -58,34 +67,105 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     });
 
     try {
+      final currentYear = DateTime.now().year;
+
       // Si hay una sede seleccionada, obtener datos de esa sede
-      // Si no, obtener datos de todas las sedes del cliente
       if (widget.sede != null) {
-        final extinguishers = await _getExtinguishersUseCase.call(
-          widget.sede!.id,
+        final sedeId = widget.sede!.id;
+
+        // Obtener estadísticas desde los endpoints
+        final extinguisherStats = await _getExtinguisherStatsUseCase.call(
+          sedeId,
         );
-        final services = await _getServicesUseCase.call(widget.sede!.id);
+        final serviceStats = await _getServiceStatsUseCase.call(
+          sedeId,
+          currentYear,
+        );
+
+        // También obtener lista completa de extintores para otras funcionalidades
+        final extinguishers = await _getExtinguishersUseCase.call(sedeId);
+
         setState(() {
+          _extinguisherStats = extinguisherStats;
+          _serviceStats = serviceStats;
           _extinguishers = extinguishers;
-          _services = services;
           _isLoading = false;
         });
       } else if (widget.client.sedes != null &&
           widget.client.sedes!.isNotEmpty) {
-        // Obtener datos de todas las sedes
+        // Si no hay sede específica, agregar estadísticas de todas las sedes
+        final allExtinguisherTypes = <String, int>{};
+        final allServiceTypes = <String, int>{
+          'MANTENIMIENTO': 0,
+          'RECARGA': 0,
+          'PRUEBA HIDROSTÁTICA': 0,
+          'BAJA': 0,
+        };
+        int totalOperativos = 0;
+        int totalInoperativos = 0;
+        int totalExtinguishers = 0;
+
+        for (final sede in widget.client.sedes!) {
+          try {
+            final extinguisherStats = await _getExtinguisherStatsUseCase.call(
+              sede.id,
+            );
+            final serviceStats = await _getServiceStatsUseCase.call(
+              sede.id,
+              currentYear,
+            );
+
+            // Agregar tipos de extintores
+            extinguisherStats.byType.forEach((key, value) {
+              allExtinguisherTypes[key] =
+                  (allExtinguisherTypes[key] ?? 0) + value;
+            });
+
+            // Agregar tipos de servicios
+            serviceStats.byType.forEach((key, value) {
+              allServiceTypes[key] = (allServiceTypes[key] ?? 0) + value;
+            });
+
+            totalOperativos += extinguisherStats.operativos;
+            totalInoperativos += extinguisherStats.inoperativos;
+            totalExtinguishers += extinguisherStats.total;
+          } catch (e) {
+            // Si falla obtener estadísticas de una sede, continuar con las demás
+            continue;
+          }
+        }
+
+        // Crear estadísticas agregadas
+        final aggregatedExtinguisherStats = ExtinguisherStatsEntity(
+          sedeId: widget
+              .client
+              .sedes!
+              .first
+              .id, // Usar el ID de la primera sede como referencia
+          byType: allExtinguisherTypes,
+          total: totalExtinguishers,
+          operativos: totalOperativos,
+          inoperativos: totalInoperativos,
+        );
+
+        final aggregatedServiceStats = ServiceStatsEntity(
+          sedeId: widget.client.sedes!.first.id,
+          year: currentYear,
+          byType: allServiceTypes,
+        );
+
+        // También obtener lista completa de extintores
         final allExtinguishers = <Extinguisher>[];
-        final allServices = <ServiceEntity>[];
 
         for (final sede in widget.client.sedes!) {
           final extinguishers = await _getExtinguishersUseCase.call(sede.id);
-          final services = await _getServicesUseCase.call(sede.id);
           allExtinguishers.addAll(extinguishers);
-          allServices.addAll(services);
         }
 
         setState(() {
+          _extinguisherStats = aggregatedExtinguisherStats;
+          _serviceStats = aggregatedServiceStats;
           _extinguishers = allExtinguishers;
-          _services = allServices;
           _isLoading = false;
         });
       } else {
@@ -108,17 +188,28 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     }
   }
 
-  /// Calcular distribución de tipos de extintores
-  Map<String, int> _calculateExtinguisherTypes() {
-    final types = <String, int>{};
-    for (final ext in _extinguishers) {
-      final type = _getExtinguisherTypeLabel(ext);
-      types[type] = (types[type] ?? 0) + 1;
+  /// Obtener distribución de tipos de extintores desde estadísticas
+  Map<String, int> _getExtinguisherTypes() {
+    if (_extinguisherStats != null) {
+      return _extinguisherStats!.byType;
     }
-    return types;
+    return {};
   }
 
-  /// Obtener etiqueta del tipo de extintor
+  /// Obtener servicios anuales desde estadísticas
+  Map<String, int> _getAnnualServices() {
+    if (_serviceStats != null) {
+      return _serviceStats!.byType;
+    }
+    return {
+      'MANTENIMIENTO': 0,
+      'RECARGA': 0,
+      'PRUEBA HIDROSTÁTICA': 0,
+      'BAJA': 0,
+    };
+  }
+
+  /// Obtener etiqueta del tipo de extintor (para mostrar en lista de equipos)
   String _getExtinguisherTypeLabel(Extinguisher ext) {
     if (ext.type != null && ext.agent != null) {
       return '${ext.type} ${ext.agent}';
@@ -128,38 +219,6 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       return ext.agent!;
     }
     return 'Desconocido';
-  }
-
-  /// Calcular servicios anuales
-  Map<String, int> _calculateAnnualServices() {
-    final now = DateTime.now();
-    final currentYear = now.year;
-    final services = <String, int>{
-      'MANTENIMIENTO': 0,
-      'RECARGA': 0,
-      'PRUEBA HIDROSTÁTICA': 0,
-      'BAJA': 0,
-    };
-
-    for (final service in _services) {
-      if (service.dateStart.year == currentYear) {
-        if (service.type == 'MANTENIMIENTO') {
-          services['MANTENIMIENTO'] = (services['MANTENIMIENTO'] ?? 0) + 1;
-        } else if (service.type == 'INSPECCION') {
-          // Las inspecciones pueden incluir recargas, pruebas hidrostáticas, etc.
-          // Por ahora las contamos como inspecciones
-          // TODO: Agregar lógica para diferenciar tipos de inspección
-        }
-      }
-    }
-
-    // Contar extintores dados de baja (status INOPERATIVO)
-    final inoperativos = _extinguishers
-        .where((e) => e.status == 'INOPERATIVO')
-        .length;
-    services['BAJA'] = inoperativos;
-
-    return services;
   }
 
   @override
@@ -219,8 +278,8 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
   }
 
   Widget _buildChartsSection() {
-    final extinguisherTypes = _calculateExtinguisherTypes();
-    final annualServices = _calculateAnnualServices();
+    final extinguisherTypes = _getExtinguisherTypes();
+    final annualServices = _getAnnualServices();
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -577,42 +636,106 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                 _buildInfoRow('Teléfono', widget.client.phone),
               if (widget.sede != null) ...[
                 const Divider(height: 24),
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.business, size: 20, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.sede!.nameSede,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
+                    Text(
+                      widget.sede!.nameSede,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Dirección con icono
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
                             widget.sede!.address,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[700],
                             ),
                           ),
-                          if (widget.sede!.city.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
+                        ),
+                      ],
+                    ),
+                    if (widget.sede!.city.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.business_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
                               widget.sede!.city,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
                               ),
                             ),
-                          ],
+                          ),
                         ],
                       ),
-                    ),
+                    ],
+                    // Información del gestor
+                    if (widget.sede!.managerName != null &&
+                        widget.sede!.managerName!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Gestor: ${widget.sede!.managerName}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (widget.sede!.managerPhone != null &&
+                        widget.sede!.managerPhone!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Teléfono: ${widget.sede!.managerPhone}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ],
