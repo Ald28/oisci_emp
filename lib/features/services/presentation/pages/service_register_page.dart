@@ -41,7 +41,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _agenteController = TextEditingController();
   final _numeroCilindroController = TextEditingController();
   final _ubicacionController = TextEditingController();
-  final _fotoController = TextEditingController();
 
   String? _estado;
   int? _sedeId;
@@ -75,7 +74,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     _agenteController.dispose();
     _numeroCilindroController.dispose();
     _ubicacionController.dispose();
-    _fotoController.dispose();
     super.dispose();
   }
 
@@ -151,9 +149,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ubicacionController.text.trim(),
         'status': _estado,
-        'photo': _fotoController.text.trim().isEmpty
-            ? null
-            : _fotoController.text.trim(),
         'sedeId': _sedeId,
       };
 
@@ -418,12 +413,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       const SizedBox(height: 12),
                       // Dropdown para Estado
                       _buildEstadoDropdown(),
-                      const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _fotoController,
-                        label: 'Foto (URL)',
-                        hintText: 'Foto (URL)',
-                      ),
                       const SizedBox(height: 32),
                       // Botón Registrar
                       PrimaryButton(
