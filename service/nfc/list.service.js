@@ -39,9 +39,8 @@ export async function getExtintoresStatsBySedeService(sedeId) {
         if (ext.status === 'OPERATIVO') operativos++;
         if (ext.status === 'INOPERATIVO') inoperativos++;
 
-        const key = ext.agent
-            ? `${ext.type} ${ext.agent}`
-            : ext.type || 'SIN_TIPO';
+        // Agrupar solo por tipo, sin incluir el agente
+        const key = ext.type || 'SIN_TIPO';
 
         byType[key] = (byType[key] || 0) + 1;
     }
