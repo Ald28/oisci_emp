@@ -13,6 +13,7 @@ class ExtinguisherModel extends Extinguisher {
     super.location,
     super.status,
     super.photo,
+    super.photoPath,
     super.createdAt,
     super.updatedAt,
     required super.sedeId,
@@ -62,6 +63,7 @@ class ExtinguisherModel extends Extinguisher {
       location: json['location'] as String?,
       status: json['status'] as String?,
       photo: json['photo'] as String?,
+      photoPath: null, // El backend no envía photoPath, solo photo (URL)
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,
@@ -101,6 +103,7 @@ class ExtinguisherModel extends Extinguisher {
       location: map['location'] as String?,
       status: map['status'] as String?,
       photo: map['photo'] as String?,
+      photoPath: map['photoPath'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,

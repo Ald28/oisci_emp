@@ -105,6 +105,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'location': data['location'] as String?,
       'status': data['status'] as String?,
       'photo': data['photo'] as String?,
+      'photoPath': data['photoPath'] as String?,
       'sedeId': sedeId,
       'usuarioCreadorId': usuarioCreadorId,
       'createdAt': now.toIso8601String(),
@@ -134,6 +135,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       location: data['location'] as String?,
       status: data['status'] as String?,
       photo: data['photo'] as String?,
+      photoPath: data['photoPath'] as String?,
       sedeId: sedeId,
       usuarioCreadorId: usuarioCreadorId,
       createdAt: now,
@@ -142,8 +144,26 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   /// Guardar extintor sincronizado desde el servidor
+  /// Preserva photoPath local si ya existe en SQLite
   Future<void> saveExtinguisher(ExtinguisherModel extinguisher) async {
     final db = await AppDatabase.database;
+
+    // Verificar si ya existe un registro con este ID para preservar photoPath
+    final existing = await db.query(
+      'extintor',
+      where: 'id = ?',
+      whereArgs: [extinguisher.id],
+      limit: 1,
+    );
+
+    String? photoPathToUse = extinguisher.photoPath;
+    if (existing.isNotEmpty) {
+      // Si ya existe, preservar el photoPath local si existe
+      final existingPhotoPath = existing.first['photoPath'] as String?;
+      if (existingPhotoPath != null && existingPhotoPath.isNotEmpty) {
+        photoPathToUse = existingPhotoPath;
+      }
+    }
 
     await db.insert('extintor', {
       'id': extinguisher.id,
@@ -155,6 +175,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'location': extinguisher.location,
       'status': extinguisher.status,
       'photo': extinguisher.photo,
+      'photoPath': photoPathToUse, // Usar el path preservado o el nuevo
       'sedeId': extinguisher.sedeId,
       'usuarioCreadorId': extinguisher.usuarioCreadorId,
       'createdAt': extinguisher.createdAt?.toIso8601String(),
@@ -194,6 +215,13 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     final oldExtintorId = tempExtinguisher.first['id'] as int;
     final newExtintorId = extinguisher.id;
 
+    // Preservar photoPath local si existe
+    final existingPhotoPath = tempExtinguisher.first['photoPath'] as String?;
+    final photoPathToUse =
+        (existingPhotoPath != null && existingPhotoPath.isNotEmpty)
+        ? existingPhotoPath
+        : extinguisher.photoPath;
+
     // Actualizar en una transacción para mantener consistencia
     await db.transaction((txn) async {
       // Actualizar el registro del extintor con el ID real y synced = 1
@@ -209,6 +237,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
           'location': extinguisher.location,
           'status': extinguisher.status,
           'photo': extinguisher.photo,
+          'photoPath': photoPathToUse, // Preservar path local si existe
           'sedeId': extinguisher.sedeId,
           'usuarioCreadorId': extinguisher.usuarioCreadorId,
           'createdAt': extinguisher.createdAt?.toIso8601String(),

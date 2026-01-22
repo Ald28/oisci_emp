@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 6, // Mantener versión 6, no necesitamos nuevas tablas
+      version: 7, // Versión 7: agregar photoPath a extintor
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -82,6 +82,7 @@ class AppDatabase {
         location TEXT,
         status TEXT,
         photo TEXT,
+        photoPath TEXT,
         sedeId INTEGER NOT NULL,
         usuarioCreadorId INTEGER NOT NULL,
         createdAt TEXT,
@@ -437,6 +438,19 @@ class AppDatabase {
           updatedAt TEXT
         )
       ''');
+    }
+
+    if (oldVersion < 7) {
+      // Agregar campo photoPath a extintor para almacenar paths locales de imágenes
+      // Usar try-catch para evitar errores si la columna ya existe
+      try {
+        await db.execute('''
+          ALTER TABLE extintor ADD COLUMN photoPath TEXT
+        ''');
+      } catch (e) {
+        // Si la columna ya existe, ignorar el error
+        // Esto puede pasar si la migración se ejecuta múltiples veces
+      }
 
       await db.execute('''
         CREATE UNIQUE INDEX IF NOT EXISTS idx_client_id ON client(id)

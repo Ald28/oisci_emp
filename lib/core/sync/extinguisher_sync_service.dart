@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 import '../../features/services/data/datasources/local_extinguisher_datasource.dart';
 import '../../features/services/data/models/extinguisher_model.dart';
 import '../network/dio_client.dart';
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Servicio para sincronizar extintores: descargar del servidor y guardar localmente
 class ExtinguisherSyncService {
@@ -54,7 +58,46 @@ class ExtinguisherSyncService {
           .toList();
 
       for (final extintor in extintores) {
-        await _localDataSource.saveExtinguisher(extintor);
+        // Si el extintor tiene una foto URL, descargarla y guardar el path local
+        if (extintor.photo != null && extintor.photo!.isNotEmpty) {
+          try {
+            final photoPath = await _downloadPhoto(
+              extintor.id,
+              extintor.photo!,
+            );
+            if (photoPath != null) {
+              // Crear un nuevo modelo con el photoPath actualizado
+              final extintorWithPath = ExtinguisherModel(
+                id: extintor.id,
+                serialNumber: extintor.serialNumber,
+                type: extintor.type,
+                capacity: extintor.capacity,
+                agent: extintor.agent,
+                cylinderNumber: extintor.cylinderNumber,
+                location: extintor.location,
+                status: extintor.status,
+                photo: extintor.photo,
+                photoPath: photoPath,
+                createdAt: extintor.createdAt,
+                updatedAt: extintor.updatedAt,
+                sedeId: extintor.sedeId,
+                usuarioCreadorId: extintor.usuarioCreadorId,
+                sedeName: extintor.sedeName,
+              );
+              await _localDataSource.saveExtinguisher(extintorWithPath);
+            } else {
+              // Si falla la descarga, guardar sin photoPath
+              await _localDataSource.saveExtinguisher(extintor);
+            }
+          } catch (e) {
+            // Si hay error al descargar, guardar sin photoPath
+            // No queremos que falle toda la sincronización por una imagen
+            await _localDataSource.saveExtinguisher(extintor);
+          }
+        } else {
+          // Si no hay foto, guardar normalmente
+          await _localDataSource.saveExtinguisher(extintor);
+        }
       }
 
       return true;
@@ -107,9 +150,42 @@ class ExtinguisherSyncService {
 
         if (responseData['ok'] == true && responseData['data'] != null) {
           // Guardar el extintor sincronizado localmente
-          final extintor = ExtinguisherModel.fromJson(
+          var extintor = ExtinguisherModel.fromJson(
             responseData['data'] as Map<String, dynamic>,
           );
+
+          // Si el extintor tiene una foto URL, descargarla y guardar el path local
+          if (extintor.photo != null && extintor.photo!.isNotEmpty) {
+            try {
+              final photoPath = await _downloadPhoto(
+                extintor.id,
+                extintor.photo!,
+              );
+              if (photoPath != null) {
+                // Crear un nuevo modelo con el photoPath actualizado
+                extintor = ExtinguisherModel(
+                  id: extintor.id,
+                  serialNumber: extintor.serialNumber,
+                  type: extintor.type,
+                  capacity: extintor.capacity,
+                  agent: extintor.agent,
+                  cylinderNumber: extintor.cylinderNumber,
+                  location: extintor.location,
+                  status: extintor.status,
+                  photo: extintor.photo,
+                  photoPath: photoPath,
+                  createdAt: extintor.createdAt,
+                  updatedAt: extintor.updatedAt,
+                  sedeId: extintor.sedeId,
+                  usuarioCreadorId: extintor.usuarioCreadorId,
+                  sedeName: extintor.sedeName,
+                );
+              }
+            } catch (e) {
+              // Si hay error al descargar, continuar sin photoPath
+              // No queremos que falle toda la sincronización por una imagen
+            }
+          }
 
           // Buscar el extintor temporal en extintor por serialNumber
           // para actualizarlo con el ID real del servidor
@@ -139,6 +215,65 @@ class ExtinguisherSyncService {
         // Error al sincronizar
         await _localDataSource.updateSyncError(item['id'] as int, e.toString());
       }
+    }
+  }
+
+  /// Descargar foto de un extintor desde la URL y guardarla localmente
+  /// Retorna el path local de la imagen descargada, o null si falla
+  /// Si ya existe un archivo para este extintor, lo reemplaza con la nueva versión
+  Future<String?> _downloadPhoto(int extintorId, String photoUrl) async {
+    try {
+      // Construir URL completa si es relativa
+      String fullUrl = photoUrl;
+      if (!photoUrl.startsWith('http://') && !photoUrl.startsWith('https://')) {
+        final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
+        final cleanUrl = photoUrl.startsWith('/')
+            ? photoUrl.substring(1)
+            : photoUrl;
+        fullUrl = '$baseUrl/$cleanUrl';
+      }
+
+      // Obtener directorio de documentos de la app
+      final appDir = await getApplicationDocumentsDirectory();
+      final extintoresDir = Directory(path.join(appDir.path, 'extintores'));
+      if (!await extintoresDir.exists()) {
+        await extintoresDir.create(recursive: true);
+      }
+
+      // Buscar si ya existe un archivo para este extintor
+      // Usar un patrón de nombre consistente: extintor_{id}.jpg
+      final fileName = 'extintor_$extintorId.jpg';
+      final filePath = path.join(extintoresDir.path, fileName);
+
+      // Si ya existe el archivo, eliminarlo para reemplazarlo con la nueva versión
+      final existingFile = File(filePath);
+      if (await existingFile.exists()) {
+        await existingFile.delete();
+      }
+
+      // Descargar la imagen
+      final response = await _dio.get(
+        fullUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // Guardar el archivo
+        final file = File(filePath);
+        await file.writeAsBytes(response.data as List<int>);
+        return filePath;
+      } else {
+        // Si la descarga falla, retornar null
+        return null;
+      }
+    } catch (e) {
+      // Si hay cualquier error, retornar null
+      // No queremos que falle toda la sincronización por una imagen
+      return null;
     }
   }
 }

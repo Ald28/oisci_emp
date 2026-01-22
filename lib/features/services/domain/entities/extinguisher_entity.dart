@@ -9,7 +9,8 @@ class Extinguisher {
   final String? cylinderNumber;
   final String? location;
   final String? status; // OPERATIVO / INOPERATIVO
-  final String? photo;
+  final String? photo; // URL de la foto
+  final String? photoPath; // Path local de la foto (para modo offline)
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int sedeId;
@@ -26,6 +27,7 @@ class Extinguisher {
     this.location,
     this.status,
     this.photo,
+    this.photoPath,
     this.createdAt,
     this.updatedAt,
     required this.sedeId,

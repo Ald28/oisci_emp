@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../services/domain/entities/extinguisher_entity.dart';
 import '../../../services/data/repositories/extinguisher_repository_impl.dart';
@@ -75,6 +77,88 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
     return '$baseUrl/$cleanPhoto';
   }
 
+  /// Construir widget de foto con soporte para modo offline
+  Widget _buildPhotoWidget(Extinguisher extinguisher) {
+    // Verificar conexión a internet
+    return FutureBuilder<bool>(
+      future: InternetConnectionChecker().hasConnection,
+      builder: (context, snapshot) {
+        final hasInternet = snapshot.data ?? false;
+
+        // Prioridad:
+        // 1. Si hay internet y hay photo (URL) → usar Image.network
+        // 2. Si no hay internet o falla la URL pero hay photoPath → usar Image.file
+        // 3. Si no hay nada → mostrar placeholder
+
+        if (hasInternet &&
+            extinguisher.photo != null &&
+            extinguisher.photo!.isNotEmpty) {
+          // Modo online: usar URL
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              _getPhotoUrl(extinguisher.photo),
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) {
+                  return child;
+                }
+                return Container(
+                  height: 140,
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                          : null,
+                      color: const Color(0xFFE84343),
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                // Si falla la URL, intentar con path local
+                if (extinguisher.photoPath != null &&
+                    extinguisher.photoPath!.isNotEmpty &&
+                    File(extinguisher.photoPath!).existsSync()) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      File(extinguisher.photoPath!),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildNoPhotoPlaceholder();
+                      },
+                    ),
+                  );
+                }
+                return _buildNoPhotoPlaceholder();
+              },
+            ),
+          );
+        } else if (extinguisher.photoPath != null &&
+            extinguisher.photoPath!.isNotEmpty &&
+            File(extinguisher.photoPath!).existsSync()) {
+          // Modo offline: usar path local
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(extinguisher.photoPath!),
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildNoPhotoPlaceholder();
+              },
+            ),
+          );
+        } else {
+          // No hay foto disponible
+          return _buildNoPhotoPlaceholder();
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final extinguisher = _extinguisher ?? widget.extinguisher;
@@ -135,44 +219,7 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                               color: Colors.grey[200],
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child:
-                                extinguisher.photo != null &&
-                                    extinguisher.photo!.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      _getPhotoUrl(extinguisher.photo),
-                                      fit: BoxFit.contain,
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return Container(
-                                          height: 140,
-                                          color: Colors.grey[200],
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value:
-                                                  loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
-                                                  ? loadingProgress
-                                                            .cumulativeBytesLoaded /
-                                                        loadingProgress
-                                                            .expectedTotalBytes!
-                                                  : null,
-                                              color: const Color(0xFFE84343),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return _buildNoPhotoPlaceholder();
-                                          },
-                                    ),
-                                  )
-                                : _buildNoPhotoPlaceholder(),
+                            child: _buildPhotoWidget(extinguisher),
                           ),
                           const SizedBox(height: 20),
                           const Text(

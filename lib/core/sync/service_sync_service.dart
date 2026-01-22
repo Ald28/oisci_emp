@@ -1039,6 +1039,59 @@ class ServiceSyncService {
         where: 'id = ?',
         whereArgs: [oldId],
       );
+
+      // Si hay foto1Url, actualizar también Extintor.photo (como lo hace el backend)
+      // También guardar el path local si existe para modo offline
+      if (foto1Url != null && foto1Url.isNotEmpty) {
+        // Obtener el extintorId desde servicio_extintor
+        final servicioExtintor = await txn.query(
+          'servicio_extintor',
+          where: 'id = ?',
+          whereArgs: [servicioExtintorId],
+          limit: 1,
+        );
+
+        if (servicioExtintor.isNotEmpty) {
+          final extintorId = servicioExtintor.first['extintorId'] as int?;
+          if (extintorId != null) {
+            // Verificar si ya existe photoPath en el extintor para preservarlo
+            final existingExtintor = await txn.query(
+              'extintor',
+              where: 'id = ?',
+              whereArgs: [extintorId],
+              limit: 1,
+            );
+
+            // Preservar photoPath existente si no se está actualizando con uno nuevo
+            String? finalPhotoPath = foto1Path;
+            if (existingExtintor.isNotEmpty) {
+              final existingPhotoPath =
+                  existingExtintor.first['photoPath'] as String?;
+              // Si hay un path nuevo, usarlo; si no, preservar el existente
+              if (foto1Path == null || foto1Path.isEmpty) {
+                finalPhotoPath = existingPhotoPath;
+              }
+            }
+
+            // Actualizar Extintor.photo y photoPath
+            final updateData = <String, dynamic>{
+              'photo': foto1Url,
+              'updatedAt': DateTime.now().toIso8601String(),
+            };
+            // Solo actualizar photoPath si hay uno nuevo o si existe uno para preservar
+            if (finalPhotoPath != null) {
+              updateData['photoPath'] = finalPhotoPath;
+            }
+
+            await txn.update(
+              'extintor',
+              updateData,
+              where: 'id = ?',
+              whereArgs: [extintorId],
+            );
+          }
+        }
+      }
     });
   }
 

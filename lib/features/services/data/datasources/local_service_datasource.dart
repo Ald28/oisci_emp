@@ -782,6 +782,19 @@ class LocalServiceDataSource {
       'synced': 0,
     });
 
+    // Si hay foto1Url o foto1Path, actualizar también Extintor.photo y photoPath
+    final foto1Url = inspectionData['foto1Url'] as String?;
+    final foto1Path = inspectionData['foto1Path'] as String?;
+    if ((foto1Url != null && foto1Url.isNotEmpty) ||
+        (foto1Path != null && foto1Path.isNotEmpty)) {
+      await _updateExtinguisherPhotoFromServicioExtintorId(
+        db,
+        servicioExtintorId,
+        foto1Url ?? '',
+        foto1Path,
+      );
+    }
+
     // Agregar a sync_queue
     await db.insert('sync_queue', {
       'type': 'CREATE_INSPECTION_DETAIL',
@@ -883,6 +896,19 @@ class LocalServiceDataSource {
       whereArgs: [inspeccionId],
     );
 
+    // Si hay foto1Url o foto1Path, actualizar también Extintor.photo y photoPath
+    final foto1Url = inspectionData['foto1Url'] as String?;
+    final foto1Path = inspectionData['foto1Path'] as String?;
+    if ((foto1Url != null && foto1Url.isNotEmpty) ||
+        (foto1Path != null && foto1Path.isNotEmpty)) {
+      await _updateExtinguisherPhotoFromServicioExtintorId(
+        db,
+        servicioExtintorId,
+        foto1Url ?? '',
+        foto1Path,
+      );
+    }
+
     // Obtener el registro actualizado
     final updated = await db.query(
       'inspeccion_detalle',
@@ -956,6 +982,103 @@ class LocalServiceDataSource {
       map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    // Si hay foto1Url o foto1Path, actualizar también Extintor.photo y photoPath
+    // foto1Path ya está disponible desde arriba (línea 946)
+    if ((inspectionDetail.foto1Url != null &&
+            inspectionDetail.foto1Url!.isNotEmpty) ||
+        (foto1Path != null && foto1Path.isNotEmpty)) {
+      await _updateExtinguisherPhotoFromServicioExtintorId(
+        db,
+        inspectionDetail.servicioExtintorId,
+        inspectionDetail.foto1Url ?? '',
+        foto1Path,
+      );
+    }
+  }
+
+  /// Actualizar Extintor.photo cuando se guarda foto1Url en InspeccionDetalle
+  /// Esto replica el comportamiento del backend que actualiza Extintor.photo
+  /// También guarda el path local si existe para modo offline
+  Future<void> _updateExtinguisherPhotoFromServicioExtintorId(
+    Database db,
+    int servicioExtintorId,
+    String foto1Url,
+    String? foto1Path,
+  ) async {
+    try {
+      // Obtener el extintorId desde servicio_extintor
+      final servicioExtintor = await db.query(
+        'servicio_extintor',
+        where: 'id = ?',
+        whereArgs: [servicioExtintorId],
+        limit: 1,
+      );
+
+      if (servicioExtintor.isNotEmpty) {
+        final extintorId = servicioExtintor.first['extintorId'] as int?;
+        if (extintorId != null) {
+          // Si no se pasó foto1Path, buscarlo en InspeccionDetalle
+          String? pathToUse = foto1Path;
+          if (pathToUse == null) {
+            final inspeccionDetalle = await db.query(
+              'inspeccion_detalle',
+              where: 'servicioExtintorId = ?',
+              whereArgs: [servicioExtintorId],
+              limit: 1,
+            );
+
+            if (inspeccionDetalle.isNotEmpty) {
+              pathToUse = inspeccionDetalle.first['foto1Path'] as String?;
+            }
+          }
+
+          // Verificar si ya existe photoPath en el extintor para preservarlo
+          final existingExtintor = await db.query(
+            'extintor',
+            where: 'id = ?',
+            whereArgs: [extintorId],
+            limit: 1,
+          );
+
+          // Preservar photoPath existente si no se está actualizando con uno nuevo
+          String? finalPhotoPath = pathToUse;
+          if (existingExtintor.isNotEmpty) {
+            final existingPhotoPath =
+                existingExtintor.first['photoPath'] as String?;
+            // Si hay un path nuevo, usarlo; si no, preservar el existente
+            if (pathToUse == null || pathToUse.isEmpty) {
+              finalPhotoPath = existingPhotoPath;
+            }
+          }
+
+          // Actualizar Extintor.photo y photoPath
+          // Solo actualizar photo si hay URL, pero siempre actualizar photoPath si hay path
+          final updateData = <String, dynamic>{
+            'updatedAt': DateTime.now().toIso8601String(),
+          };
+
+          if (foto1Url.isNotEmpty) {
+            updateData['photo'] = foto1Url;
+          }
+          // Actualizar photoPath solo si hay uno nuevo, o preservar el existente
+          if (finalPhotoPath != null) {
+            updateData['photoPath'] = finalPhotoPath;
+          }
+
+          await db.update(
+            'extintor',
+            updateData,
+            where: 'id = ?',
+            whereArgs: [extintorId],
+          );
+        }
+      }
+    } catch (e) {
+      // Si hay error al actualizar, no lanzar excepción
+      // (no queremos que falle la operación principal)
+      // Se puede loggear el error si es necesario
+    }
   }
 
   /// Actualizar InspeccionDetalle después de sincronización
