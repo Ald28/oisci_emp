@@ -167,7 +167,7 @@ model Extintor {
   status           StatusEnum?
   historic         Int?
   dateLow          DateTime?
-  photo            String?    @db.VarChar(45)
+  photo            String?    @db.VarChar(255)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   sedeId           Int
@@ -209,6 +209,8 @@ model Servicio {
   user                User @relation("ServicioAsignado", fields: [userId], references: [id])
 
   servicioExtintores ServicioExtintor[]
+
+  reportes Reporte[]
 
   @@unique([sedeId, type, dateStart])
 }

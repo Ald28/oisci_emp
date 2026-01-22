@@ -33,8 +33,8 @@ async function saveInspeccion({ servicioExtintorId, userId, ...data }) {
 
 async function saveInspeccionWithFotos({ servicioExtintorId, files, userId, ...data }) {
     const fotos = {}
+    let foto1Url = null
 
-    // Subir fotos si existen
     if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
             const result = await storage.upload(files[i].buffer, {
@@ -42,19 +42,19 @@ async function saveInspeccionWithFotos({ servicioExtintorId, files, userId, ...d
             })
 
             fotos[`foto${i + 1}Url`] = result.url
-        }
-    }
 
-    // Combinar fotos con datos del checklist
-    const fullData = {
-        ...data,
-        ...fotos,
+            // 👉 SOLO capturamos la primera
+            if (i === 0) {
+                foto1Url = result.url
+            }
+        }
     }
 
     return inspeccionRepo.upsertDetalle({
         servicioExtintorId,
-        data: fullData,
+        data: { ...data, ...fotos }, // 👈 siguen yendo las 3 fotos
         userId,
+        foto1Url, // 👈 SOLO PARA extintor.photo
     })
 }
 
