@@ -37,12 +37,9 @@ class LocalStatisticsDataSource {
         inoperativos++;
       }
 
-      // Construir la clave igual que el backend: "type agent" o solo "type"
+      // Agrupar solo por tipo, sin incluir el agente
       final type = row['type'] as String?;
-      final agent = row['agent'] as String?;
-      final key = agent != null && agent.isNotEmpty
-          ? '$type $agent'
-          : (type ?? 'SIN_TIPO');
+      final key = type ?? 'SIN_TIPO';
 
       byType[key] = (byType[key] ?? 0) + 1;
     }

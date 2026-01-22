@@ -287,51 +287,55 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Gráfico de torta - Tipos de extintores
               Flexible(
-                flex: 3,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 20,
-                      child: const Text(
-                        'EXTINTORES',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                flex: 2,
+                fit: FlexFit.loose,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 20,
+                        child: const Text(
+                          'EXTINTORES',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 60,
-                      width: 60,
-                      child: extinguisherTypes.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No hay datos',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 9,
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        height: 60,
+                        width: 60,
+                        child: extinguisherTypes.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No hay datos',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              )
+                            : PieChart(
+                                PieChartData(
+                                  sections: _buildPieChartSections(
+                                    extinguisherTypes,
+                                  ),
+                                  centerSpaceRadius: 13,
                                 ),
                               ),
-                            )
-                          : PieChart(
-                              PieChartData(
-                                sections: _buildPieChartSections(
-                                  extinguisherTypes,
-                                ),
-                                centerSpaceRadius: 13,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 6),
-                    _buildPieChartLegend(extinguisherTypes),
-                  ],
+                      ),
+                      const SizedBox(height: 6),
+                      _buildPieChartLegend(extinguisherTypes),
+                    ],
+                  ),
                 ),
               ),
               // Línea vertical de separación
@@ -344,108 +348,114 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
               // Gráfico de barras - Servicios anuales (más espacio)
               Flexible(
                 flex: 4,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 20,
-                      child: const Text(
-                        'SERVICIO ANUAL',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                fit: FlexFit.loose,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 20,
+                        child: const Text(
+                          'SERVICIO ANUAL',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 70,
-                      child: annualServices.values.every((v) => v == 0)
-                          ? const Center(
-                              child: Text(
-                                'No hay datos',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 10,
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        height: 70,
+                        child: annualServices.values.every((v) => v == 0)
+                            ? const Center(
+                                child: Text(
+                                  'No hay datos',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 10,
+                                  ),
                                 ),
-                              ),
-                            )
-                          : BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY:
-                                    annualServices.values
-                                        .reduce((a, b) => a > b ? a : b)
-                                        .toDouble() +
-                                    2,
-                                minY: 0,
-                                barGroups: _buildBarChartGroups(annualServices),
-                                titlesData: FlTitlesData(
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: _calculateYAxisReservedSize(
-                                        annualServices.values.reduce(
-                                          (a, b) => a > b ? a : b,
-                                        ),
-                                      ),
-                                      interval: 1,
-                                      getTitlesWidget: (value, meta) {
-                                        if (value.toInt() == value) {
-                                          return Text(
-                                            value.toInt().toString(),
-                                            style: const TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.grey,
+                              )
+                            : BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY:
+                                      annualServices.values
+                                          .reduce((a, b) => a > b ? a : b)
+                                          .toDouble() +
+                                      2,
+                                  minY: 0,
+                                  barGroups: _buildBarChartGroups(
+                                    annualServices,
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize:
+                                            _calculateYAxisReservedSize(
+                                              annualServices.values.reduce(
+                                                (a, b) => a > b ? a : b,
+                                              ),
                                             ),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
+                                        interval: 1,
+                                        getTitlesWidget: (value, meta) {
+                                          if (value.toInt() == value) {
+                                            return Text(
+                                              value.toInt().toString(),
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    topTitles: AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
                                     ),
                                   ),
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    drawHorizontalLine: true,
+                                    horizontalInterval: 1,
+                                    getDrawingHorizontalLine: (value) {
+                                      return FlLine(
+                                        color: Colors.grey[300]!,
+                                        strokeWidth: 1,
+                                      );
+                                    },
                                   ),
-                                  topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                ),
-                                gridData: FlGridData(
-                                  show: true,
-                                  drawVerticalLine: false,
-                                  drawHorizontalLine: true,
-                                  horizontalInterval: 1,
-                                  getDrawingHorizontalLine: (value) {
-                                    return FlLine(
-                                      color: Colors.grey[300]!,
-                                      strokeWidth: 1,
-                                    );
-                                  },
-                                ),
-                                borderData: FlBorderData(
-                                  show: true,
-                                  border: Border(
-                                    left: BorderSide(
-                                      color: Colors.grey[400]!,
-                                      width: 1,
-                                    ),
-                                    bottom: BorderSide(
-                                      color: Colors.grey[400]!,
-                                      width: 1,
+                                  borderData: FlBorderData(
+                                    show: true,
+                                    border: Border(
+                                      left: BorderSide(
+                                        color: Colors.grey[400]!,
+                                        width: 1,
+                                      ),
+                                      bottom: BorderSide(
+                                        color: Colors.grey[400]!,
+                                        width: 1,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                    ),
-                    const SizedBox(height: 6),
-                    _buildBarChartLegend(annualServices),
-                  ],
+                      ),
+                      const SizedBox(height: 6),
+                      _buildBarChartLegend(annualServices),
+                    ],
+                  ),
                 ),
               ),
             ],
