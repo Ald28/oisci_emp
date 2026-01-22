@@ -13,6 +13,7 @@ import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../data/datasources/local_extinguisher_datasource.dart';
+import '../../domain/constants/extinguisher_types.dart';
 import 'service_data_page.dart';
 
 /// Pantalla: Registro de extintor nuevo
@@ -36,12 +37,13 @@ class ServiceRegisterPage extends StatefulWidget {
 class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _numeroSerieController = TextEditingController();
-  final _tipoController = TextEditingController();
   final _capacidadController = TextEditingController();
-  final _agenteController = TextEditingController();
   final _numeroCilindroController = TextEditingController();
   final _ubicacionController = TextEditingController();
+  final _agenteController = TextEditingController();
 
+  String? _tipo;
+  String? _agente;
   String? _estado;
   int? _sedeId;
   bool _isLoading = false;
@@ -63,17 +65,29 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     if (widget.initialSerial != null) {
       _numeroSerieController.text = widget.initialSerial!;
     }
+    // Listener para sincronizar _agente con _agenteController
+    _agenteController.addListener(_onAgenteChanged);
     _loadSedes();
+  }
+
+  void _onAgenteChanged() {
+    if (_agenteController.text.trim() != (_agente ?? '')) {
+      setState(() {
+        _agente = _agenteController.text.trim().isEmpty
+            ? null
+            : _agenteController.text.trim();
+      });
+    }
   }
 
   @override
   void dispose() {
     _numeroSerieController.dispose();
-    _tipoController.dispose();
     _capacidadController.dispose();
-    _agenteController.dispose();
     _numeroCilindroController.dispose();
     _ubicacionController.dispose();
+    _agenteController.removeListener(_onAgenteChanged);
+    _agenteController.dispose();
     super.dispose();
   }
 
@@ -133,15 +147,11 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         'serialNumber': _numeroSerieController.text.trim().isEmpty
             ? null
             : _numeroSerieController.text.trim(),
-        'type': _tipoController.text.trim().isEmpty
-            ? null
-            : _tipoController.text.trim(),
+        'type': _tipo,
         'capacity': _capacidadController.text.trim().isEmpty
             ? null
             : _capacidadController.text.trim(),
-        'agent': _agenteController.text.trim().isEmpty
-            ? null
-            : _agenteController.text.trim(),
+        'agent': _agente,
         'cylinderNumber': _numeroCilindroController.text.trim().isEmpty
             ? null
             : _numeroCilindroController.text.trim(),
@@ -371,48 +381,46 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Campos del formulario
+                      // Campos del formulario (orden según imagen)
+                      // 1. Nro. Serie
                       FloatingLabelTextField(
                         controller: _numeroSerieController,
                         label: 'Nro. Serie',
                         hintText: 'Nro. Serie',
                       ),
                       const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _tipoController,
-                        label: 'Tipo',
-                        hintText: 'Tipo',
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _capacidadController,
-                        label: 'Capacidad',
-                        hintText: 'Capacidad',
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _agenteController,
-                        label: 'Agente',
-                        hintText: 'Agente',
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingLabelTextField(
-                        controller: _numeroCilindroController,
-                        label: 'Nro. Cilindro',
-                        hintText: 'Nro. Cilindro',
-                      ),
-                      const SizedBox(height: 12),
+                      // 2. Ubicación
                       FloatingLabelTextField(
                         controller: _ubicacionController,
                         label: 'Ubicación',
                         hintText: 'Ubicación',
                       ),
                       const SizedBox(height: 12),
+                      // 3. Nro. Cilindro
+                      FloatingLabelTextField(
+                        controller: _numeroCilindroController,
+                        label: 'Nro. Cilindro',
+                        hintText: 'Nro. Cilindro',
+                      ),
+                      const SizedBox(height: 12),
+                      // 4. Tipo (Dropdown)
+                      _buildTipoDropdown(),
+                      const SizedBox(height: 12),
+                      // 5. Agente (Dropdown dependiente del tipo)
+                      _buildAgenteDropdown(),
+                      const SizedBox(height: 12),
+                      // 6. Capacidad
+                      FloatingLabelTextField(
+                        controller: _capacidadController,
+                        label: 'Capacidad',
+                        hintText: 'Capacidad',
+                      ),
+                      const SizedBox(height: 12),
+                      // 7. Estado (Dropdown)
+                      _buildEstadoDropdown(),
+                      const SizedBox(height: 12),
                       // Dropdown para Sede
                       _buildSedeDropdown(),
-                      const SizedBox(height: 12),
-                      // Dropdown para Estado
-                      _buildEstadoDropdown(),
                       const SizedBox(height: 32),
                       // Botón Registrar
                       PrimaryButton(
@@ -427,6 +435,284 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTipoDropdown() {
+    final hasValue = _tipo != null;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: _tipo,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 14),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+            hint: Text(
+              'Tipo',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[400],
+              ),
+            ),
+            items: ExtinguisherTypes.types.map((type) {
+              return DropdownMenuItem<String>(
+                value: type,
+                child: Text(
+                  type,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _tipo = value;
+                // Limpiar agente cuando cambia el tipo
+                _agente = null;
+                _agenteController.clear();
+              });
+            },
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        if (hasValue)
+          Positioned(
+            top: -8,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAEAEA),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Tipo',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAgenteDropdown() {
+    final hasValue = _agente != null;
+    final agentsData = ExtinguisherTypes.getAgentsByType(_tipo);
+    final predefinedAgents = agentsData['predefined'] as List<String>;
+    final hasOther = agentsData['hasOther'] as bool;
+    final requiresSelection = ExtinguisherTypes.requiresAgentSelection(_tipo);
+
+    // Si el tipo no requiere selección de agente, mostrar campo de texto libre
+    if (!requiresSelection) {
+      // Sincronizar el controller con el estado si es necesario
+      if (_agente != null && _agenteController.text != _agente) {
+        _agenteController.text = _agente!;
+      }
+      return FloatingLabelTextField(
+        controller: _agenteController,
+        label: 'Agente',
+        hintText: 'Agente',
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: _agente,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 14),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+            hint: Text(
+              'Agente',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[400],
+              ),
+            ),
+            items: [
+              ...predefinedAgents.map((agent) {
+                return DropdownMenuItem<String>(
+                  value: agent,
+                  child: Text(
+                    agent,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                );
+              }),
+              // Si hay un agente personalizado que no está en la lista predefinida, mostrarlo
+              if (_agente != null &&
+                  !predefinedAgents.contains(_agente) &&
+                  _agente != '__OTROS__')
+                DropdownMenuItem<String>(
+                  value: _agente,
+                  child: Text(
+                    _agente!,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              if (hasOther)
+                DropdownMenuItem<String>(
+                  value: '__OTROS__',
+                  child: Text(
+                    'Otros: ____',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+            onChanged: (value) async {
+              if (value == '__OTROS__') {
+                // Guardar el valor anterior temporalmente
+                final previousAgent = _agente;
+                // Establecer temporalmente para que el dropdown muestre la selección
+                setState(() {
+                  _agente = '__OTROS__';
+                });
+                // Mostrar modal para ingresar texto libre
+                final customAgent = await _showOtherAgentModal();
+                if (customAgent != null && customAgent.isNotEmpty) {
+                  setState(() {
+                    _agente = customAgent;
+                  });
+                } else {
+                  // Si se cancela el modal, restaurar el valor anterior
+                  setState(() {
+                    _agente = previousAgent;
+                  });
+                }
+              } else {
+                setState(() {
+                  _agente = value;
+                });
+              }
+            },
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        if (hasValue)
+          Positioned(
+            top: -8,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAEAEA),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Agente',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Mostrar modal para ingresar agente personalizado
+  Future<String?> _showOtherAgentModal() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ingresar Agente'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Agente',
+            hintText: 'Ingrese el nombre del agente',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isNotEmpty) {
+                Navigator.pop(context, value);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE84343),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
       ),
     );
   }

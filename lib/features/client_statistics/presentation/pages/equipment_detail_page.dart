@@ -232,7 +232,7 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                           const SizedBox(height: 16),
                           _buildDetailRow(
                             '1',
-                            'Código',
+                            'Nro. Serie',
                             extinguisher.serialNumber ?? 'N/A',
                           ),
                           _buildDetailRow(
@@ -242,18 +242,18 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                           ),
                           _buildDetailRow(
                             '3',
-                            'Nro. Serie',
-                            extinguisher.serialNumber ?? 'N/A',
-                          ),
-                          _buildDetailRow(
-                            '4',
                             'Nro. Cilindro',
                             extinguisher.cylinderNumber ?? 'N/A',
                           ),
                           _buildDetailRow(
+                            '4',
+                            'Tipo',
+                            extinguisher.type ?? 'N/A',
+                          ),
+                          _buildDetailRow(
                             '5',
-                            'Tipo de agente',
-                            _getExtinguisherTypeLabel(extinguisher),
+                            'Agente',
+                            extinguisher.agent ?? 'N/A',
                           ),
                           _buildDetailRow(
                             '6',
@@ -308,17 +308,6 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
         ],
       ),
     );
-  }
-
-  String _getExtinguisherTypeLabel(Extinguisher extinguisher) {
-    if (extinguisher.type != null && extinguisher.agent != null) {
-      return '${extinguisher.type} ${extinguisher.agent}';
-    } else if (extinguisher.type != null) {
-      return extinguisher.type!;
-    } else if (extinguisher.agent != null) {
-      return extinguisher.agent!;
-    }
-    return 'Desconocido';
   }
 
   Widget _buildNoPhotoPlaceholder() {
