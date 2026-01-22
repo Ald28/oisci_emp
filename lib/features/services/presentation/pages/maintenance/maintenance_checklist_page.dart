@@ -141,7 +141,28 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
 
   void _toggleItem(String itemId) {
     setState(() {
-      _checklistItems[itemId] = !(_checklistItems[itemId] ?? false);
+      final newValue = !(_checklistItems[itemId] ?? false);
+      _checklistItems[itemId] = newValue;
+
+      // Si se marca BAJA_EXTINTOR, limpiar todos los demás campos y abrir modal
+      if (itemId == 'BAJA_EXTINTOR' && newValue) {
+        // Limpiar todos los demás campos
+        _checklistItems['MANTENIMIENTO'] = false;
+        _checklistItems['RECARGA'] = false;
+        _checklistItems['PRUEBA_HIDRO'] = false;
+        _checklistItems['PINTURA'] = false;
+        _checklistItems['REC_CARTUCHO'] = false;
+        _checklistItems['CAMBIO_PARTES'] = false;
+
+        // Limpiar datos adicionales
+        _rechargeAgent = null;
+        _partsChangeDetails = null;
+
+        // Abrir automáticamente el modal de baja
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openDecommissionModal();
+        });
+      }
     });
   }
 
@@ -197,19 +218,29 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
     });
 
     try {
+      final isBajaActive = _checklistItems['BAJA_EXTINTOR'] ?? false;
+
       // Mapear los datos del checklist al formato del backend
+      // Si BAJA está activa, enviar null en los demás campos
       final checklistData = <String, dynamic>{
-        'mantenimiento': _checklistItems['MANTENIMIENTO'] ?? false,
-        'recarga': _checklistItems['RECARGA'] ?? false,
-        'agenteCarga': _rechargeAgent, // Solo si recarga está activa
-        'pruebaHidrostatica': _checklistItems['PRUEBA_HIDRO'] ?? false,
-        'bajaExtintor': _checklistItems['BAJA_EXTINTOR'] ?? false,
-        'motivoBaja': _decommissionReason, // Solo si baja está activa
-        'pintura': _checklistItems['PINTURA'] ?? false,
-        'recargaCartucho': _checklistItems['REC_CARTUCHO'] ?? false,
-        'cambioPartes': _checklistItems['CAMBIO_PARTES'] ?? false,
-        'detallesCambioPartes':
-            _partsChangeDetails, // Solo si cambioPartes está activa
+        'mantenimiento': isBajaActive
+            ? null
+            : (_checklistItems['MANTENIMIENTO'] ?? false),
+        'recarga': isBajaActive ? null : (_checklistItems['RECARGA'] ?? false),
+        'agenteCarga': isBajaActive ? null : _rechargeAgent,
+        'pruebaHidrostatica': isBajaActive
+            ? null
+            : (_checklistItems['PRUEBA_HIDRO'] ?? false),
+        'bajaExtintor': isBajaActive,
+        'motivoBaja': isBajaActive ? _decommissionReason : null,
+        'pintura': isBajaActive ? null : (_checklistItems['PINTURA'] ?? false),
+        'recargaCartucho': isBajaActive
+            ? null
+            : (_checklistItems['REC_CARTUCHO'] ?? false),
+        'cambioPartes': isBajaActive
+            ? null
+            : (_checklistItems['CAMBIO_PARTES'] ?? false),
+        'detallesCambioPartes': isBajaActive ? null : _partsChangeDetails,
       };
 
       // Crear o actualizar MantenimientoDetalle según corresponda
@@ -318,6 +349,7 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
           serviceExtinguishers: serviceExtinguishers,
           servicioId: widget.servicioId,
           serviceType: widget.serviceType,
+          currentServicioExtintorId: widget.servicioExtintorId,
         ),
       ).then((_) {
         // Recargar cuando se cierra el modal
@@ -375,71 +407,91 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
                   ),
                   const SizedBox(height: 24),
                   // Lista de items del checklist
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!, width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        // MANTENIMIENTO
-                        MaintenanceChecklistItem(
-                          title: 'MANTENIMIENTO',
-                          isChecked: _checklistItems['MANTENIMIENTO'] ?? false,
-                          onTap: () => _toggleItem('MANTENIMIENTO'),
-                          showEditIcon: false,
+                  Builder(
+                    builder: (context) {
+                      final isBajaActive =
+                          _checklistItems['BAJA_EXTINTOR'] ?? false;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            width: 1,
+                          ),
                         ),
-                        // RECARGA
-                        MaintenanceChecklistItem(
-                          title: 'RECARGA',
-                          isChecked: _checklistItems['RECARGA'] ?? false,
-                          onTap: () => _toggleItem('RECARGA'),
-                          onEdit: _openRechargeModal,
-                          showEditIcon: true,
-                          additionalInfo: _rechargeAgent,
+                        child: Column(
+                          children: [
+                            // MANTENIMIENTO
+                            MaintenanceChecklistItem(
+                              title: 'MANTENIMIENTO',
+                              isChecked:
+                                  _checklistItems['MANTENIMIENTO'] ?? false,
+                              onTap: () => _toggleItem('MANTENIMIENTO'),
+                              showEditIcon: false,
+                              isDisabled: isBajaActive,
+                            ),
+                            // RECARGA
+                            MaintenanceChecklistItem(
+                              title: 'RECARGA',
+                              isChecked: _checklistItems['RECARGA'] ?? false,
+                              onTap: () => _toggleItem('RECARGA'),
+                              onEdit: _openRechargeModal,
+                              showEditIcon: true,
+                              additionalInfo: _rechargeAgent,
+                              isDisabled: isBajaActive,
+                            ),
+                            // PRUEBA HIDRO.
+                            MaintenanceChecklistItem(
+                              title: 'PRUEBA HIDRO.',
+                              isChecked:
+                                  _checklistItems['PRUEBA_HIDRO'] ?? false,
+                              onTap: () => _toggleItem('PRUEBA_HIDRO'),
+                              showEditIcon: false,
+                              isDisabled: isBajaActive,
+                            ),
+                            // BAJA DE EXTINTOR
+                            MaintenanceChecklistItem(
+                              title: 'BAJA DE EXTINTOR',
+                              isChecked:
+                                  _checklistItems['BAJA_EXTINTOR'] ?? false,
+                              onTap: () => _toggleItem('BAJA_EXTINTOR'),
+                              onEdit: _openDecommissionModal,
+                              showEditIcon: true,
+                              additionalInfo: _decommissionReason,
+                            ),
+                            // PINTURA
+                            MaintenanceChecklistItem(
+                              title: 'PINTURA',
+                              isChecked: _checklistItems['PINTURA'] ?? false,
+                              onTap: () => _toggleItem('PINTURA'),
+                              showEditIcon: false,
+                              isDisabled: isBajaActive,
+                            ),
+                            // REC. CARTUCHO
+                            MaintenanceChecklistItem(
+                              title: 'REC. CARTUCHO',
+                              isChecked:
+                                  _checklistItems['REC_CARTUCHO'] ?? false,
+                              onTap: () => _toggleItem('REC_CARTUCHO'),
+                              showEditIcon: false,
+                              isDisabled: isBajaActive,
+                            ),
+                            // CAMBIO PARTES
+                            MaintenanceChecklistItem(
+                              title: 'CAMBIO PARTES',
+                              isChecked:
+                                  _checklistItems['CAMBIO_PARTES'] ?? false,
+                              onTap: () => _toggleItem('CAMBIO_PARTES'),
+                              onEdit: _openPartsChangeModal,
+                              showEditIcon: true,
+                              additionalInfo: _partsChangeDetails,
+                              isDisabled: isBajaActive,
+                            ),
+                          ],
                         ),
-                        // PRUEBA HIDRO.
-                        MaintenanceChecklistItem(
-                          title: 'PRUEBA HIDRO.',
-                          isChecked: _checklistItems['PRUEBA_HIDRO'] ?? false,
-                          onTap: () => _toggleItem('PRUEBA_HIDRO'),
-                          showEditIcon: false,
-                        ),
-                        // BAJA DE EXTINTOR
-                        MaintenanceChecklistItem(
-                          title: 'BAJA DE EXTINTOR',
-                          isChecked: _checklistItems['BAJA_EXTINTOR'] ?? false,
-                          onTap: () => _toggleItem('BAJA_EXTINTOR'),
-                          onEdit: _openDecommissionModal,
-                          showEditIcon: true,
-                          additionalInfo: _decommissionReason,
-                        ),
-                        // PINTURA
-                        MaintenanceChecklistItem(
-                          title: 'PINTURA',
-                          isChecked: _checklistItems['PINTURA'] ?? false,
-                          onTap: () => _toggleItem('PINTURA'),
-                          showEditIcon: false,
-                        ),
-                        // REC. CARTUCHO
-                        MaintenanceChecklistItem(
-                          title: 'REC. CARTUCHO',
-                          isChecked: _checklistItems['REC_CARTUCHO'] ?? false,
-                          onTap: () => _toggleItem('REC_CARTUCHO'),
-                          showEditIcon: false,
-                        ),
-                        // CAMBIO PARTES
-                        MaintenanceChecklistItem(
-                          title: 'CAMBIO PARTES',
-                          isChecked: _checklistItems['CAMBIO_PARTES'] ?? false,
-                          onTap: () => _toggleItem('CAMBIO_PARTES'),
-                          onEdit: _openPartsChangeModal,
-                          showEditIcon: true,
-                          additionalInfo: _partsChangeDetails,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   // Botón Guardar checklist y continuar

@@ -11,12 +11,15 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
   final List<ServiceExtinguisherEntity> serviceExtinguishers;
   final int servicioId;
   final ServiceType serviceType;
+  final int?
+  currentServicioExtintorId; // ID del extintor actual si estamos en un checklist
 
   const ServiceExtinguisherCartModal({
     super.key,
     required this.serviceExtinguishers,
     required this.servicioId,
     required this.serviceType,
+    this.currentServicioExtintorId,
   });
 
   @override
@@ -161,18 +164,45 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
     BuildContext context,
     ServiceExtinguisherEntity item,
   ) async {
+    // Verificar PRIMERO si ya estamos en la página del mismo extintor
+    // Esto evita mostrar loading innecesario
+    if (currentServicioExtintorId != null &&
+        currentServicioExtintorId == item.id) {
+      // Obtener el NavigatorState ANTES de cerrar el modal y hacer await
+      final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+      // Cerrar el modal
+      Navigator.pop(context);
+
+      // Esperar un momento para que el modal se cierre
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Obtener el contexto después del await
+      final rootContext = rootNavigator.context;
+
+      if (rootContext.mounted) {
+        ScaffoldMessenger.of(rootContext).showSnackBar(
+          const SnackBar(
+            content: Text('Ya estás trabajando en este extintor'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Obtener el NavigatorState raíz ANTES de cerrar el modal
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
     // Cerrar el modal primero
     Navigator.pop(context);
 
-    // Mostrar loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFE84343)),
-      ),
-    );
+    // Obtener el contexto del Navigator raíz inmediatamente
+    final rootContext = rootNavigator.context;
+    if (!rootContext.mounted) return;
 
+    // NO mostrar loading aquí - la página de checklist mostrará su propio loading
+    // El repositorio ya maneja cache local primero, así que obtener el extinguisher será rápido
     try {
       // Obtener el extinguisher por extintorId
       final getExtinguisherUseCase = GetExtinguisherByIdUseCase(
@@ -180,12 +210,12 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
       );
       final extinguisher = await getExtinguisherUseCase.call(item.extintorId);
 
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loading
+      // Verificar si el contexto sigue siendo válido después del await
+      if (!rootContext.mounted) return;
 
       if (extinguisher == null) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!rootContext.mounted) return;
+        ScaffoldMessenger.of(rootContext).showSnackBar(
           SnackBar(
             content: Text(
               'Error: No se pudo encontrar el extintor (ID: ${item.extintorId}). '
@@ -198,39 +228,39 @@ class ServiceExtinguisherCartModal extends StatelessWidget {
         return;
       }
 
-      // Navegar a la página correspondiente según el tipo de servicio
-      if (!context.mounted) return;
+      // Navegar directamente - la página mostrará su propio loading
+      // Si currentServicioExtintorId no es null, significa que estamos en un checklist
+      // En ese caso, usar pushReplacement para evitar apilar páginas
+      final isCurrentlyInChecklist = currentServicioExtintorId != null;
 
-      if (serviceType == ServiceType.maintenance) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MaintenanceChecklistPage(
-              extinguisher: extinguisher,
-              serviceType: serviceType,
-              servicioId: servicioId,
-              servicioExtintorId: item.id,
-            ),
-          ),
-        );
+      final route = serviceType == ServiceType.maintenance
+          ? MaterialPageRoute(
+              builder: (_) => MaintenanceChecklistPage(
+                extinguisher: extinguisher,
+                serviceType: serviceType,
+                servicioId: servicioId,
+                servicioExtintorId: item.id,
+              ),
+            )
+          : MaterialPageRoute(
+              builder: (_) => InspectionChecklistPage(
+                extinguisher: extinguisher,
+                serviceType: serviceType,
+                servicioId: servicioId,
+                servicioExtintorId: item.id,
+              ),
+            );
+
+      // Si ya estamos en un checklist, reemplazar en lugar de apilar
+      if (isCurrentlyInChecklist) {
+        rootNavigator.pushReplacement(route);
       } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => InspectionChecklistPage(
-              extinguisher: extinguisher,
-              serviceType: serviceType,
-              servicioId: servicioId,
-              servicioExtintorId: item.id,
-            ),
-          ),
-        );
+        rootNavigator.push(route);
       }
     } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // Cerrar loading
+      if (!rootContext.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(rootContext).showSnackBar(
         SnackBar(
           content: Text(
             'Error al cargar extintor: ${e.toString()}\n'

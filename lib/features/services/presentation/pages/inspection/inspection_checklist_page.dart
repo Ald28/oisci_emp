@@ -432,6 +432,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
           serviceExtinguishers: serviceExtinguishers,
           servicioId: widget.servicioId,
           serviceType: widget.serviceType,
+          currentServicioExtintorId: widget.servicioExtintorId,
         ),
       ).then((_) {
         // Recargar cuando se cierra el modal
