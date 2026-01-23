@@ -13,7 +13,7 @@ import '../../domain/usecases/search_extinguisher_usecase.dart';
 import '../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
-import 'maintenance/widgets/service_extinguisher_cart_modal.dart';
+import '../widgets/service_extinguisher_cart_modal.dart';
 
 /// Pantalla: NFC + input manual + Buscar
 /// Compartida para Mantenimiento e Inspección

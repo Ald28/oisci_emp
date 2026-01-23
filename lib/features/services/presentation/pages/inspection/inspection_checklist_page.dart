@@ -16,7 +16,7 @@ import '../../../domain/usecases/get_inspection_detail_by_service_extinguisher_i
 import '../../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
 import '../../../data/repositories/service_repository_impl.dart';
 import '../../widgets/inspection_checklist_item.dart';
-import '../maintenance/widgets/service_extinguisher_cart_modal.dart';
+import '../../widgets/service_extinguisher_cart_modal.dart';
 import '../service_observations_page.dart';
 
 /// Pantalla: Checklist de Inspección

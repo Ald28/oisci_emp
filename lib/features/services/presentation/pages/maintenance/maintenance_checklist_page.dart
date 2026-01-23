@@ -13,7 +13,7 @@ import '../../widgets/maintenance_checklist_item.dart';
 import 'widgets/recharge_modal.dart';
 import 'widgets/decommission_modal.dart';
 import 'widgets/parts_change_modal.dart';
-import 'widgets/service_extinguisher_cart_modal.dart';
+import '../../widgets/service_extinguisher_cart_modal.dart';
 import '../service_observations_page.dart';
 
 /// Pantalla: Checklist de Mantenimiento

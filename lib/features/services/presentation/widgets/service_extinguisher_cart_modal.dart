@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../domain/entities/service_extinguisher_entity.dart';
-import '../../../../domain/entities/service_type.dart';
-import '../../../../data/repositories/extinguisher_repository_impl.dart';
-import '../../../../domain/usecases/get_extinguisher_by_id_usecase.dart';
-import '../maintenance_checklist_page.dart';
-import '../../inspection/inspection_checklist_page.dart';
+import '../../domain/entities/service_extinguisher_entity.dart';
+import '../../domain/entities/service_type.dart';
+import '../../data/repositories/extinguisher_repository_impl.dart';
+import '../../domain/usecases/get_extinguisher_by_id_usecase.dart';
+import '../pages/maintenance/maintenance_checklist_page.dart';
+import '../pages/inspection/inspection_checklist_page.dart';
 
 /// Modal: Carrito de extintores agregados al servicio
 class ServiceExtinguisherCartModal extends StatelessWidget {
