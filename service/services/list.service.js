@@ -34,6 +34,14 @@ export const ListService = {
      */
     async getAllWithDetails() {
         return ListRepository.findAllWithDetails()
+    },
+
+    /**
+     * Obtener servicios modificados después de un timestamp
+     * Para sincronización incremental
+     */
+    async getUpdatedSince(since) {
+        return ListRepository.findUpdatedSince(since)
     }
 
 }

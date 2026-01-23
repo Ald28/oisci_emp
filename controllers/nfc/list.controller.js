@@ -1,4 +1,4 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService,getExtintoresStatsBySedeService } from "../../service/nfc/list.service.js";
+import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
@@ -100,6 +100,31 @@ export async function getExtintoresStatsBySedeController(req, res) {
             ok: false,
             message: 'Error al obtener estadísticas',
             error: error.message,
+        });
+    }
+}
+
+export async function getExtinguishersUpdatedSinceController(req, res) {
+    try {
+        const since = req.query.since;
+        
+        if (!since || typeof since !== 'string') {
+            return res.status(400).json({
+                ok: false,
+                message: 'El parámetro "since" es requerido (ISO 8601 timestamp)'
+            });
+        }
+
+        const extintores = await getExtinguishersUpdatedSinceService(since);
+
+        return res.status(200).json({
+            ok: true,
+            data: extintores
+        });
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            message: error.message
         });
     }
 }

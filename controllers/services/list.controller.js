@@ -109,6 +109,33 @@ export const ListController = {
                 message: error.message
             })
         }
+    },
+
+    /**
+     * Obtener servicios modificados después de un timestamp
+     * Para sincronización incremental
+     * GET /services/sync/incremental?since=2026-01-22T10:00:00Z
+     */
+    async getUpdatedSince(req, res) {
+        try {
+            const since = req.query.since
+            
+            if (!since || typeof since !== 'string') {
+                return res.status(400).json({
+                    message: 'El parámetro "since" es requerido (ISO 8601 timestamp)'
+                })
+            }
+
+            const servicios = await ListService.getUpdatedSince(since)
+
+            return res.status(200).json({
+                data: servicios
+            })
+        } catch (error) {
+            return res.status(500).json({
+                message: error.message
+            })
+        }
     }
 
 }

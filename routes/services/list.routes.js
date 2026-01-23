@@ -271,4 +271,46 @@ router.get('/servicios/sede/:sedeId', authenticate, authorize(['admin', 'user', 
  */
 router.get('/sync/all', authenticate, authorize(['admin', 'user', 'tecnico']), ListController.getAllWithDetails)
 
+/**
+ * @swagger
+ * /services/sync/incremental:
+ *   get:
+ *     summary: Obtener servicios modificados después de un timestamp
+ *     description: Para sincronización incremental. Retorna solo servicios y sus detalles creados o modificados después del timestamp proporcionado.
+ *     tags:
+ *       - Services
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: since
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Timestamp ISO 8601 desde el cual obtener cambios
+ *         example: "2026-01-22T10:00:00Z"
+ *     responses:
+ *       200:
+ *         description: Lista de servicios modificados con detalles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Parámetro "since" faltante o inválido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecnico']), ListController.getUpdatedSince)
+
 export default router

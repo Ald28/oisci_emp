@@ -1,4 +1,5 @@
 import { ServiceService } from '../../service/services/register.service.js'
+import { emitServiceChange, emitServiceExtinguisherChange } from '../../utils/socket.helper.js'
 
 export const ServiceController = {
 
@@ -10,6 +11,11 @@ export const ServiceController = {
                 req.body,
                 usuarioId
             )
+
+            // Emitir evento WebSocket para notificar a otros dispositivos
+            if (result.data) {
+                emitServiceChange('created', result.data);
+            }
 
             res.status(201).json({
                 message: 'Servicio iniciado',
@@ -32,6 +38,13 @@ export const ServiceController = {
                 usuarioId
             )
 
+            // Emitir evento WebSocket para notificar a otros dispositivos
+            if (result.data) {
+                emitServiceExtinguisherChange('created', result.data);
+                // También notificar cambio en el servicio padre
+                emitServiceChange('updated', { id: Number(servicioId) });
+            }
+
             res.status(201).json({
                 message: 'Extintor agregado al servicio',
                 ...result
@@ -51,6 +64,11 @@ export const ServiceController = {
                 servicioId,
                 usuarioId
             )
+
+            // Emitir evento WebSocket para notificar a otros dispositivos
+            if (ServicivioFinalizado) {
+                emitServiceChange('finalized', ServicivioFinalizado);
+            }
 
             res.status(200).json({
                 message: 'Servicio finalizado correctamente',

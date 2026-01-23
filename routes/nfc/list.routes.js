@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -248,5 +248,49 @@ router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisher
 router.get('/ext-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresBySedeController);
 
 router.get( '/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresStatsBySedeController);
+
+/**
+ * @swagger
+ * /nfc/sync/incremental:
+ *   get:
+ *     summary: Obtener extintores modificados después de un timestamp
+ *     description: Para sincronización incremental. Retorna solo extintores creados o modificados después del timestamp proporcionado.
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: since
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Timestamp ISO 8601 desde el cual obtener cambios
+ *         example: "2026-01-22T10:00:00Z"
+ *     responses:
+ *       200:
+ *         description: Lista de extintores modificados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Parámetro "since" faltante o inválido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecnico']), getExtinguishersUpdatedSinceController);
 
 export default router;

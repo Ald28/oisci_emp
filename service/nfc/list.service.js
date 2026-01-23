@@ -53,3 +53,8 @@ export async function getExtintoresStatsBySedeService(sedeId) {
         inoperativos,
     };
 }
+
+export async function getExtinguishersUpdatedSinceService(since) {
+    const extintores = await ListRepository.findUpdatedSince(since);
+    return extintores;
+}

@@ -135,5 +135,74 @@ export const ListRepository = {
                 dateStart: 'desc'
             }
         })
+    },
+
+    /**
+     * Obtener servicios modificados después de un timestamp
+     * Para sincronización incremental
+     */
+    findUpdatedSince(since) {
+        const sinceDate = since ? new Date(since) : null
+        
+        const where = sinceDate ? {
+            OR: [
+                { updatedAt: { gte: sinceDate } },
+                { createdAt: { gte: sinceDate } },
+                // También incluir servicios con servicioExtintores modificados
+                {
+                    servicioExtintores: {
+                        some: {
+                            OR: [
+                                { updatedAt: { gte: sinceDate } },
+                                { createdAt: { gte: sinceDate } },
+                                {
+                                    mantenimientoDetalle: {
+                                        isNot: null,
+                                        updatedAt: { gte: sinceDate }
+                                    }
+                                },
+                                {
+                                    inspeccionDetalle: {
+                                        isNot: null,
+                                        updatedAt: { gte: sinceDate }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        } : {}
+
+        return prisma.servicio.findMany({
+            where,
+            include: {
+                sede: {
+                    select: {
+                        id: true,
+                        name_sede: true
+                    }
+                },
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                servicioExtintores: {
+                    include: {
+                        mantenimientoDetalle: true,
+                        inspeccionDetalle: true
+                    },
+                    orderBy: {
+                        createdAt: 'asc'
+                    }
+                }
+            },
+            orderBy: {
+                dateStart: 'desc'
+            }
+        })
     }
 }

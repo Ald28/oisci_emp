@@ -81,6 +81,10 @@ export async function createOrUpdateInspeccionWithFotos(req, res) {
             ...checklistData,
         })
 
+        // Emitir evento WebSocket para notificar a otros dispositivos
+        const { emitInspectionDetailChange } = await import('../../utils/socket.helper.js');
+        emitInspectionDetailChange('created', inspeccion);
+
         res.json({ data: inspeccion })
     } catch (error) {
         console.error(error)

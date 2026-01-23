@@ -1,4 +1,5 @@
 import { MantenimientoDetalleService } from '../../service/mantenimientoD/mantenimientoDetalle.service.js'
+import { emitMaintenanceDetailChange } from '../../utils/socket.helper.js'
 
 export const MantenimientoDetalleController = {
     async create(req, res) {
@@ -9,6 +10,11 @@ export const MantenimientoDetalleController = {
 
             const mantenimiento =
                 await MantenimientoDetalleService.crear(servicioExtintorId, data, usuarioId)
+
+            // Emitir evento WebSocket para notificar a otros dispositivos
+            if (mantenimiento) {
+                emitMaintenanceDetailChange('created', mantenimiento);
+            }
 
             return res.status(201).json({
                 message: 'Mantenimiento registrado correctamente',

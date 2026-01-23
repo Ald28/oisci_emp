@@ -1,4 +1,5 @@
 import { MantenimientoDetalleService } from '../../service/mantenimientoD/edit.service.js'
+import { emitMaintenanceDetailChange } from '../../utils/socket.helper.js'
 
 export const MantenimientoDetalleController = {
 
@@ -13,6 +14,11 @@ export const MantenimientoDetalleController = {
                     req.body,
                     usuarioId
                 )
+
+            // Emitir evento WebSocket para notificar a otros dispositivos
+            if (mantenimientoActualizado) {
+                emitMaintenanceDetailChange('updated', mantenimientoActualizado);
+            }
 
             res.status(200).json({
                 message: 'Checklist de mantenimiento actualizado',

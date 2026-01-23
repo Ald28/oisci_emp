@@ -97,4 +97,36 @@ export const ListRepository = {
             },
         });
     },
+
+    /**
+     * Obtener extintores modificados después de un timestamp
+     * Para sincronización incremental
+     */
+    async findUpdatedSince(since) {
+        const sinceDate = since ? new Date(since) : null
+        
+        const where = sinceDate ? {
+            OR: [
+                { updatedAt: { gte: sinceDate } },
+                { createdAt: { gte: sinceDate } }
+            ]
+        } : {}
+
+        return prisma.extintor.findMany({
+            where,
+            include: {
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                sede: true
+            },
+            orderBy: {
+                id: 'asc'
+            }
+        })
+    },
 };
