@@ -68,6 +68,7 @@ npm start         # Producción
 npx prisma studio # Ver base de datos
 
 ## Estructura
+```plaintext
 OISCI_EMP
 ├── controllers
 │   ├── client
