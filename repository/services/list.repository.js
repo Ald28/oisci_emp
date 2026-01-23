@@ -99,5 +99,41 @@ export const ListRepository = {
                 }
             }
         })
+    },
+
+    /**
+     * Obtener TODOS los servicios con todas sus relaciones anidadas
+     * Para sincronización inicial completa
+     */
+    findAllWithDetails() {
+        return prisma.servicio.findMany({
+            include: {
+                sede: {
+                    select: {
+                        id: true,
+                        name_sede: true
+                    }
+                },
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                servicioExtintores: {
+                    include: {
+                        mantenimientoDetalle: true,
+                        inspeccionDetalle: true
+                    },
+                    orderBy: {
+                        createdAt: 'asc'
+                    }
+                }
+            },
+            orderBy: {
+                dateStart: 'desc'
+            }
+        })
     }
 }

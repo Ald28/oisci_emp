@@ -218,4 +218,57 @@ router.get('/serv-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecn
 router.get('/servicios/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getServiciosStatsBySedeYearController)
 /* /servicios/sede/1?year=2026 */
 
+/**
+ * @swagger
+ * /services/sync/all:
+ *   get:
+ *     summary: Obtener todos los servicios con detalles completos para sincronización inicial
+ *     description: Retorna todos los servicios con sus servicioExtintores, mantenimientoDetalle e inspeccionDetalle anidados
+ *     tags:
+ *       - Services
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista completa de servicios con todas sus relaciones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       type:
+ *                         type: string
+ *                       dateStart:
+ *                         type: string
+ *                       dateEnd:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       servicioExtintores:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             mantenimientoDetalle:
+ *                               type: object
+ *                             inspeccionDetalle:
+ *                               type: object
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/sync/all', authenticate, authorize(['admin', 'user', 'tecnico']), ListController.getAllWithDetails)
+
 export default router

@@ -91,6 +91,24 @@ export const ListController = {
                 message: error.message
             })
         }
+    },
+
+    /**
+     * Obtener todos los servicios con detalles completos
+     * Para sincronización inicial del frontend
+     */
+    async getAllWithDetails(req, res) {
+        try {
+            const servicios = await ListService.getAllWithDetails()
+
+            return res.status(200).json({
+                data: servicios
+            })
+        } catch (error) {
+            return res.status(500).json({
+                message: error.message
+            })
+        }
     }
 
 }

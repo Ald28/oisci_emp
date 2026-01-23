@@ -26,6 +26,14 @@ export const ListService = {
         }
 
         return ListRepository.findBySedeId(sedeId)
+    },
+
+    /**
+     * Obtener todos los servicios con detalles completos
+     * Para sincronización inicial
+     */
+    async getAllWithDetails() {
+        return ListRepository.findAllWithDetails()
     }
 
 }
