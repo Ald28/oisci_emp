@@ -69,6 +69,10 @@ model User {
   reportesCreados      Reporte[] @relation("ReporteUsuarioCreador")
   reportesActualizados Reporte[] @relation("ReporteUsuarioActualizador")
   reportesAprobados    Reporte[] @relation("ReporteAprobador")
+
+  certificadosAprobados Certificado[] @relation("CertificadoAprobador")
+  certificadosCreados   Certificado[] @relation("CertificadoUsuarioCreador")
+  certificadosActualizados Certificado[] @relation("CertificadoUsuarioActualizador")
 }
 
 model RefreshToken {
@@ -94,6 +98,7 @@ model Client {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   sedes       Sede[]
+  certificados Certificado[]
 }
 
 model Reporte {
@@ -121,10 +126,33 @@ model Reporte {
   usuarioActualizadorId Int?
   usuarioActualizador   User? @relation("ReporteUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
 
+  servicioReportes ServicioReporte[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([servicioId])
+}
+
+model ServicioReporte {
+  id Int @id @default(autoincrement())
+
+  estado StatusEnum?
+
+  checklist Json
+
+  reporteId Int
+  reporte   Reporte @relation(fields: [reporteId], references: [id])
+
+  extintorId Int
+  extintor   Extintor @relation(fields: [extintorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reporteId])
+  @@index([extintorId])
+  @@unique([reporteId, extintorId])
 }
 
 enum ReporteTipo {
@@ -135,6 +163,82 @@ enum ReporteTipo {
 enum ReporteEmitido {
   SI
   NO
+}
+
+model Certificado {
+  id Int @id @default(autoincrement())
+
+  tipo CertificadoTipo
+
+  numeroCertificado String @db.VarChar(45)
+
+  fechaEmision DateTime?
+
+  emitido CertificadoEmitido @default(NO)
+
+  frecuencia String? @db.VarChar(45)
+
+  archivoPdfUrl String? @db.VarChar(255)
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  sedeId Int
+  sede   Sede @relation(fields: [sedeId], references: [id])
+
+  servicioId Int
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
+
+  aprobadorId Int?
+  aprobador   User? @relation("CertificadoAprobador", fields: [aprobadorId], references: [id])
+
+  usuarioCreadorId Int
+  usuarioCreador   User @relation("CertificadoUsuarioCreador", fields: [usuarioCreadorId], references: [id])
+
+  usuarioActualizadorId Int?
+  usuarioActualizador   User? @relation("CertificadoUsuarioActualizador", fields: [usuarioActualizadorId], references: [id])
+
+  certificadoDetalles CertificadoDetalle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([sedeId])
+  @@index([servicioId])
+  @@index([aprobadorId])
+}
+
+enum CertificadoTipo {
+  OPER
+  HIDRO
+  BAJA
+}
+
+enum CertificadoEmitido {
+  SI
+  NO
+}
+
+model CertificadoDetalle {
+  id Int @id @default(autoincrement())
+
+  estado StatusEnum?
+
+  checklist Json
+
+  certificadoId Int
+  certificado   Certificado @relation(fields: [certificadoId], references: [id])
+
+  extintorId Int
+  extintor   Extintor @relation(fields: [extintorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([certificadoId])
+  @@index([extintorId])
+  @@unique([certificadoId, extintorId])
 }
 
 model Sede {
@@ -152,6 +256,7 @@ model Sede {
   updatedAt     DateTime   @updatedAt
   extintores    Extintor[]
   servicios     Servicio[]
+  certificados Certificado[]
   @@unique([clientId, name_sede])
 }
 
@@ -174,9 +279,13 @@ model Extintor {
   usuarioCreadorId Int
 
   sede             Sede @relation(fields: [sedeId], references: [id])
+  servicioReportes ServicioReporte[]
+
   usuarioCreador   User @relation("ExtintorUsuarioCreador", fields: [usuarioCreadorId], references: [id])
 
   serviciosExtintor ServicioExtintor[]
+
+  certificadoDetalles CertificadoDetalle[]
 }
 
 enum StatusEnum {
@@ -211,6 +320,8 @@ model Servicio {
   servicioExtintores ServicioExtintor[]
 
   reportes Reporte[]
+
+  certificados Certificado[]
 
   @@unique([sedeId, type, dateStart])
 }
