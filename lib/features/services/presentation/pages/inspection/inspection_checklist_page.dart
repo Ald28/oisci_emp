@@ -17,7 +17,7 @@ import '../../../domain/usecases/get_service_extinguishers_by_service_id_usecase
 import '../../../data/repositories/service_repository_impl.dart';
 import '../../widgets/inspection_checklist_item.dart';
 import '../maintenance/widgets/service_extinguisher_cart_modal.dart';
-import '../maintenance/maintenance_observations_page.dart';
+import '../service_observations_page.dart';
 
 /// Pantalla: Checklist de Inspección
 class InspectionChecklistPage extends StatefulWidget {
@@ -351,7 +351,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => MaintenanceObservationsPage(
+          builder: (_) => ServiceObservationsPage(
             extinguisher: widget.extinguisher,
             serviceType: widget.serviceType,
             servicioId: widget.servicioId,

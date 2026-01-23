@@ -14,7 +14,7 @@ import 'widgets/recharge_modal.dart';
 import 'widgets/decommission_modal.dart';
 import 'widgets/parts_change_modal.dart';
 import 'widgets/service_extinguisher_cart_modal.dart';
-import 'maintenance_observations_page.dart';
+import '../service_observations_page.dart';
 
 /// Pantalla: Checklist de Mantenimiento
 class MaintenanceChecklistPage extends StatefulWidget {
@@ -268,7 +268,7 @@ class _MaintenanceChecklistPageState extends State<MaintenanceChecklistPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => MaintenanceObservationsPage(
+          builder: (_) => ServiceObservationsPage(
             extinguisher: widget.extinguisher,
             serviceType: widget.serviceType,
             servicioId: widget.servicioId,

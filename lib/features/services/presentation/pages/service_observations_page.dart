@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import '../../../../home/presentation/widgets/home_app_bar.dart';
-import '../../../../../core/widgets/primary_button.dart';
-import '../../../../../core/widgets/secondary_button.dart';
-import '../../../../../core/widgets/floating_label_text_field.dart';
-import '../../../domain/entities/extinguisher_entity.dart';
-import '../../../domain/entities/service_extinguisher_entity.dart';
-import '../../../domain/entities/service_type.dart';
-import '../../../domain/usecases/update_service_extinguisher_observations_usecase.dart';
-import '../../../data/repositories/service_repository_impl.dart';
-import '../services_scan_page.dart';
-import '../services_menu_page.dart';
-import '../service_extinguisher_list_page.dart';
+import '../../../home/presentation/widgets/home_app_bar.dart';
+import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/secondary_button.dart';
+import '../../../../core/widgets/floating_label_text_field.dart';
+import '../../domain/entities/extinguisher_entity.dart';
+import '../../domain/entities/service_extinguisher_entity.dart';
+import '../../domain/entities/service_type.dart';
+import '../../domain/usecases/update_service_extinguisher_observations_usecase.dart';
+import '../../data/repositories/service_repository_impl.dart';
+import 'services_scan_page.dart';
+import 'services_menu_page.dart';
+import 'service_extinguisher_list_page.dart';
 
-/// Pantalla: Observaciones de mantenimiento
-class MaintenanceObservationsPage extends StatefulWidget {
+/// Pantalla: Observaciones de servicio (inspección y mantenimiento)
+class ServiceObservationsPage extends StatefulWidget {
   final Extinguisher extinguisher;
   final ServiceType serviceType;
   final int servicioId;
@@ -23,7 +23,7 @@ class MaintenanceObservationsPage extends StatefulWidget {
   final String? decommissionReason;
   final String? partsChangeDetails;
 
-  const MaintenanceObservationsPage({
+  const ServiceObservationsPage({
     super.key,
     required this.extinguisher,
     required this.serviceType,
@@ -36,12 +36,11 @@ class MaintenanceObservationsPage extends StatefulWidget {
   });
 
   @override
-  State<MaintenanceObservationsPage> createState() =>
-      _MaintenanceObservationsPageState();
+  State<ServiceObservationsPage> createState() =>
+      _ServiceObservationsPageState();
 }
 
-class _MaintenanceObservationsPageState
-    extends State<MaintenanceObservationsPage> {
+class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
   final _observationsController = TextEditingController();
   bool _isSaving = false;
   bool _isLoading = true;
