@@ -29,9 +29,13 @@ Permite administrar checklists de servicios, realizar inspecciones actualizando 
 ### Instalar dependencias
 npm install
 
+---
+
 ### Configurar variables de entorno
 
 cp .env.example .env
+
+---
 
 ### Ejemplo de .env:
 
@@ -49,23 +53,33 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
+---
+
 ### Ejecutar migraciones:
 
 npx prisma migrate dev
 
+---
+
 ### Iniciar el proyecto:
 
 npm run dev
+
+---
 
 ### 📚 Documentación API
 
 Swagger disponible en:
 http://localhost:8000/api-docs
 
+---
+
 ### Scripts
-npm run dev       # Desarrollo
-npm start         # Producción
-npx prisma studio # Ver base de datos
+- npm run dev       # Desarrollo
+- npm start         # Producción
+- npx prisma studio # Ver base de datos
+
+---
 
 ### Estructura
 ```plaintext
