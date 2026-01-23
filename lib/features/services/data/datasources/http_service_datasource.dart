@@ -573,6 +573,36 @@ class HttpServiceDataSource {
       rethrow;
     }
   }
+
+  /// Obtener servicios modificados después de un timestamp (sincronización incremental)
+  /// GET /services/sync/incremental?since=2026-01-22T10:00:00Z
+  /// Retorna solo servicios modificados desde el timestamp proporcionado
+  Future<List<ServiceWithDetailsModel>> getServicesUpdatedSince(
+      String since) async {
+    try {
+      final response = await _dio.get(
+        '/services/sync/incremental',
+        queryParameters: {'since': since},
+      );
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: [...] }
+      if (responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+        return dataList
+            .map((json) => ServiceWithDetailsModel.fromJson(
+                json as Map<String, dynamic>))
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
+    }
+  }
 }
 
 /// Modelo temporal para recibir servicios con detalles anidados del backend

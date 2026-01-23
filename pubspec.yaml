@@ -32,6 +32,7 @@ dependencies:
   flutter_nfc_kit: ^3.6.1
   permission_handler: ^11.3.1
   fl_chart: ^0.69.0
+  socket_io_client: ^2.0.3+1
 
 dev_dependencies:
   flutter_test:

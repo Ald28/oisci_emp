@@ -116,4 +116,37 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
       rethrow;
     }
   }
+
+  /// Obtener extintores modificados después de un timestamp (sincronización incremental)
+  /// GET /nfc/sync/incremental?since=2026-01-22T10:00:00Z
+  /// Retorna solo extintores modificados desde el timestamp proporcionado
+  Future<List<ExtinguisherModel>> getExtinguishersUpdatedSince(String since) async {
+    try {
+      final response = await _dio.get(
+        '/nfc/sync/incremental',
+        queryParameters: {'since': since},
+      );
+
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { ok: true, data: [...] }
+      if (responseData['ok'] == true && responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+
+        return dataList
+            .map(
+              (json) =>
+                  ExtinguisherModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
+    }
+  }
 }

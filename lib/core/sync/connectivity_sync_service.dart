@@ -4,6 +4,8 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'sync_service.dart';
 import 'service_sync_service.dart';
 import 'sync_progress_controller.dart';
+import 'incremental_sync_service.dart';
+import '../websocket/realtime_sync_service.dart';
 import '../notifications/notification_service.dart';
 
 /// Servicio para monitorear conectividad y sincronizar automáticamente
@@ -11,13 +13,19 @@ class ConnectivitySyncService {
   final Connectivity _connectivity = Connectivity();
   final SyncService _syncService = SyncService();
   final ServiceSyncService _serviceSyncService = ServiceSyncService();
+  final IncrementalSyncService _incrementalSyncService = IncrementalSyncService();
+  final RealtimeSyncService _realtimeSyncService = RealtimeSyncService();
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  Timer? _periodicSyncTimer;
   bool _isSyncing = false;
   bool _isSyncingServices = false;
   DateTime? _lastSyncTime;
   static const Duration _syncCooldown = Duration(
     seconds: 5,
   ); // Evitar sincronizaciones muy frecuentes
+  static const Duration _periodicSyncInterval = Duration(
+    minutes: 2,
+  ); // Sincronizar cada 2 minutos cuando está online
 
   /// Iniciar monitoreo de conectividad
   void startMonitoring() {
@@ -30,6 +38,13 @@ class ConnectivitySyncService {
         if (hasInternet) {
           // Hay conexión a internet, sincronizar automáticamente
           await _syncWhenConnected();
+          // Conectar WebSocket si no está conectado
+          if (!_realtimeSyncService.isConnected) {
+            await _realtimeSyncService.connect();
+          }
+        } else {
+          // Desconectar WebSocket si se pierde internet
+          _realtimeSyncService.disconnect();
         }
       },
       onError: (error) {
@@ -39,6 +54,39 @@ class ConnectivitySyncService {
 
     // Verificar conectividad inicial
     _checkInitialConnectivity();
+
+    // Iniciar sincronización periódica cuando está online (fallback)
+    _startPeriodicSync();
+
+    // Conectar WebSocket para sincronización en tiempo real
+    _connectWebSocket();
+  }
+
+  /// Conectar WebSocket para sincronización en tiempo real
+  Future<void> _connectWebSocket() async {
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+    if (hasInternet) {
+      await _realtimeSyncService.connect();
+    }
+  }
+
+  /// Iniciar sincronización periódica para detectar cambios cuando está online
+  void _startPeriodicSync() {
+    // Cancelar timer anterior si existe
+    _periodicSyncTimer?.cancel();
+
+    // Crear nuevo timer que se ejecuta cada _periodicSyncInterval
+    _periodicSyncTimer = Timer.periodic(_periodicSyncInterval, (timer) async {
+      final hasInternet = await InternetConnectionChecker().hasConnection;
+      if (hasInternet) {
+        // Solo descargar cambios (no subir pendientes, eso se hace en _syncWhenConnected)
+        await _incrementalSyncService.syncIncremental();
+      } else {
+        // Si no hay internet, cancelar el timer
+        timer.cancel();
+        _periodicSyncTimer = null;
+      }
+    });
   }
 
   /// Verificar conectividad inicial
@@ -64,24 +112,24 @@ class ConnectivitySyncService {
       }
     }
 
-    // Verificar si hay registros pendientes antes de sincronizar
+    // 1. PRIMERO: Subir pendientes (si hay)
     final hasPendingExtinguishers = await _syncService
         .hasPendingExtinguishers();
     final hasPendingServices = await _serviceSyncService.hasPendingServices();
 
-    if (!hasPendingExtinguishers && !hasPendingServices) {
-      return; // No hay nada que sincronizar
-    }
-
-    // Sincronizar extintores primero
     if (hasPendingExtinguishers) {
       await _syncExtinguishers();
     }
 
-    // Sincronizar servicios después
     if (hasPendingServices) {
       await _syncServices();
     }
+
+    // 2. SIEMPRE: Descargar cambios del servidor (incluso si no hay pendientes)
+    // Esto asegura que cuando ambos dispositivos están online, vean cambios mutuos
+    await _incrementalSyncService.syncIncremental();
+    
+    _lastSyncTime = DateTime.now();
   }
 
   /// Sincronizar extintores pendientes
@@ -272,6 +320,9 @@ class ConnectivitySyncService {
   void stopMonitoring() {
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    _periodicSyncTimer?.cancel();
+    _periodicSyncTimer = null;
+    _realtimeSyncService.disconnect();
   }
 
   /// Sincronizar manualmente (forzar sincronización)

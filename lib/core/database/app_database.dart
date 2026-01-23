@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 7, // Versión 7: agregar photoPath a extintor
+      version: 8, // Versión 8: agregar tabla sync_metadata para sincronización incremental
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -273,6 +273,14 @@ class AppDatabase {
     await db.execute('''
       CREATE INDEX idx_client_razon_social ON client(razonSocial)
     ''');
+
+    // Tabla para almacenar metadatos de sincronización
+    await db.execute('''
+      CREATE TABLE sync_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
   }
 
   /// Migración de la base de datos
@@ -462,6 +470,16 @@ class AppDatabase {
 
       await db.execute('''
         CREATE INDEX IF NOT EXISTS idx_client_razon_social ON client(razonSocial)
+      ''');
+    }
+
+    if (oldVersion < 8) {
+      // Agregar tabla sync_metadata para sincronización incremental
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sync_metadata (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
       ''');
     }
   }
