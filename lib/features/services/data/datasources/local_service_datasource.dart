@@ -983,16 +983,18 @@ class LocalServiceDataSource {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    // Si hay foto1Url o foto1Path, actualizar también Extintor.photo y photoPath
-    // foto1Path ya está disponible desde arriba (línea 946)
+    // Si hay foto1Url o foto1Path, actualizar también Extintor.photo y photoPath.
+    // Importante: aquí usamos el path FINAL que quedó guardado (map['foto1Path']),
+    // porque en sincronización inicial podemos venir con un foto1Path recién descargado.
+    final finalFoto1Path = map['foto1Path'] as String?;
     if ((inspectionDetail.foto1Url != null &&
             inspectionDetail.foto1Url!.isNotEmpty) ||
-        (foto1Path != null && foto1Path.isNotEmpty)) {
+        (finalFoto1Path != null && finalFoto1Path.isNotEmpty)) {
       await _updateExtinguisherPhotoFromServicioExtintorId(
         db,
         inspectionDetail.servicioExtintorId,
         inspectionDetail.foto1Url ?? '',
-        foto1Path,
+        finalFoto1Path,
       );
     }
   }

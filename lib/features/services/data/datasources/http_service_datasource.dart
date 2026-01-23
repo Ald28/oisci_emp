@@ -547,4 +547,148 @@ class HttpServiceDataSource {
       rethrow;
     }
   }
+
+  /// Obtener TODOS los servicios con detalles completos para sincronización inicial
+  /// GET /services/sync/all
+  /// Retorna servicios con servicioExtintores, mantenimientoDetalle e inspeccionDetalle anidados
+  Future<List<ServiceWithDetailsModel>> getAllServicesWithDetails() async {
+    try {
+      final response = await _dio.get('/services/sync/all');
+      final responseData = response.data as Map<String, dynamic>;
+
+      // El backend retorna: { data: [...] }
+      if (responseData['data'] != null) {
+        final List<dynamic> dataList = responseData['data'] as List<dynamic>;
+        return dataList
+            .map((json) => ServiceWithDetailsModel.fromJson(
+                json as Map<String, dynamic>))
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
+    }
+  }
+}
+
+/// Modelo temporal para recibir servicios con detalles anidados del backend
+class ServiceWithDetailsModel {
+  final int id;
+  final String type;
+  final DateTime dateStart;
+  final DateTime? dateEnd;
+  final String status;
+  final String statusValid;
+  final String? historic;
+  final int sedeId;
+  final int userId;
+  final int usuarioCreadorId;
+  final int? usuarioActualizadorId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final List<ServiceExtinguisherWithDetailsModel> servicioExtintores;
+
+  ServiceWithDetailsModel({
+    required this.id,
+    required this.type,
+    required this.dateStart,
+    this.dateEnd,
+    required this.status,
+    required this.statusValid,
+    this.historic,
+    required this.sedeId,
+    required this.userId,
+    required this.usuarioCreadorId,
+    this.usuarioActualizadorId,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.servicioExtintores,
+  });
+
+  factory ServiceWithDetailsModel.fromJson(Map<String, dynamic> json) {
+    return ServiceWithDetailsModel(
+      id: json['id'] as int,
+      type: json['type'] as String,
+      dateStart: DateTime.parse(json['dateStart'] as String),
+      dateEnd: json['dateEnd'] != null
+          ? DateTime.parse(json['dateEnd'] as String)
+          : null,
+      status: json['status'] as String,
+      statusValid: json['statusValid'] as String,
+      historic: json['historic'] as String?,
+      sedeId: json['sedeId'] as int,
+      userId: json['userId'] as int,
+      usuarioCreadorId: json['usuarioCreadorId'] as int,
+      usuarioActualizadorId: json['usuarioActualizadorId'] as int?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      servicioExtintores: (json['servicioExtintores'] as List<dynamic>?)
+              ?.map((se) => ServiceExtinguisherWithDetailsModel.fromJson(
+                  se as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+/// Modelo temporal para servicio_extintor con detalles anidados
+class ServiceExtinguisherWithDetailsModel {
+  final int id;
+  final int servicioId;
+  final int extintorId;
+  final String? estadoInicial;
+  final String? estadoFinal;
+  final bool completado;
+  final String? observaciones;
+  final int usuarioCreadorId;
+  final int? usuarioActualizadorId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final MaintenanceDetailModel? mantenimientoDetalle;
+  final InspectionDetailModel? inspeccionDetalle;
+
+  ServiceExtinguisherWithDetailsModel({
+    required this.id,
+    required this.servicioId,
+    required this.extintorId,
+    this.estadoInicial,
+    this.estadoFinal,
+    required this.completado,
+    this.observaciones,
+    required this.usuarioCreadorId,
+    this.usuarioActualizadorId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.mantenimientoDetalle,
+    this.inspeccionDetalle,
+  });
+
+  factory ServiceExtinguisherWithDetailsModel.fromJson(
+      Map<String, dynamic> json) {
+    return ServiceExtinguisherWithDetailsModel(
+      id: json['id'] as int,
+      servicioId: json['servicioId'] as int,
+      extintorId: json['extintorId'] as int,
+      estadoInicial: json['estadoInicial'] as String?,
+      estadoFinal: json['estadoFinal'] as String?,
+      completado: json['completado'] as bool? ?? false,
+      observaciones: json['observaciones'] as String?,
+      usuarioCreadorId: json['usuarioCreadorId'] as int,
+      usuarioActualizadorId: json['usuarioActualizadorId'] as int?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      mantenimientoDetalle: json['mantenimientoDetalle'] != null
+          ? MaintenanceDetailModel.fromJson(
+              json['mantenimientoDetalle'] as Map<String, dynamic>)
+          : null,
+      inspeccionDetalle: json['inspeccionDetalle'] != null
+          ? InspectionDetailModel.fromJson(
+              json['inspeccionDetalle'] as Map<String, dynamic>)
+          : null,
+    );
+  }
 }

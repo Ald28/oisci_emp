@@ -2,6 +2,7 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'extinguisher_sync_service.dart';
 import 'sede_sync_service.dart';
 import 'client_sync_service.dart';
+import 'service_download_sync_service.dart';
 import '../database/app_database.dart';
 
 /// Servicio para descarga inicial de datos después del primer login
@@ -9,15 +10,19 @@ class InitialSyncService {
   final ExtinguisherSyncService _extinguisherSyncService;
   final SedeSyncService _sedeSyncService;
   final ClientSyncService _clientSyncService;
+  final ServiceDownloadSyncService _serviceDownloadSyncService;
 
   InitialSyncService({
     ExtinguisherSyncService? extinguisherSyncService,
     SedeSyncService? sedeSyncService,
     ClientSyncService? clientSyncService,
+    ServiceDownloadSyncService? serviceDownloadSyncService,
   }) : _extinguisherSyncService =
            extinguisherSyncService ?? ExtinguisherSyncService(),
        _sedeSyncService = sedeSyncService ?? SedeSyncService(),
-       _clientSyncService = clientSyncService ?? ClientSyncService();
+       _clientSyncService = clientSyncService ?? ClientSyncService(),
+       _serviceDownloadSyncService =
+           serviceDownloadSyncService ?? ServiceDownloadSyncService();
 
   /// Verificar si es necesario hacer descarga inicial
   /// Retorna true si no hay datos locales o hay muy pocos
@@ -40,8 +45,15 @@ class InitialSyncService {
     );
     final clientes = clientesCount.first['count'] as int? ?? 0;
 
-    // Si no hay sedes, extintores o clientes, necesita descarga inicial
-    return sedes == 0 || extintores == 0 || clientes == 0;
+    // Verificar si hay servicios guardados
+    final serviciosCount = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM servicio',
+    );
+    final servicios = serviciosCount.first['count'] as int? ?? 0;
+
+    // Si no hay sedes, extintores o clientes, necesita descarga inicial.
+    // También si no hay servicios (para poder continuar servicios en proceso offline).
+    return sedes == 0 || extintores == 0 || clientes == 0 || servicios == 0;
   }
 
   /// Realizar descarga inicial de todos los datos
@@ -59,7 +71,7 @@ class InitialSyncService {
     }
 
     try {
-      // Paso 1: Descargar sedes (0% → 20% del progreso)
+      // Paso 1: Descargar sedes (0% → 15% del progreso)
       yield {'step': 'Descargando sedes...', 'progress': 0.0};
       final sedesSuccess = await _sedeSyncService.syncSedes();
       if (!sedesSuccess) {
@@ -70,17 +82,17 @@ class InitialSyncService {
         };
         return;
       }
-      yield {'step': 'Sedes descargadas', 'progress': 0.2};
+      yield {'step': 'Sedes descargadas', 'progress': 0.15};
 
-      // Paso 2: Descargar extintores (20% → 80% del progreso)
-      yield {'step': 'Descargando extintores...', 'progress': 0.2};
+      // Paso 2: Descargar extintores (15% → 65% del progreso)
+      yield {'step': 'Descargando extintores...', 'progress': 0.15};
 
       // Verificar conexión antes de descargar extintores
       final hasInternet2 = await InternetConnectionChecker().hasConnection;
       if (!hasInternet2) {
         yield {
           'step': 'Error',
-          'progress': 0.2,
+          'progress': 0.15,
           'error': 'Conexión perdida durante la descarga',
         };
         return;
@@ -92,7 +104,7 @@ class InitialSyncService {
         if (!extinguisherSuccess) {
           yield {
             'step': 'Error',
-            'progress': 0.2,
+            'progress': 0.15,
             'error': 'Error al descargar extintores',
           };
           return;
@@ -100,22 +112,22 @@ class InitialSyncService {
       } catch (e) {
         yield {
           'step': 'Error',
-          'progress': 0.2,
+          'progress': 0.15,
           'error': e.toString().replaceAll('Exception: ', ''),
         };
         return;
       }
-      yield {'step': 'Extintores descargados', 'progress': 0.8};
+      yield {'step': 'Extintores descargados', 'progress': 0.65};
 
-      // Paso 3: Descargar clientes (80% → 100% del progreso)
-      yield {'step': 'Descargando clientes...', 'progress': 0.8};
+      // Paso 3: Descargar clientes (65% → 85% del progreso)
+      yield {'step': 'Descargando clientes...', 'progress': 0.65};
 
       // Verificar conexión antes de descargar clientes
       final hasInternet3 = await InternetConnectionChecker().hasConnection;
       if (!hasInternet3) {
         yield {
           'step': 'Error',
-          'progress': 0.8,
+          'progress': 0.65,
           'error': 'Conexión perdida durante la descarga',
         };
         return;
@@ -126,7 +138,7 @@ class InitialSyncService {
         if (!clientsSuccess) {
           yield {
             'step': 'Error',
-            'progress': 0.8,
+            'progress': 0.65,
             'error': 'Error al descargar clientes',
           };
           return;
@@ -134,7 +146,33 @@ class InitialSyncService {
       } catch (e) {
         yield {
           'step': 'Error',
-          'progress': 0.8,
+          'progress': 0.65,
+          'error': e.toString().replaceAll('Exception: ', ''),
+        };
+        return;
+      }
+
+      yield {'step': 'Clientes descargados', 'progress': 0.85};
+
+      // Paso 4: Descargar servicios y detalles (85% → 100% del progreso)
+      yield {'step': 'Descargando servicios...', 'progress': 0.85};
+
+      final hasInternet4 = await InternetConnectionChecker().hasConnection;
+      if (!hasInternet4) {
+        yield {
+          'step': 'Error',
+          'progress': 0.85,
+          'error': 'Conexión perdida durante la descarga',
+        };
+        return;
+      }
+
+      try {
+        await _serviceDownloadSyncService.syncServicesForOffline();
+      } catch (e) {
+        yield {
+          'step': 'Error',
+          'progress': 0.85,
           'error': e.toString().replaceAll('Exception: ', ''),
         };
         return;
