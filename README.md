@@ -62,13 +62,12 @@ npm run dev
 Swagger disponible en:
 http://localhost:8000/api-docs
 
-## Scripts
-```plaintext
+### Scripts
 npm run dev       # Desarrollo
 npm start         # Producción
 npx prisma studio # Ver base de datos
 
-## Estructura
+### Estructura
 ```plaintext
 OISCI_EMP
 ├── controllers
