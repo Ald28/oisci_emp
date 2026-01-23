@@ -63,6 +63,7 @@ Swagger disponible en:
 http://localhost:8000/api-docs
 
 ## Scripts
+```plaintext
 npm run dev       # Desarrollo
 npm start         # Producción
 npx prisma studio # Ver base de datos
