@@ -6,44 +6,11 @@
 
 Aplicación móvil Flutter para la gestión integral de servicios de mantenimiento e inspección de extintores mediante tecnología NFC. Diseñada con arquitectura **offline-first** y sincronización bidireccional en tiempo real.
 
----
-
-## 📋 Tabla de Contenidos
-
-- [Características](#-características)
-- [Tecnologías](#-tecnologías)
-- [Arquitectura](#-arquitectura)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Uso](#-uso)
-- [Sincronización](#-sincronización)
-- [Documentación](#-documentación)
-- [Desarrollo](#-desarrollo)
-- [Contribución](#-contribución)
-
----
-
-## ✨ Características
-
-### 🔐 Autenticación y Seguridad
-- ✅ Autenticación JWT con tokens de acceso y refresh
-- ✅ Almacenamiento seguro de credenciales con `flutter_secure_storage`
-- ✅ Sesión persistente con soporte offline
-
-### 🔄 Sincronización
-- ✅ **Offline-First:** Funciona completamente sin conexión a internet
-- ✅ **Sincronización Automática:** Sincroniza automáticamente cuando hay conexión
-- ✅ **Sincronización Incremental:** Solo descarga cambios desde la última sincronización
-- ✅ **Tiempo Real:** WebSocket para sincronización instantánea entre dispositivos
-- ✅ **Cola de Sincronización:** Guarda cambios pendientes para sincronizar después
-
-### 🎨 Interfaz de Usuario
-- ✅ Material Design 3
-- ✅ Soporte multi-idioma (Español/Inglés)
-- ✅ Modo oscuro/claro
-- ✅ Navegación intuitiva con Drawer
-- ✅ Widgets reutilizables y personalizados
+**Características principales:**
+- Autenticación JWT con sesión persistente offline
+- Lectura NFC para escaneo de extintores
+- Sincronización automática e incremental con WebSocket
+- Funciona completamente offline con cola de sincronización
 
 ---
 
@@ -177,12 +144,6 @@ oisci_fe/
 
 ---
 
-## 🚀 Uso
-
-La aplicación permite gestionar servicios de mantenimiento e inspección de extintores mediante NFC. Los datos se sincronizan automáticamente cuando hay conexión a internet, y funcionan completamente offline cuando no hay conexión.
-
----
-
 ## 🔄 Sincronización
 
 La aplicación utiliza sincronización **offline-first** con las siguientes características:
@@ -221,21 +182,6 @@ flutter build ios --release        # iOS
 ```
 
 El proyecto utiliza `flutter_lints` para mantener la calidad del código.
-
----
-
-## 🔧 Troubleshooting
-
-**Error: "Cannot find module"**
-```bash
-flutter clean && flutter pub get
-```
-
-**Error de conexión:** Verifica `API_BASE_URL` en `.env` y que el backend esté ejecutándose.
-
-**Problemas con NFC:** Verifica que el dispositivo tenga NFC habilitado y los permisos necesarios.
-
-**Problemas de sincronización:** Verifica la conexión a internet y revisa los logs en la consola.
 
 ---
 
