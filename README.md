@@ -49,33 +49,11 @@ Aplicación móvil Flutter para la gestión integral de servicios de mantenimien
 
 ## 🛠️ Tecnologías
 
-### Framework y Lenguaje
-- **Flutter** 3.10.1
-- **Dart** 3.10.1
-
-### Dependencias Principales
-
-#### Red y Sincronización
-- `dio` ^5.9.0 - Cliente HTTP para comunicación con el backend
-- `socket_io_client` ^2.0.3+1 - WebSocket para sincronización en tiempo real
-- `connectivity_plus` ^7.0.0 - Detección de conectividad
-- `internet_connection_checker` ^1.0.0 - Verificación de conexión a internet
-
-#### Almacenamiento Local
-- `sqflite` ^2.3.0 - Base de datos SQLite
-- `shared_preferences` ^2.5.3 - Almacenamiento de preferencias
-- `flutter_secure_storage` ^9.2.4 - Almacenamiento seguro de tokens
-
-#### Funcionalidades Específicas
-- `flutter_nfc_kit` ^3.6.1 - Lectura de tags NFC
-- `image_picker` ^1.0.0 - Selección y captura de imágenes
-- `flutter_local_notifications` ^17.0.0 - Notificaciones locales
-- `workmanager` ^0.9.0+3 - Tareas en background
-
-#### UI y Utilidades
-- `fl_chart` ^0.69.0 - Gráficos y visualización de datos
-- `intl` ^0.20.2 - Internacionalización y formateo
-- `flutter_dotenv` ^5.1.0 - Variables de entorno
+- **Flutter** 3.10.1 / **Dart** 3.10.1
+- **Red:** `dio`, `socket_io_client`, `connectivity_plus`
+- **Almacenamiento:** `sqflite`, `flutter_secure_storage`, `shared_preferences`
+- **Funcionalidades:** `flutter_nfc_kit`, `image_picker`, `flutter_local_notifications`
+- **UI:** `fl_chart`, `intl`, `flutter_dotenv`
 
 ---
 
@@ -144,14 +122,7 @@ Para más detalles sobre la arquitectura, consulta:
 
 4. **Ejecutar la aplicación**
    ```bash
-   # Android
    flutter run
-
-   # iOS
-   flutter run
-
-   # Específico
-   flutter run -d <device-id>
    ```
 
 ---
@@ -196,12 +167,11 @@ oisci_fe/
 │       ├── home/                  # Página principal
 │       └── client_statistics/     # Estadísticas
 │
-├── assets/                       # Recursos (imágenes, iconos)
-├── test/                         # Tests
+├── assets/                       # Recursos
+├── test/                          # Tests
 ├── .env                          # Variables de entorno
 ├── pubspec.yaml                  # Dependencias
 ├── ARQUITECTURA.md               # Documentación de arquitectura
-├── FLUJO_DATOS.md                # Diagramas de flujo
 └── README.md                     # Este archivo
 ```
 
@@ -209,186 +179,80 @@ oisci_fe/
 
 ## 🚀 Uso
 
-### Inicio de Sesión
-
-1. Abre la aplicación
-2. Ingresa tus credenciales (email y contraseña)
-3. La aplicación verificará tu sesión y te redirigirá al home
-
-### Crear un Servicio
-
-1. Desde el menú principal, selecciona "Servicios"
-2. Elige el tipo de servicio (Mantenimiento o Inspección)
-3. Selecciona la sede
-4. Escanea o busca el extintor mediante NFC
-5. Completa el checklist correspondiente
-6. Guarda el servicio
-
-### Sincronización Manual
-
-1. Abre el menú lateral (Drawer)
-2. Selecciona "Sincronizar"
-3. Elige el tipo de datos a sincronizar
-4. Espera a que se complete la sincronización
+La aplicación permite gestionar servicios de mantenimiento e inspección de extintores mediante NFC. Los datos se sincronizan automáticamente cuando hay conexión a internet, y funcionan completamente offline cuando no hay conexión.
 
 ---
 
 ## 🔄 Sincronización
 
-### Sincronización Automática
+La aplicación utiliza sincronización **offline-first** con las siguientes características:
 
-La aplicación sincroniza automáticamente cuando:
-- Se detecta conexión a internet
-- Se completa una acción que requiere sincronización
-- Cada 2 minutos cuando está online (fallback)
-
-### Sincronización Incremental
-
-La aplicación utiliza sincronización incremental para optimizar el uso de datos:
-- Solo descarga cambios desde la última sincronización
-- Utiliza timestamps (`updatedAt`) para filtrar cambios
-- Reduce significativamente el consumo de ancho de banda
-
-### Sincronización en Tiempo Real (WebSocket)
-
-Cuando múltiples dispositivos están conectados:
-- Los cambios se propagan instantáneamente (< 1 segundo)
-- Similar a WhatsApp: cuando un dispositivo crea/edita algo, los demás lo ven inmediatamente
-- Funciona como fallback si WebSocket falla: polling cada 2 minutos
-
-### Modo Offline
-
-La aplicación funciona completamente offline:
-- Todos los datos se guardan localmente en SQLite
-- Los cambios pendientes se agregan a una cola de sincronización
-- Cuando se restablece la conexión, se sincronizan automáticamente
+- **Automática:** Se sincroniza cuando hay conexión a internet
+- **Incremental:** Solo descarga cambios desde la última sincronización
+- **Tiempo Real:** WebSocket para sincronización instantánea entre dispositivos (< 1 segundo)
+- **Offline:** Funciona completamente sin conexión, guardando cambios en cola para sincronizar después
 
 ---
 
 ## 📚 Documentación
 
-### Documentación Adicional
-
 - 📄 [ARQUITECTURA.md](ARQUITECTURA.md) - Arquitectura detallada y explicación de capas
 
-### Documentación del Código
-
-El código está documentado con comentarios explicativos. Los archivos principales incluyen:
-- Descripción de clases y métodos
-- Ejemplos de uso
-- Notas sobre decisiones de diseño
+El código está documentado con comentarios explicativos en los archivos principales.
 
 ---
 
 ## 🧪 Desarrollo
 
-### Ejecutar en Modo Desarrollo
-
 ```bash
+# Desarrollo
 flutter run --debug
-```
 
-### Ejecutar Tests
-
-```bash
+# Tests
 flutter test
-```
 
-### Análisis de Código
-
-```bash
+# Análisis
 flutter analyze
+
+# Build
+flutter build apk --release        # Android APK
+flutter build appbundle --release  # Android Bundle
+flutter build ios --release        # iOS
 ```
 
-### Generar Build
-
-```bash
-# Android APK
-flutter build apk --release
-
-# Android App Bundle
-flutter build appbundle --release
-
-# iOS
-flutter build ios --release
-```
-
-### Linting
-
-El proyecto utiliza `flutter_lints` para mantener la calidad del código. Se ejecuta automáticamente en el IDE.
+El proyecto utiliza `flutter_lints` para mantener la calidad del código.
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Problemas Comunes
-
-#### Error: "Cannot find module"
+**Error: "Cannot find module"**
 ```bash
-flutter clean
-flutter pub get
+flutter clean && flutter pub get
 ```
 
-#### Error de conexión con el backend
-- Verifica que `API_BASE_URL` en `.env` sea correcta
-- Asegúrate de que el backend esté ejecutándose
-- Verifica la conectividad de red
+**Error de conexión:** Verifica `API_BASE_URL` en `.env` y que el backend esté ejecutándose.
 
-#### Problemas con NFC
-- Verifica que el dispositivo tenga NFC habilitado
-- Asegúrate de tener los permisos necesarios
-- En Android, verifica `AndroidManifest.xml`
+**Problemas con NFC:** Verifica que el dispositivo tenga NFC habilitado y los permisos necesarios.
 
-#### Problemas de sincronización
-- Verifica la conexión a internet
-- Revisa los logs en la consola para errores específicos
-- Intenta una sincronización manual desde el menú
+**Problemas de sincronización:** Verifica la conexión a internet y revisa los logs en la consola.
 
 ---
 
 ## 🤝 Contribución
 
-### Guías de Contribución
-
 1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+2. Crea una rama para tu feature
+3. Commit tus cambios
+4. Abre un Pull Request
 
-### Estándares de Código
-
-- Sigue la arquitectura Clean Architecture
-- Mantén la separación de capas (Domain, Data, Presentation)
-- Escribe tests para nuevas funcionalidades
-- Documenta código complejo
-- Sigue las convenciones de Dart/Flutter
+**Estándares:** Sigue Clean Architecture, mantén la separación de capas, escribe tests y documenta código complejo.
 
 ---
 
 ## 📝 Licencia
 
 Este proyecto es de propiedad privada. Todos los derechos reservados.
-
----
-
-## 👥 Autores
-
-- **Equipo de Desarrollo OISCI**
-
----
-
-## 🙏 Agradecimientos
-
-- Flutter Team por el excelente framework
-- Comunidad de Flutter por las librerías y recursos
-- Todos los contribuidores del proyecto
-
----
-
-## 📞 Soporte
-
-Para soporte, contacta al equipo de desarrollo o abre un issue en el repositorio.
 
 ---
 
