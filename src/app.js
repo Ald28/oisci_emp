@@ -19,6 +19,7 @@ import nfcCreateRoutes from '../routes/nfc/create.routes.js';
 
 import servicioCreateRoutes from '../routes/services/register.routes.js';
 import listServicioRoutes from '../routes/services/list.routes.js';
+import approvedRoutes from '../routes/services/approved.routes.js';
 
 import mantenimientoRoutes from '../routes/mantenimientoD/mantenimientoDetalle.routes.js';
 import editMantenimiento from '../routes/mantenimientoD/edit.routes.js';
@@ -85,6 +86,7 @@ app.use('/statistics', listServicioRoutes)
 
 app.use('/services', servicioCreateRoutes);
 app.use('/services', listServicioRoutes);
+app.use('/services', approvedRoutes);
 
 app.use('/mantenimiento', mantenimientoRoutes);
 app.use('/mantenimiento', editMantenimiento);
