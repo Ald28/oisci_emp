@@ -31,6 +31,49 @@ npm install
 
 ---
 
+### 🗄️ Migraciones de Base de Datos (Prisma)
+
+#### 🧪 Entorno local (desarrollo)
+
+1. Asegúrate de que `DATABASE_URL` apunte a tu base de datos local.
+2. Ejecuta las migraciones:
+
+```bash
+npx prisma migrate dev --name init
+
+Esto:
+
+Crea las tablas
+...
+Genera la carpeta prisma/migrations
+
+Aplica los cambios a la base de datos local
+
+(Opcional) Ejecutar seed de datos:
+
+```bash
+npx prisma db seed
+
+#### 🚀 Entorno de producción
+
+⚠️ Nunca ejecutar prisma migrate dev en producción
+
+Configura DATABASE_URL apuntando a la base de datos de producción.
+
+Aplica las migraciones ya existentes:
+
+```bash
+npx prisma migrate deploy
+
+(Opcional) Ejecutar seed inicial:
+
+npx prisma db seed
+
+```md
+> Las migraciones deben crearse únicamente en entorno local y luego desplegarse en producción usando `prisma migrate deploy`.
+
+---
+
 ### Configurar variables de entorno
 
 cp .env.example .env
