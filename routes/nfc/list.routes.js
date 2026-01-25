@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -120,49 +120,41 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
 
 /**
  * @swagger
- * /nfc/{extintorId}:
+ * /nfc/list-nfc:
  *   get:
- *     summary: Obtener extintor por ID
+ *     summary: Listar todos los Extintores sin número de serie
  *     tags:
  *       - NFC
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: extintorId
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del extintor
- *         example: 1
  *     responses:
  *       200:
- *         description: Extintor encontrado
+ *         description: Lista de Extintores sin número de serie
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 ok:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     serialNumber:
- *                       type: string
- *                     type:
- *                       type: string
- *                     capacity:
- *                       type: string
- *                     agent:
- *                       type: string
- *                     status:
- *                       type: string
- *       404:
- *         description: Extintor no encontrado
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   codigoNFC:
+ *                     type: string
+ *                     example: "NFC123456"
+ *                   numeroSerie:
+ *                     type: string
+ *                     example: "SERIE98765"
+ *                   tipo:
+ *                     type: string
+ *                     example: "Polvo Químico"
+ *                   capacidad:
+ *                     type: string
+ *                     example: "5kg"
+ *                   agente:
+ *                     type: string
+ *                     example: "ABC"
+ *                   estado:
+ *                     type: string
+ *                     example: "OPERATIVO"
  *       401:
  *         description: No autenticado
  *       403:
@@ -170,7 +162,7 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisherByIdController);
+router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 'tecnico']), listExtintorNumberController);
 
 /**
  * @swagger
@@ -292,5 +284,59 @@ router.get( '/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user'
  *         description: Error interno del servidor
  */
 router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecnico']), getExtinguishersUpdatedSinceController);
+
+/**
+ * @swagger
+ * /nfc/{extintorId}:
+ *   get:
+ *     summary: Obtener extintor por ID
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: extintorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del extintor
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Extintor encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     serialNumber:
+ *                       type: string
+ *                     type:
+ *                       type: string
+ *                     capacity:
+ *                       type: string
+ *                     agent:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *       404:
+ *         description: Extintor no encontrado
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisherByIdController);
 
 export default router;

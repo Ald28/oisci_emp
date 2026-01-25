@@ -6,7 +6,7 @@ export async function listNFCService() {
 }
 
 export async function getNFCByIdService(codigoNFC) {
-    const nfc = await ListRepository.findById(codigoNFC);
+    const nfc = await ListRepository.findByNFC(codigoNFC);
     return nfc;
 }
 
@@ -56,5 +56,10 @@ export async function getExtintoresStatsBySedeService(sedeId) {
 
 export async function getExtinguishersUpdatedSinceService(since) {
     const extintores = await ListRepository.findUpdatedSince(since);
+    return extintores;
+}
+
+export async function listExtintorNumber(){
+    const extintores = await ListRepository.listByExtintorNumber();
     return extintores;
 }

@@ -16,7 +16,7 @@ export const ListRepository = {
         });
     },
 
-    async findById(codigoNFC) {
+    async findByNFC(codigoNFC) {
         return prisma.extintor.findUnique({
             where: { codigoNFC },
             include: {
@@ -129,4 +129,15 @@ export const ListRepository = {
             }
         })
     },
+
+    async listByExtintorNumber() {
+        return prisma.extintor.findMany({
+            where:{
+                OR:[
+                    {serialNumber: null},
+                    {serialNumber: ''}
+                ]
+            }
+        })
+    }
 };

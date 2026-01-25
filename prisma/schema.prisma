@@ -271,6 +271,15 @@ model Extintor {
   location         String?    @db.VarChar(45)
   status           StatusEnum?
   historic         Int?
+
+  pressure         String?    @db.VarChar(255)
+  brand            String?    @db.VarChar(255)
+  model            String?    @db.VarChar(255)
+  rating           String?    @db.VarChar(255)
+  yearManufacture  String?    @db.VarChar(255)
+  dateHydrostatic  String?    @db.VarChar(255)
+  dateMaintenance  String?    @db.VarChar(255)
+  
   dateLow          DateTime?
   photo            String?    @db.VarChar(255)
   createdAt        DateTime   @default(now())
@@ -423,6 +432,23 @@ model InspeccionDetalle {
   peso          String? @db.VarChar(45)
 
   observaciones String? @db.VarChar(255)
+
+  Ubicación     String? @db.VarChar(255)
+  Acceso        String? @db.VarChar(255)
+  Fijación      String? @db.VarChar(255)
+  Uso           String? @db.VarChar(255)
+  Clase         String? @db.VarChar(255)
+  Recarga       String? @db.VarChar(255)
+  Hidrostática  String? @db.VarChar(255)
+  Presión       String? @db.VarChar(255)
+  Precinto      String? @db.VarChar(255)
+  Cilindro      String? @db.VarChar(255)
+  Carga         String? @db.VarChar(255)
+  Soporte       String? @db.VarChar(255)
+  Manija        String? @db.VarChar(255)
+  Manguera      String? @db.VarChar(255)
+  Tobera        String? @db.VarChar(255)
+  Abrazadera    String? @db.VarChar(255)
 
   usuarioCreadorId      Int
   usuarioActualizadorId Int?
