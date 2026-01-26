@@ -182,6 +182,40 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
                       _buildField('Estado', widget.extinguisher.status!),
                     if (widget.extinguisher.status != null)
                       const SizedBox(height: 12),
+                    if (widget.extinguisher.pressure != null)
+                      _buildField('Presión', widget.extinguisher.pressure!),
+                    if (widget.extinguisher.pressure != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.brand != null)
+                      _buildField('Marca', widget.extinguisher.brand!),
+                    if (widget.extinguisher.brand != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.model != null)
+                      _buildField('Modelo', widget.extinguisher.model!),
+                    if (widget.extinguisher.model != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.rating != null)
+                      _buildField('Clasificación', widget.extinguisher.rating!),
+                    if (widget.extinguisher.rating != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.yearManufacture != null)
+                      _buildField('Año de Fabricación', widget.extinguisher.yearManufacture!),
+                    if (widget.extinguisher.yearManufacture != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.dateHydrostatic != null)
+                      _buildField(
+                        'Fecha Hidrostática',
+                        _formatDate(widget.extinguisher.dateHydrostatic!),
+                      ),
+                    if (widget.extinguisher.dateHydrostatic != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.dateMaintenance != null)
+                      _buildField(
+                        'Fecha de Mantenimiento',
+                        _formatDate(widget.extinguisher.dateMaintenance!),
+                      ),
+                    if (widget.extinguisher.dateMaintenance != null)
+                      const SizedBox(height: 12),
                     if (widget.extinguisher.sedeName != null)
                       _buildField('Sede', widget.extinguisher.sedeName!),
                     if (widget.extinguisher.sedeName != null)
@@ -208,6 +242,18 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
         },
       ),
     );
+  }
+
+  /// Formatear fecha desde String (puede venir en formato ISO o dd/MM/yyyy)
+  String _formatDate(String dateString) {
+    try {
+      // Intentar parsear como ISO (yyyy-MM-dd)
+      final date = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      // Si no se puede parsear, retornar el string original
+      return dateString;
+    }
   }
 
   Widget _buildField(String label, String value) {

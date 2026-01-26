@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/network/error_handler.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
+import '../../../../core/widgets/floating_label_date_picker.dart';
+import '../../../../core/widgets/floating_label_year_picker.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
 import '../../domain/entities/sede_entity.dart';
@@ -41,6 +44,15 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _numeroCilindroController = TextEditingController();
   final _ubicacionController = TextEditingController();
   final _agenteController = TextEditingController();
+  final _pressureController = TextEditingController();
+  final _brandController = TextEditingController();
+  final _modelController = TextEditingController();
+  final _ratingController = TextEditingController();
+  
+  // Para año y fechas
+  int? _selectedYearManufacture;
+  DateTime? _selectedDateHydrostatic;
+  DateTime? _selectedDateMaintenance;
 
   String? _tipo;
   String? _agente;
@@ -88,6 +100,10 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     _ubicacionController.dispose();
     _agenteController.removeListener(_onAgenteChanged);
     _agenteController.dispose();
+    _pressureController.dispose();
+    _brandController.dispose();
+    _modelController.dispose();
+    _ratingController.dispose();
     super.dispose();
   }
 
@@ -159,6 +175,25 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ubicacionController.text.trim(),
         'status': _estado,
+        'pressure': _pressureController.text.trim().isEmpty
+            ? null
+            : _pressureController.text.trim(),
+        'brand': _brandController.text.trim().isEmpty
+            ? null
+            : _brandController.text.trim(),
+        'model': _modelController.text.trim().isEmpty
+            ? null
+            : _modelController.text.trim(),
+        'rating': _ratingController.text.trim().isEmpty
+            ? null
+            : _ratingController.text.trim(),
+        'yearManufacture': _selectedYearManufacture?.toString(),
+        'dateHydrostatic': _selectedDateHydrostatic != null
+            ? DateFormat('yyyy-MM-dd').format(_selectedDateHydrostatic!)
+            : null,
+        'dateMaintenance': _selectedDateMaintenance != null
+            ? DateFormat('yyyy-MM-dd').format(_selectedDateMaintenance!)
+            : null,
         'sedeId': _sedeId,
       };
 
@@ -418,6 +453,76 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       const SizedBox(height: 12),
                       // 7. Estado (Dropdown)
                       _buildEstadoDropdown(),
+                      const SizedBox(height: 12),
+                      // 8. Presión
+                      FloatingLabelTextField(
+                        controller: _pressureController,
+                        label: 'Presión',
+                        hintText: 'Presión',
+                      ),
+                      const SizedBox(height: 12),
+                      // 9. Marca
+                      FloatingLabelTextField(
+                        controller: _brandController,
+                        label: 'Marca',
+                        hintText: 'Marca',
+                      ),
+                      const SizedBox(height: 12),
+                      // 10. Modelo
+                      FloatingLabelTextField(
+                        controller: _modelController,
+                        label: 'Modelo',
+                        hintText: 'Modelo',
+                      ),
+                      const SizedBox(height: 12),
+                      // 11. Clasificación
+                      FloatingLabelTextField(
+                        controller: _ratingController,
+                        label: 'Clasificación',
+                        hintText: 'Clasificación',
+                      ),
+                      const SizedBox(height: 12),
+                      // 12. Año de Fabricación
+                      FloatingLabelYearPicker(
+                        selectedYear: _selectedYearManufacture,
+                        label: 'Año de Fabricación',
+                        hintText: 'Año de Fabricación',
+                        firstYear: 1950,
+                        lastYear: DateTime.now().year + 10,
+                        onYearSelected: (year) {
+                          setState(() {
+                            _selectedYearManufacture = year;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // 13. Fecha Hidrostática
+                      FloatingLabelDatePicker(
+                        selectedDate: _selectedDateHydrostatic,
+                        label: 'Fecha Hidrostática',
+                        hintText: 'Fecha Hidrostática',
+                        firstDate: DateTime(1950),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+                        onDateSelected: (date) {
+                          setState(() {
+                            _selectedDateHydrostatic = date;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // 14. Fecha de Mantenimiento
+                      FloatingLabelDatePicker(
+                        selectedDate: _selectedDateMaintenance,
+                        label: 'Fecha de Mantenimiento',
+                        hintText: 'Fecha de Mantenimiento',
+                        firstDate: DateTime(1950),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+                        onDateSelected: (date) {
+                          setState(() {
+                            _selectedDateMaintenance = date;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 12),
                       // Dropdown para Sede
                       _buildSedeDropdown(),

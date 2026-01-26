@@ -20,6 +20,22 @@ class InspectionDetailEntity {
   final String? recorrido;
   final String? peso;
   final String? observaciones;
+  final String? ubicacion;
+  final String? acceso;
+  final String? fijacion;
+  final String? uso;
+  final String? clase;
+  final String? recarga;
+  final String? hidrostatica;
+  final String? presion;
+  final String? precinto;
+  final String? cilindro;
+  final String? carga;
+  final String? soporte;
+  final String? manija;
+  final String? manguera;
+  final String? tobera;
+  final String? abrazadera;
   final int usuarioCreadorId;
   final int? usuarioActualizadorId;
   final DateTime? createdAt;
@@ -44,6 +60,22 @@ class InspectionDetailEntity {
     this.recorrido,
     this.peso,
     this.observaciones,
+    this.ubicacion,
+    this.acceso,
+    this.fijacion,
+    this.uso,
+    this.clase,
+    this.recarga,
+    this.hidrostatica,
+    this.presion,
+    this.precinto,
+    this.cilindro,
+    this.carga,
+    this.soporte,
+    this.manija,
+    this.manguera,
+    this.tobera,
+    this.abrazadera,
     required this.usuarioCreadorId,
     this.usuarioActualizadorId,
     this.createdAt,

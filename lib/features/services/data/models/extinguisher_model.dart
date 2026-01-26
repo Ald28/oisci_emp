@@ -14,6 +14,13 @@ class ExtinguisherModel extends Extinguisher {
     super.status,
     super.photo,
     super.photoPath,
+    super.pressure,
+    super.brand,
+    super.model,
+    super.rating,
+    super.yearManufacture,
+    super.dateHydrostatic,
+    super.dateMaintenance,
     super.createdAt,
     super.updatedAt,
     required super.sedeId,
@@ -64,6 +71,13 @@ class ExtinguisherModel extends Extinguisher {
       status: json['status'] as String?,
       photo: json['photo'] as String?,
       photoPath: null, // El backend no envía photoPath, solo photo (URL)
+      pressure: json['pressure'] as String?,
+      brand: json['brand'] as String?,
+      model: json['model'] as String?,
+      rating: json['rating'] as String?,
+      yearManufacture: json['yearManufacture'] as String?,
+      dateHydrostatic: json['dateHydrostatic'] as String?,
+      dateMaintenance: json['dateMaintenance'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,
@@ -87,6 +101,13 @@ class ExtinguisherModel extends Extinguisher {
       'location': location,
       'status': status,
       'photo': photo,
+      'pressure': pressure,
+      'brand': brand,
+      'model': model,
+      'rating': rating,
+      'yearManufacture': yearManufacture,
+      'dateHydrostatic': dateHydrostatic,
+      'dateMaintenance': dateMaintenance,
       'sedeId': sedeId,
     };
   }
@@ -104,6 +125,13 @@ class ExtinguisherModel extends Extinguisher {
       status: map['status'] as String?,
       photo: map['photo'] as String?,
       photoPath: map['photoPath'] as String?,
+      pressure: map['pressure'] as String?,
+      brand: map['brand'] as String?,
+      model: map['model'] as String?,
+      rating: map['rating'] as String?,
+      yearManufacture: map['yearManufacture'] as String?,
+      dateHydrostatic: map['dateHydrostatic'] as String?,
+      dateMaintenance: map['dateMaintenance'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,

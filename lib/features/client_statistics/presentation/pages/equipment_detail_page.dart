@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:intl/intl.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../services/domain/entities/extinguisher_entity.dart';
 import '../../../services/data/repositories/extinguisher_repository_impl.dart';
@@ -265,6 +266,48 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                             'Estado',
                             extinguisher.status ?? 'N/A',
                           ),
+                          if (extinguisher.pressure != null)
+                            _buildDetailRow(
+                              '8',
+                              'Presión',
+                              extinguisher.pressure!,
+                            ),
+                          if (extinguisher.brand != null)
+                            _buildDetailRow(
+                              '9',
+                              'Marca',
+                              extinguisher.brand!,
+                            ),
+                          if (extinguisher.model != null)
+                            _buildDetailRow(
+                              '10',
+                              'Modelo',
+                              extinguisher.model!,
+                            ),
+                          if (extinguisher.rating != null)
+                            _buildDetailRow(
+                              '11',
+                              'Clasificación',
+                              extinguisher.rating!,
+                            ),
+                          if (extinguisher.yearManufacture != null)
+                            _buildDetailRow(
+                              '12',
+                              'Año de Fabricación',
+                              extinguisher.yearManufacture!,
+                            ),
+                          if (extinguisher.dateHydrostatic != null)
+                            _buildDetailRow(
+                              '13',
+                              'Fecha Hidrostática',
+                              _formatDate(extinguisher.dateHydrostatic!),
+                            ),
+                          if (extinguisher.dateMaintenance != null)
+                            _buildDetailRow(
+                              '14',
+                              'Fecha de Mantenimiento',
+                              _formatDate(extinguisher.dateMaintenance!),
+                            ),
                         ],
                       ),
                     ),
@@ -273,6 +316,18 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
               ),
             ),
     );
+  }
+
+  /// Formatear fecha desde String (puede venir en formato ISO o dd/MM/yyyy)
+  String _formatDate(String dateString) {
+    try {
+      // Intentar parsear como ISO (yyyy-MM-dd)
+      final date = DateTime.parse(dateString);
+      return DateFormat('dd/MM/yyyy').format(date);
+    } catch (e) {
+      // Si no se puede parsear, retornar el string original
+      return dateString;
+    }
   }
 
   Widget _buildDetailRow(String number, String label, String value) {

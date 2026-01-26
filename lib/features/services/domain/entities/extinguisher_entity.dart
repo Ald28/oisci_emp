@@ -11,6 +11,13 @@ class Extinguisher {
   final String? status; // OPERATIVO / INOPERATIVO
   final String? photo; // URL de la foto
   final String? photoPath; // Path local de la foto (para modo offline)
+  final String? pressure;
+  final String? brand;
+  final String? model;
+  final String? rating;
+  final String? yearManufacture;
+  final String? dateHydrostatic;
+  final String? dateMaintenance;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int sedeId;
@@ -28,6 +35,13 @@ class Extinguisher {
     this.status,
     this.photo,
     this.photoPath,
+    this.pressure,
+    this.brand,
+    this.model,
+    this.rating,
+    this.yearManufacture,
+    this.dateHydrostatic,
+    this.dateMaintenance,
     this.createdAt,
     this.updatedAt,
     required this.sedeId,

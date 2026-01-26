@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../features/services/data/datasources/local_service_datasource.dart';
@@ -75,34 +76,89 @@ class ServiceSyncService {
           servicioId = realServicioId;
         }
 
-        final serviceExtinguisher = await _httpDataSource
-            .addExtinguisherToService(
-              servicioId: servicioId,
-              data: {
-                'extintorId': data['extintorId'],
-                'estadoInicial': data['estadoInicial'],
-                'observaciones': data['observaciones'],
-              },
+        try {
+          final serviceExtinguisher = await _httpDataSource
+              .addExtinguisherToService(
+                servicioId: servicioId,
+                data: {
+                  'extintorId': data['extintorId'],
+                  'estadoInicial': data['estadoInicial'],
+                  'observaciones': data['observaciones'],
+                },
+              );
+
+          // Buscar el servicio_extintor temporal por su ID negativo
+          final tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
+            servicioId,
+            data['extintorId'] as int,
+            db,
+          );
+          if (tempServiceExtinguisherId != null) {
+            // Actualizar servicio_extintor: reemplazar ID negativo con positivo
+            await _updateServiceExtinguisherId(
+              db,
+              tempServiceExtinguisherId,
+              serviceExtinguisher.id,
+            );
+          }
+
+          // Eliminar de la cola
+          await _localDataSource.deleteQueueItem(item['id'] as int);
+          syncedCount++;
+        } on DioException catch (e) {
+          // Si el error es que el extintor ya está agregado, buscar el registro existente
+          final errorMessage = e.response?.data is Map<String, dynamic>
+              ? (e.response!.data as Map<String, dynamic>)['message'] as String?
+              : e.message;
+          
+          if (errorMessage != null &&
+              (errorMessage.toLowerCase().contains('ya está agregado') ||
+               errorMessage.toLowerCase().contains('duplicate') ||
+               errorMessage.toLowerCase().contains('unique'))) {
+            // El extintor ya está agregado en el servidor
+            // Buscar el servicio_extintor existente en la base de datos local
+            final existing = await db.query(
+              'servicio_extintor',
+              where: 'servicioId = ? AND extintorId = ? AND id > 0',
+              whereArgs: [servicioId, data['extintorId'] as int],
+              limit: 1,
             );
 
-        // Buscar el servicio_extintor temporal por su ID negativo
-        final tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
-          servicioId,
-          data['extintorId'] as int,
-          db,
-        );
-        if (tempServiceExtinguisherId != null) {
-          // Actualizar servicio_extintor: reemplazar ID negativo con positivo
-          await _updateServiceExtinguisherId(
-            db,
-            tempServiceExtinguisherId,
-            serviceExtinguisher.id,
-          );
+            if (existing.isNotEmpty) {
+              // Ya existe un registro sincronizado, actualizar el temporal si existe
+              final existingId = existing.first['id'] as int;
+              final tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
+                servicioId,
+                data['extintorId'] as int,
+                db,
+              );
+              
+              if (tempServiceExtinguisherId != null && tempServiceExtinguisherId != existingId) {
+                // Eliminar el registro temporal duplicado
+                await db.delete(
+                  'servicio_extintor',
+                  where: 'id = ?',
+                  whereArgs: [tempServiceExtinguisherId],
+                );
+              }
+              
+              // Eliminar de la cola porque ya existe en el servidor
+              await _localDataSource.deleteQueueItem(item['id'] as int);
+              syncedCount++;
+            } else {
+              // No encontrado localmente, guardar error pero no bloquear
+              await _localDataSource.updateSyncError(
+                item['id'] as int,
+                'Este extintor ya está agregado al servicio (existe en el servidor)',
+              );
+            }
+          } else {
+            // Otro tipo de error, guardar normalmente
+            await _localDataSource.updateSyncError(item['id'] as int, e.toString());
+          }
+        } catch (e) {
+          await _localDataSource.updateSyncError(item['id'] as int, e.toString());
         }
-
-        // Eliminar de la cola
-        await _localDataSource.deleteQueueItem(item['id'] as int);
-        syncedCount++;
       } catch (e) {
         await _localDataSource.updateSyncError(item['id'] as int, e.toString());
       }
@@ -245,6 +301,23 @@ class ServiceSyncService {
           'recorrido': data['recorrido'],
           'peso': data['peso'],
           'observaciones': data['observaciones'],
+          // Nuevos campos del checklist
+          'ubicacion': data['ubicacion'],
+          'acceso': data['acceso'],
+          'fijacion': data['fijacion'],
+          'uso': data['uso'],
+          'clase': data['clase'],
+          'recarga': data['recarga'],
+          'hidrostatica': data['hidrostatica'],
+          'presion': data['presion'],
+          'precinto': data['precinto'],
+          'cilindro': data['cilindro'],
+          'carga': data['carga'],
+          'soporte': data['soporte'],
+          'manija': data['manija'],
+          'manguera': data['manguera'],
+          'tobera': data['tobera'],
+          'abrazadera': data['abrazadera'],
         };
 
         // Agregar Files si existen (se subirán junto con el checklist)
@@ -1316,49 +1389,108 @@ class ServiceSyncService {
           extintorId = realExtintorId;
         }
 
-        final serviceExtinguisher = await _httpDataSource
-            .addExtinguisherToService(
-              servicioId: servicioId,
-              data: {
-                'extintorId': extintorId,
-                'estadoInicial': data['estadoInicial'],
-                'observaciones': data['observaciones'],
-              },
+        try {
+          final serviceExtinguisher = await _httpDataSource
+              .addExtinguisherToService(
+                servicioId: servicioId,
+                data: {
+                  'extintorId': extintorId,
+                  'estadoInicial': data['estadoInicial'],
+                  'observaciones': data['observaciones'],
+                },
+              );
+
+          // Buscar el servicio_extintor temporal usando el servicioId original (negativo) del payload
+          final originalServicioId = data['servicioId'] as int;
+          int? tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
+            originalServicioId, // Usar el ID original del payload
+            data['extintorId'] as int,
+            db,
+          );
+
+          // Si no se encuentra con servicioId negativo (porque ya fue actualizado por _updateServiceId),
+          // buscar con el servicioId positivo mapeado
+          if (tempServiceExtinguisherId == null &&
+              servicioId > 0 &&
+              originalServicioId < 0) {
+            final seWithPositive = await db.query(
+              'servicio_extintor',
+              where: 'servicioId = ? AND extintorId = ? AND id < 0',
+              whereArgs: [servicioId, data['extintorId'] as int],
+              limit: 1,
+            );
+            if (seWithPositive.isNotEmpty) {
+              tempServiceExtinguisherId = seWithPositive.first['id'] as int;
+            }
+          }
+
+          if (tempServiceExtinguisherId != null) {
+            await _updateServiceExtinguisherId(
+              db,
+              tempServiceExtinguisherId,
+              serviceExtinguisher.id,
+            );
+          }
+          await _localDataSource.deleteQueueItem(queueId);
+          return true;
+        } on DioException catch (e) {
+          // Si el error es que el extintor ya está agregado, buscar el registro existente
+          final errorMessage = e.response?.data is Map<String, dynamic>
+              ? (e.response!.data as Map<String, dynamic>)['message'] as String?
+              : e.message;
+          
+          if (errorMessage != null &&
+              (errorMessage.toLowerCase().contains('ya está agregado') ||
+               errorMessage.toLowerCase().contains('duplicate') ||
+               errorMessage.toLowerCase().contains('unique'))) {
+            // El extintor ya está agregado en el servidor
+            // Buscar el servicio_extintor existente en la base de datos local
+            final existing = await db.query(
+              'servicio_extintor',
+              where: 'servicioId = ? AND extintorId = ? AND id > 0',
+              whereArgs: [servicioId, extintorId],
+              limit: 1,
             );
 
-        // Buscar el servicio_extintor temporal usando el servicioId original (negativo) del payload
-        final originalServicioId = data['servicioId'] as int;
-        int? tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
-          originalServicioId, // Usar el ID original del payload
-          data['extintorId'] as int,
-          db,
-        );
-
-        // Si no se encuentra con servicioId negativo (porque ya fue actualizado por _updateServiceId),
-        // buscar con el servicioId positivo mapeado
-        if (tempServiceExtinguisherId == null &&
-            servicioId > 0 &&
-            originalServicioId < 0) {
-          final seWithPositive = await db.query(
-            'servicio_extintor',
-            where: 'servicioId = ? AND extintorId = ? AND id < 0',
-            whereArgs: [servicioId, data['extintorId'] as int],
-            limit: 1,
-          );
-          if (seWithPositive.isNotEmpty) {
-            tempServiceExtinguisherId = seWithPositive.first['id'] as int;
+            if (existing.isNotEmpty) {
+              // Ya existe un registro sincronizado, actualizar el temporal si existe
+              final existingId = existing.first['id'] as int;
+              final originalServicioId = data['servicioId'] as int;
+              int? tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
+                originalServicioId,
+                data['extintorId'] as int,
+                db,
+              );
+              
+              if (tempServiceExtinguisherId != null && tempServiceExtinguisherId != existingId) {
+                // Eliminar el registro temporal duplicado
+                await db.delete(
+                  'servicio_extintor',
+                  where: 'id = ?',
+                  whereArgs: [tempServiceExtinguisherId],
+                );
+              }
+              
+              // Eliminar de la cola porque ya existe en el servidor
+              await _localDataSource.deleteQueueItem(queueId);
+              return true;
+            } else {
+              // No encontrado localmente, guardar error pero no bloquear
+              await _localDataSource.updateSyncError(
+                queueId,
+                'Este extintor ya está agregado al servicio (existe en el servidor)',
+              );
+              return false;
+            }
+          } else {
+            // Otro tipo de error, guardar normalmente
+            await _localDataSource.updateSyncError(queueId, e.toString());
+            return false;
           }
+        } catch (e) {
+          await _localDataSource.updateSyncError(queueId, e.toString());
+          return false;
         }
-
-        if (tempServiceExtinguisherId != null) {
-          await _updateServiceExtinguisherId(
-            db,
-            tempServiceExtinguisherId,
-            serviceExtinguisher.id,
-          );
-        }
-        await _localDataSource.deleteQueueItem(queueId);
-        return true;
       } else if (type == 'CREATE_MAINTENANCE_DETAIL') {
         final originalServicioExtintorId = data['servicioExtintorId'] as int;
         var servicioExtintorId = originalServicioExtintorId;
@@ -1542,6 +1674,23 @@ class ServiceSyncService {
           'recorrido': data['recorrido'],
           'peso': data['peso'],
           'observaciones': data['observaciones'],
+          // Nuevos campos del checklist
+          'ubicacion': data['ubicacion'],
+          'acceso': data['acceso'],
+          'fijacion': data['fijacion'],
+          'uso': data['uso'],
+          'clase': data['clase'],
+          'recarga': data['recarga'],
+          'hidrostatica': data['hidrostatica'],
+          'presion': data['presion'],
+          'precinto': data['precinto'],
+          'cilindro': data['cilindro'],
+          'carga': data['carga'],
+          'soporte': data['soporte'],
+          'manija': data['manija'],
+          'manguera': data['manguera'],
+          'tobera': data['tobera'],
+          'abrazadera': data['abrazadera'],
         };
 
         // Agregar Files si existen (se subirán junto con el checklist)
@@ -1636,6 +1785,23 @@ class ServiceSyncService {
           'recorrido': data['recorrido'],
           'peso': data['peso'],
           'observaciones': data['observaciones'],
+          // Nuevos campos del checklist
+          'ubicacion': data['ubicacion'],
+          'acceso': data['acceso'],
+          'fijacion': data['fijacion'],
+          'uso': data['uso'],
+          'clase': data['clase'],
+          'recarga': data['recarga'],
+          'hidrostatica': data['hidrostatica'],
+          'presion': data['presion'],
+          'precinto': data['precinto'],
+          'cilindro': data['cilindro'],
+          'carga': data['carga'],
+          'soporte': data['soporte'],
+          'manija': data['manija'],
+          'manguera': data['manguera'],
+          'tobera': data['tobera'],
+          'abrazadera': data['abrazadera'],
         };
 
         // Agregar Files si existen (se subirán junto con el checklist)
