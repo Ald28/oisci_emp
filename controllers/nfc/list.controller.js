@@ -25,8 +25,10 @@ export async function getNFCByIdController(req, res) {
 
 export async function searchExtinguisherController(req, res) {
     const { searchTerm } = req.params;
+    const sedeId = req.query.sedeId ? Number(req.query.sedeId) : null;
+    
     try {
-        const extinguisher = await searchExtinguisherService(searchTerm);
+        const extinguisher = await searchExtinguisherService(searchTerm, sedeId);
         if (extinguisher) {
             res.status(200).json({ ok: true, data: extinguisher });
         } else {

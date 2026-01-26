@@ -32,11 +32,18 @@ export const ListRepository = {
         });
     },
 
-    async findBySerialNumber(searchTerm) {
+    async findBySerialNumber(searchTerm, sedeId = null) {
+        const where = {
+            serialNumber: searchTerm
+        };
+        
+        // Si se proporciona sedeId, filtrar también por sede
+        if (sedeId !== null && sedeId !== undefined) {
+            where.sedeId = Number(sedeId);
+        }
+        
         return prisma.extintor.findFirst({
-            where: {
-                serialNumber: searchTerm
-            },
+            where,
             include: {
                 usuarioCreador: {
                     select: {

@@ -10,8 +10,8 @@ export async function getNFCByIdService(codigoNFC) {
     return nfc;
 }
 
-export async function searchExtinguisherService(searchTerm) {
-    const extinguisher = await ListRepository.findBySerialNumber(searchTerm);
+export async function searchExtinguisherService(searchTerm, sedeId = null) {
+    const extinguisher = await ListRepository.findBySerialNumber(searchTerm, sedeId);
     return extinguisher;
 }
 
