@@ -9,19 +9,32 @@ import 'extinguisher_datasource.dart';
 /// DataSource local usando SQLite para almacenar extintores
 class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   @override
-  Future<Extinguisher?> searchExtinguisher(String searchTerm) async {
+  Future<Extinguisher?> searchExtinguisher(String searchTerm, {int? sedeId}) async {
     final db = await AppDatabase.database;
 
-    // Buscar en extintor (tanto sincronizados como pendientes)
-    // Ahora todos los extintores están en la tabla extintor con synced = 0 o 1
-    final result = await db.query(
-      'extintor',
-      where: 'serialNumber = ?',
-      whereArgs: [searchTerm],
-      limit: 1,
-    );
+    // Buscar en extintor con JOIN a sede para obtener el nombre de la sede
+    String whereClause = 'e.serialNumber = ?';
+    List<dynamic> whereArgs = [searchTerm];
+    
+    // Si se proporciona sedeId, filtrar también por sede
+    if (sedeId != null) {
+      whereClause += ' AND e.sedeId = ?';
+      whereArgs.add(sedeId);
+    }
+    
+    // Hacer JOIN con la tabla sede para obtener el nombre
+    final result = await db.rawQuery('''
+      SELECT 
+        e.*,
+        s.name_sede as sede_name
+      FROM extintor e
+      LEFT JOIN sede s ON e.sedeId = s.id
+      WHERE $whereClause
+      LIMIT 1
+    ''', whereArgs);
 
     if (result.isNotEmpty) {
+      // fromMap ahora maneja el campo sede_name del JOIN
       return ExtinguisherModel.fromMap(result.first);
     }
 

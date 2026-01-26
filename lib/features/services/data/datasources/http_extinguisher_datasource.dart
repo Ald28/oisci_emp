@@ -8,9 +8,17 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   final Dio _dio = DioClient().dio;
 
   @override
-  Future<ExtinguisherModel?> searchExtinguisher(String searchTerm) async {
+  Future<ExtinguisherModel?> searchExtinguisher(String searchTerm, {int? sedeId}) async {
     try {
-      final response = await _dio.get('/nfc/search/$searchTerm');
+      final queryParams = <String, dynamic>{};
+      if (sedeId != null) {
+        queryParams['sedeId'] = sedeId;
+      }
+      
+      final response = await _dio.get(
+        '/nfc/search/$searchTerm',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
 
       // El backend retorna: { ok: true, data: {...} } o { ok: false, message: "..." }
       final responseData = response.data as Map<String, dynamic>;

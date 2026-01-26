@@ -30,7 +30,7 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
   }
 
   @override
-  Future<Extinguisher?> searchExtinguisher(String searchTerm) async {
+  Future<Extinguisher?> searchExtinguisher(String searchTerm, {int? sedeId}) async {
     final hasInternet = await InternetConnectionChecker().hasConnection;
 
     // Si hay internet, buscar primero en el servidor
@@ -38,6 +38,7 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
       final remoteDataSource = await _getDataSource(preferLocal: false);
       final extinguisher = await remoteDataSource.searchExtinguisher(
         searchTerm,
+        sedeId: sedeId,
       );
 
       // Si se encontró en el servidor, guardarlo localmente para uso offline
@@ -58,7 +59,7 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
           localDataSource is LocalExtinguisherDataSource) {
         final localExtinguisher =
             await (localDataSource as LocalExtinguisherDataSource)
-                .searchExtinguisher(searchTerm);
+                .searchExtinguisher(searchTerm, sedeId: sedeId);
         if (localExtinguisher != null) {
           return localExtinguisher;
         }
@@ -70,7 +71,7 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
 
     // Sin internet, buscar solo en SQLite (incluye sincronizados y pendientes)
     final dataSource = await _getDataSource(preferLocal: true);
-    return await dataSource.searchExtinguisher(searchTerm);
+    return await dataSource.searchExtinguisher(searchTerm, sedeId: sedeId);
   }
 
   @override

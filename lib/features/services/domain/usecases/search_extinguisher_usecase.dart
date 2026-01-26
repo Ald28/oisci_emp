@@ -7,10 +7,10 @@ class SearchExtinguisherUseCase {
 
   SearchExtinguisherUseCase(this.repository);
 
-  Future<Extinguisher?> call(String searchTerm) async {
+  Future<Extinguisher?> call(String searchTerm, {int? sedeId}) async {
     if (searchTerm.trim().isEmpty) {
       return null;
     }
-    return await repository.searchExtinguisher(searchTerm.trim());
+    return await repository.searchExtinguisher(searchTerm.trim(), sedeId: sedeId);
   }
 }

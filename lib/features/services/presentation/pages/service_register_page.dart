@@ -15,6 +15,8 @@ import '../../domain/usecases/create_extinguisher_usecase.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/sede_repository_impl.dart';
+import '../../data/repositories/service_repository_impl.dart';
+import '../../domain/repositories/service_repository.dart';
 import '../../data/datasources/local_extinguisher_datasource.dart';
 import '../../domain/constants/extinguisher_types.dart';
 import 'service_data_page.dart';
@@ -25,12 +27,14 @@ class ServiceRegisterPage extends StatefulWidget {
   final String?
   initialSerial; // Número de serie autocompletado desde NFC o búsqueda
   final int servicioId;
+  final int? initialSedeId; // Sede pre-seleccionada del servicio
 
   const ServiceRegisterPage({
     super.key,
     required this.serviceType,
     this.initialSerial,
     required this.servicioId,
+    this.initialSedeId,
   });
 
   @override
@@ -67,6 +71,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   late final GetSedesUseCase _getSedesUseCase = GetSedesUseCase(
     SedeRepositoryImpl(),
   );
+  late final ServiceRepository _serviceRepository = ServiceRepositoryImpl();
   final LocalExtinguisherDataSource _localDataSource =
       LocalExtinguisherDataSource();
 
@@ -77,9 +82,30 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     if (widget.initialSerial != null) {
       _numeroSerieController.text = widget.initialSerial!;
     }
+    // Pre-seleccionar sede si viene como parámetro o obtenerla del servicio
+    if (widget.initialSedeId != null) {
+      _sedeId = widget.initialSedeId;
+    } else {
+      // Si no se proporciona initialSedeId, obtenerla del servicio
+      _loadServiceSede();
+    }
     // Listener para sincronizar _agente con _agenteController
     _agenteController.addListener(_onAgenteChanged);
     _loadSedes();
+  }
+  
+  Future<void> _loadServiceSede() async {
+    try {
+      final service = await _serviceRepository.getServiceById(widget.servicioId);
+      if (service != null && mounted) {
+        setState(() {
+          _sedeId = service.sedeId;
+        });
+      }
+    } catch (e) {
+      // Si hay error, continuar sin pre-seleccionar sede
+      debugPrint('Error al obtener sede del servicio: $e');
+    }
   }
 
   void _onAgenteChanged() {

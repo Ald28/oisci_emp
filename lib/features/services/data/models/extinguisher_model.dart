@@ -140,6 +140,7 @@ class ExtinguisherModel extends Extinguisher {
           : null,
       sedeId: map['sedeId'] as int,
       usuarioCreadorId: map['usuarioCreadorId'] as int,
+      sedeName: map['sede_name'] as String?, // Incluir nombre de sede si viene del JOIN
     );
   }
 }

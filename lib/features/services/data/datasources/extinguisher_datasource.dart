@@ -1,7 +1,7 @@
 import '../../domain/entities/extinguisher_entity.dart';
 
 abstract class ExtinguisherDataSource {
-  Future<Extinguisher?> searchExtinguisher(String searchTerm);
+  Future<Extinguisher?> searchExtinguisher(String searchTerm, {int? sedeId});
   Future<Extinguisher> createExtinguisher(Map<String, dynamic> data);
   Future<Extinguisher?> getExtinguisherById(int extintorId);
   Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId);

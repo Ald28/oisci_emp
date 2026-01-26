@@ -13,6 +13,7 @@ import '../../domain/usecases/search_extinguisher_usecase.dart';
 import '../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
+import '../../domain/repositories/service_repository.dart';
 import '../widgets/service_extinguisher_cart_modal.dart';
 
 /// Pantalla: NFC + input manual + Buscar
@@ -44,11 +45,29 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
     ServiceRepositoryImpl(),
   );
+  late final ServiceRepository _serviceRepository = ServiceRepositoryImpl();
+  
+  int? _sedeId; // Sede del servicio actual
 
   @override
   void initState() {
     super.initState();
     _loadServiceExtinguishers();
+    _loadServiceSede();
+  }
+  
+  Future<void> _loadServiceSede() async {
+    try {
+      final service = await _serviceRepository.getServiceById(widget.servicioId);
+      if (service != null && mounted) {
+        setState(() {
+          _sedeId = service.sedeId;
+        });
+      }
+    } catch (e) {
+      // Si hay error, continuar sin filtrar por sede
+      debugPrint('Error al obtener sede del servicio: $e');
+    }
   }
 
   Future<void> _loadServiceExtinguishers() async {
@@ -252,15 +271,16 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     });
 
     try {
-      final extinguisher = await _searchUseCase.call(searchTerm);
+      // Paso 1: Buscar extintor filtrando por sede si está disponible
+      final extinguisher = await _searchUseCase.call(searchTerm, sedeId: _sedeId);
 
       if (!mounted) return;
 
-      setState(() {
-        _isSearching = false;
-      });
-
       if (extinguisher != null) {
+        // Extintor encontrado en la sede actual
+        setState(() {
+          _isSearching = false;
+        });
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -271,20 +291,45 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             ),
           ),
         );
-      } else {
-        // Si no encuentra el extintor, abrir directamente el formulario de registro
-        // con el número de serie autocompletado (como en movil-aldo)
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ServiceRegisterPage(
-              serviceType: widget.serviceType,
-              initialSerial: searchTerm,
-              servicioId: widget.servicioId,
-            ),
-          ),
-        );
+        return;
       }
+
+      // Paso 2: Si no se encontró en la sede actual, buscar sin filtro de sede
+      // para verificar si existe en otra sede
+      if (_sedeId != null) {
+        final extinguisherInOtherSede = await _searchUseCase.call(searchTerm, sedeId: null);
+
+        if (!mounted) return;
+
+        if (extinguisherInOtherSede != null) {
+          // El extintor existe pero en otra sede
+          setState(() {
+            _isSearching = false;
+          });
+
+          // Mostrar mensaje informativo con el nombre de la sede
+          final sedeName = extinguisherInOtherSede.sedeName ?? 'otra sede';
+          _showExtinguisherInOtherSedeDialog(sedeName, searchTerm);
+          return;
+        }
+      }
+
+      // Paso 3: No se encontró en ninguna sede, abrir formulario de registro
+      setState(() {
+        _isSearching = false;
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ServiceRegisterPage(
+            serviceType: widget.serviceType,
+            initialSerial: searchTerm,
+            servicioId: widget.servicioId,
+            initialSedeId: _sedeId, // Pasar la sede del servicio
+          ),
+        ),
+      );
     } on DioException catch (e) {
       if (!mounted) return;
 
@@ -375,6 +420,85 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
                   ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showExtinguisherInOtherSedeDialog(String sedeName, String serialNumber) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Extintor ya registrado',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'El extintor con número de serie "$serialNumber" ya está registrado en la sede:',
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.business, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      sedeName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Por favor, use un número de serie diferente para registrar este extintor en la sede actual.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE84343),
+            ),
+            child: const Text('Entendido'),
+          ),
+        ],
       ),
     );
   }
