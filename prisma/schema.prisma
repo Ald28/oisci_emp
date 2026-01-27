@@ -277,8 +277,8 @@ model Extintor {
   model            String?    @db.VarChar(255)
   rating           String?    @db.VarChar(255)
   yearManufacture  String?    @db.VarChar(255)
-  dateHydrostatic  String?    @db.VarChar(255)
-  dateMaintenance  String?    @db.VarChar(255)
+  dateHydrostatic  DateTime?
+  dateMaintenance  DateTime?
   
   dateLow          DateTime?
   photo            String?    @db.VarChar(255)

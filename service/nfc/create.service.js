@@ -10,6 +10,8 @@ export async function createExtintorService(data, usuarioId) {
         status,
         historic,
         dateLow: new Date(),
+        dateHydrostatic: new Date(),
+        dateMaintenance: new Date(),
 
         sede: {
             connect: { id: sedeId }
