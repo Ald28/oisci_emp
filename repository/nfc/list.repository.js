@@ -36,12 +36,12 @@ export const ListRepository = {
         const where = {
             serialNumber: searchTerm
         };
-        
+
         // Si se proporciona sedeId, filtrar también por sede
         if (sedeId !== null && sedeId !== undefined) {
             where.sedeId = Number(sedeId);
         }
-        
+
         return prisma.extintor.findFirst({
             where,
             include: {
@@ -111,7 +111,7 @@ export const ListRepository = {
      */
     async findUpdatedSince(since) {
         const sinceDate = since ? new Date(since) : null
-        
+
         const where = sinceDate ? {
             OR: [
                 { updatedAt: { gte: sinceDate } },
@@ -137,14 +137,15 @@ export const ListRepository = {
         })
     },
 
-    async listByExtintorNumber() {
+    async listByExtintorNumber(sedeId) {
         return prisma.extintor.findMany({
-            where:{
-                OR:[
-                    {serialNumber: null},
-                    {serialNumber: ''}
+            where: {
+                sedeId: sedeId,
+                OR: [
+                    { serialNumber: null },
+                    { serialNumber: '' }
                 ]
             }
-        })
+        });
     }
 };

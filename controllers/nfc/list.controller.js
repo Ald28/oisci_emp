@@ -26,7 +26,7 @@ export async function getNFCByIdController(req, res) {
 export async function searchExtinguisherController(req, res) {
     const { searchTerm } = req.params;
     const sedeId = req.query.sedeId ? Number(req.query.sedeId) : null;
-    
+
     try {
         const extinguisher = await searchExtinguisherService(searchTerm, sedeId);
         if (extinguisher) {
@@ -109,7 +109,7 @@ export async function getExtintoresStatsBySedeController(req, res) {
 export async function getExtinguishersUpdatedSinceController(req, res) {
     try {
         const since = req.query.since;
-        
+
         if (!since || typeof since !== 'string') {
             return res.status(400).json({
                 ok: false,
@@ -133,9 +133,15 @@ export async function getExtinguishersUpdatedSinceController(req, res) {
 
 export async function listExtintorNumberController(req, res) {
     try {
-        const extintores = await listExtintorNumber();
+        const { sedeId } = req.params;
+
+        const extintores = await listExtintorNumber(Number(sedeId));
+
         res.status(200).json({ ok: true, data: extintores });
     } catch (error) {
-        res.status(500).json({ message: "Error retrieving extintor list", error: error.message });
+        res.status(500).json({
+            message: "Error retrieving extintor list",
+            error: error.message
+        });
     }
 }

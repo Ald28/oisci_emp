@@ -162,7 +162,7 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 'tecnico']), listExtintorNumberController);
+router.get('/list-extintor-number/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), listExtintorNumberController);
 
 /**
  * @swagger

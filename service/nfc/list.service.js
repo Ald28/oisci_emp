@@ -59,7 +59,6 @@ export async function getExtinguishersUpdatedSinceService(since) {
     return extintores;
 }
 
-export async function listExtintorNumber(){
-    const extintores = await ListRepository.listByExtintorNumber();
-    return extintores;
+export async function listExtintorNumber(sedeId) {
+    return await ListRepository.listByExtintorNumber(sedeId);
 }
