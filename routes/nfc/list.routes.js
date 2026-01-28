@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController, updateExtinguisherController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -338,5 +338,70 @@ router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecni
  *         description: Error interno del servidor
  */
 router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisherByIdController);
+
+/**
+ * @swagger
+ * /nfc/{extintorId}:
+ *   patch:
+ *     summary: Actualizar extintor
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: extintorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del extintor a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               serialNumber:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *               capacity:
+ *                 type: string
+ *               agent:
+ *                 type: string
+ *               cylinderNumber:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               pressure:
+ *                 type: string
+ *               brand:
+ *                 type: string
+ *               model:
+ *                 type: string
+ *               rating:
+ *                 type: string
+ *               yearManufacture:
+ *                 type: string
+ *               dateHydrostatic:
+ *                 type: string
+ *               dateMaintenance:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Extintor actualizado exitosamente
+ *       404:
+ *         description: Extintor no encontrado
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.patch('/:extintorId', authenticate, authorize(['tecnico']), updateExtinguisherController);
 
 export default router;

@@ -137,14 +137,52 @@ export const ListRepository = {
         })
     },
 
-    async listByExtintorNumber() {
+    async listByExtintorNumber(sedeId = null) {
+        const where = {
+            OR: [
+                {serialNumber: null},
+                {serialNumber: ''}
+            ]
+        };
+        
+        // Si se proporciona sedeId, filtrar también por sede
+        if (sedeId !== null && sedeId !== undefined) {
+            where.sedeId = Number(sedeId);
+        }
+        
         return prisma.extintor.findMany({
-            where:{
-                OR:[
-                    {serialNumber: null},
-                    {serialNumber: ''}
-                ]
+            where,
+            include: {
+                sede: {
+                    select: {
+                        id: true,
+                        name_sede: true,
+                    },
+                },
+            },
+            orderBy: {
+                id: 'asc'
             }
         })
+    },
+    
+    async updateExtintor(extintorId, data) {
+        return prisma.extintor.update({
+            where: { id: Number(extintorId) },
+            data: {
+                ...data,
+                updatedAt: new Date(),
+            },
+            include: {
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                sede: true
+            }
+        });
     }
 };

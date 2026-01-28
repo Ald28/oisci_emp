@@ -1,4 +1,4 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService, listExtintorNumber } from "../../service/nfc/list.service.js";
+import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService, listExtintorNumber, updateExtinguisherService } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
@@ -133,9 +133,50 @@ export async function getExtinguishersUpdatedSinceController(req, res) {
 
 export async function listExtintorNumberController(req, res) {
     try {
-        const extintores = await listExtintorNumber();
+        const sedeId = req.query.sedeId ? Number(req.query.sedeId) : null;
+        const extintores = await listExtintorNumber(sedeId);
         res.status(200).json({ ok: true, data: extintores });
     } catch (error) {
         res.status(500).json({ message: "Error retrieving extintor list", error: error.message });
+    }
+}
+
+export async function updateExtinguisherController(req, res) {
+    try {
+        const { extintorId } = req.params;
+        const data = req.body;
+
+        // Validar que extintorId sea un número válido
+        if (isNaN(Number(extintorId))) {
+            return res.status(400).json({
+                ok: false,
+                message: 'extintorId inválido',
+            });
+        }
+
+        const extinguisher = await updateExtinguisherService(extintorId, data);
+
+        return res.status(200).json({
+            ok: true,
+            data: extinguisher,
+        });
+    } catch (error) {
+        // Log detallado en servidor para monitoreo (no se expone al cliente)
+        console.error('Error al actualizar extintor:', error);
+
+        // Manejar errores específicos de Prisma con mensajes amigables
+        if (error.code === 'P2025') {
+            // Prisma: Record not found
+            return res.status(404).json({
+                ok: false,
+                message: 'Extintor no encontrado',
+            });
+        }
+
+        // Retornar mensaje amigable al cliente (sin exponer códigos técnicos)
+        return res.status(500).json({
+            ok: false,
+            message: 'Error al actualizar extintor. Por favor, intente nuevamente.',
+        });
     }
 }
