@@ -13,6 +13,16 @@ export async function createExtintorController(req, res) {
 
         res.status(201).json({ ok: true, data: extintor });
     } catch (error) {
-        res.status(500).json({ ok: false, message: error.message });
+        if (error.code === 'P2002') {
+            return res.status(409).json({
+                ok: false,
+                message: 'El codeNFC ya existe'
+            });
+        }
+
+        return res.status(500).json({
+            ok: false,
+            message: error.message
+        });
     }
 }

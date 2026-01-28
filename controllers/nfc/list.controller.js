@@ -1,4 +1,4 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService, listExtintorNumber, updateExtinguisherService } from "../../service/nfc/list.service.js";
+import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService, listExtintorNumber, updateExtinguisherService, listExtintoresWithFiltersService } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
@@ -26,7 +26,7 @@ export async function getNFCByIdController(req, res) {
 export async function searchExtinguisherController(req, res) {
     const { searchTerm } = req.params;
     const sedeId = req.query.sedeId ? Number(req.query.sedeId) : null;
-    
+
     try {
         const extinguisher = await searchExtinguisherService(searchTerm, sedeId);
         if (extinguisher) {
@@ -109,7 +109,7 @@ export async function getExtintoresStatsBySedeController(req, res) {
 export async function getExtinguishersUpdatedSinceController(req, res) {
     try {
         const since = req.query.since;
-        
+
         if (!since || typeof since !== 'string') {
             return res.status(400).json({
                 ok: false,
@@ -137,7 +137,10 @@ export async function listExtintorNumberController(req, res) {
         const extintores = await listExtintorNumber(sedeId);
         res.status(200).json({ ok: true, data: extintores });
     } catch (error) {
-        res.status(500).json({ message: "Error retrieving extintor list", error: error.message });
+        res.status(500).json({
+            message: "Error retrieving extintor list",
+            error: error.message
+        });
     }
 }
 
@@ -177,6 +180,22 @@ export async function updateExtinguisherController(req, res) {
         return res.status(500).json({
             ok: false,
             message: 'Error al actualizar extintor. Por favor, intente nuevamente.',
+        });
+    }
+}
+
+export async function listExtintoresWithFiltersController(req, res) {
+    try {
+        const extintores = await listExtintoresWithFiltersService(req.query);
+
+        return res.status(200).json({
+            ok: true,
+            data: extintores
+        });
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            message: error.message
         });
     }
 }

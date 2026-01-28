@@ -277,11 +277,12 @@ model Extintor {
   model            String?    @db.VarChar(255)
   rating           String?    @db.VarChar(255)
   yearManufacture  String?    @db.VarChar(255)
-  dateHydrostatic  String?    @db.VarChar(255)
-  dateMaintenance  String?    @db.VarChar(255)
+  dateHydrostatic  DateTime?
+  dateMaintenance  DateTime?
   
   dateLow          DateTime?
   photo            String?    @db.VarChar(255)
+  rechargeDate     DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   sedeId           Int
@@ -421,34 +422,24 @@ model InspeccionDetalle {
   foto2Url String? @db.VarChar(255)
   foto3Url String? @db.VarChar(255)
 
-  visibilidad   String? @db.VarChar(45)
-  visualizacion String? @db.VarChar(45)
-  accesibilidad String? @db.VarChar(45)
-  altura        String? @db.VarChar(45)
-  situacion     String? @db.VarChar(45)
-  conservacion  String? @db.VarChar(45)
-  inscripciones String? @db.VarChar(45)
-  recorrido     String? @db.VarChar(45)
-  peso          String? @db.VarChar(45)
-
-  observaciones String? @db.VarChar(255)
-
   ubicacion     String? @db.VarChar(255)
-  acceso        String? @db.VarChar(255)
-  fijacion      String? @db.VarChar(255)
-  uso           String? @db.VarChar(255)
-  clase         String? @db.VarChar(255)
+  accesibilidad String? @db.VarChar(255)
+  instalacion   String? @db.VarChar(255)
+  instrucciones String? @db.VarChar(255)
+  clasificacion String? @db.VarChar(255)
   recarga       String? @db.VarChar(255)
-  hidrostatica  String? @db.VarChar(255)
+  certificacion String? @db.VarChar(255)
   presion       String? @db.VarChar(255)
-  precinto      String? @db.VarChar(255)
-  cilindro      String? @db.VarChar(255)
+  seguridad     String? @db.VarChar(255)
+  estado        String? @db.VarChar(255)
   carga         String? @db.VarChar(255)
   soporte       String? @db.VarChar(255)
-  manija        String? @db.VarChar(255)
+  activacion    String? @db.VarChar(255)
   manguera      String? @db.VarChar(255)
-  tobera        String? @db.VarChar(255)
+  boquilla      String? @db.VarChar(255)
   abrazadera    String? @db.VarChar(255)
+
+  observaciones String? @db.VarChar(255)
 
   usuarioCreadorId      Int
   usuarioActualizadorId Int?

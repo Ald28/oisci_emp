@@ -56,6 +56,21 @@ export const MantenimientoDetalleRepository = {
         })
     },
 
+    async updateExtintorRechargeDateByServicioExtintor(servicioExtintorId, fecha) {
+        return prisma.extintor.updateMany({
+            where: {
+                serviciosExtintor: {
+                    some: {
+                        id: Number(servicioExtintorId)
+                    }
+                }
+            },
+            data: {
+                rechargeDate: fecha
+            }
+        })
+    },
+
     findByServicioExtintorId(servicioExtintorId) {
         return prisma.mantenimientoDetalle.findUnique({
             where: { servicioExtintorId: Number(servicioExtintorId) },

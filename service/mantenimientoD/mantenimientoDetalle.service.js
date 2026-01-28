@@ -33,6 +33,13 @@ export const MantenimientoDetalleService = {
             payload.estadoFinal
         )
 
+        const fechaMantenimiento = new Date().toISOString()
+
+        await MantenimientoDetalleRepository.updateExtintorRechargeDateByServicioExtintor(
+            servicioExtintorId,
+            fechaMantenimiento
+        )
+
         return mantenimiento
     },
 

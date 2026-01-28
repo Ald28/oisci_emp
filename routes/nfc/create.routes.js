@@ -41,10 +41,33 @@ const router = Router();
  *               location:
  *                 type: string
  *                 example: "Planta 1"
+ *               pressure:
+ *                 type: string
+ *                 example: "195 PSI"
+ *               brand:
+ *                 type: string
+ *                 example: "Amerex"
+ *               model:
+ *                 type: string
+ *                 example: "B456"
+ *               rating:
+ *                 type: string
+ *                 example: "2A:10B:C"
+ *               yearManufacture:
+ *                 type: string
+ *                 example: "2020"
  *               status:
  *                 type: string
  *                 enum: [OPERATIVO, INOPERATIVO]
  *                 example: "OPERATIVO"
+ *               dateHydrostatic:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-01-15T00:00:00.000Z"
+ *               dateMaintenance:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-01-15T00:00:00.000Z"
  *               photo:
  *                 type: string
  *                 example: "url_de_la_foto.jpg"
