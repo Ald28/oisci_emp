@@ -147,5 +147,54 @@ export const ListRepository = {
                 ]
             }
         });
+    },
+
+    async listWithFilters(filters = {}) {
+        const where = {};
+
+        if (filters.hasCodeNFC === true) {
+            where.AND = [
+                { codeNFC: { not: null } },
+                { codeNFC: { not: "" } }
+            ];
+        }
+
+        if (filters.hasCodeNFC === false) {
+            where.OR = [
+                { codeNFC: null },
+                { codeNFC: "" }
+            ];
+        }
+
+        if (filters.hasSerialNumber === true) {
+            where.AND = [
+                ...(where.AND || []),
+                { serialNumber: { not: null } },
+                { serialNumber: { not: "" } }
+            ];
+        }
+
+        if (filters.hasSerialNumber === false) {
+            where.OR = [
+                ...(where.OR || []),
+                { serialNumber: null },
+                { serialNumber: "" }
+            ];
+        }
+
+        return prisma.extintor.findMany({
+            where,
+            include: {
+                usuarioCreador: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                sede: true
+            }
+        });
     }
+
 };

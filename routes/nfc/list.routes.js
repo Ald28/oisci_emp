@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController } from '../../controllers/nfc/list.controller.js';
+import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController, listExtintoresWithFiltersController } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -166,6 +166,94 @@ router.get('/list-extintor-number/:sedeId', authenticate, authorize(['admin', 'u
 
 /**
  * @swagger
+ * /nfc/extintores:
+ *   get:
+ *     summary: Listar extintores con filtros opcionales
+ *     description: |
+ *       Permite listar extintores aplicando filtros opcionales.
+ *       Si no se envía ningún parámetro, retorna todos los extintores.
+ *
+ *       Filtros disponibles:
+ *       - hasCodeNFC=true → solo extintores con codeNFC
+ *       - hasCodeNFC=false → solo extintores sin codeNFC
+ *       - hasSerialNumber=true → solo extintores con serialNumber
+ *       - hasSerialNumber=false → solo extintores sin serialNumber
+ *
+ *       Los filtros pueden combinarse.
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: hasCodeNFC
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar extintores que tengan o no codeNFC
+ *         example: true
+ *
+ *       - in: query
+ *         name: hasSerialNumber
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: Filtrar extintores que tengan o no serialNumber
+ *         example: false
+ *
+ *     responses:
+ *       200:
+ *         description: Lista de extintores
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 10
+ *                       codeNFC:
+ *                         type: string
+ *                         nullable: true
+ *                         example: NFC123456
+ *                       serialNumber:
+ *                         type: string
+ *                         nullable: true
+ *                         example: SN-987654
+ *                       type:
+ *                         type: string
+ *                         example: Polvo Químico
+ *                       capacity:
+ *                         type: string
+ *                         example: 5kg
+ *                       agent:
+ *                         type: string
+ *                         example: ABC
+ *                       status:
+ *                         type: string
+ *                         example: OPERATIVO
+ *                       sedeId:
+ *                         type: integer
+ *                         example: 1
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/extintores', authenticate, authorize(['admin', 'tecnico']), listExtintoresWithFiltersController);
+
+/**
+ * @swagger
  * /nfc/ext-sede/{sedeId}:
  *   get:
  *     summary: Obtener extintores por sede (NFC)
@@ -239,7 +327,7 @@ router.get('/list-extintor-number/:sedeId', authenticate, authorize(['admin', 'u
 
 router.get('/ext-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresBySedeController);
 
-router.get( '/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresStatsBySedeController);
+router.get('/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresStatsBySedeController);
 
 /**
  * @swagger

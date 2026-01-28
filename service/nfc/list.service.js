@@ -62,3 +62,17 @@ export async function getExtinguishersUpdatedSinceService(since) {
 export async function listExtintorNumber(sedeId) {
     return await ListRepository.listByExtintorNumber(sedeId);
 }
+
+export async function listExtintoresWithFiltersService(query) {
+    const filters = {};
+
+    if (query.hasCodeNFC !== undefined) {
+        filters.hasCodeNFC = query.hasCodeNFC === 'true';
+    }
+
+    if (query.hasSerialNumber !== undefined) {
+        filters.hasSerialNumber = query.hasSerialNumber === 'true';
+    }
+
+    return await ListRepository.listWithFilters(filters);
+}
