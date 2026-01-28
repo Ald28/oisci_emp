@@ -60,6 +60,14 @@ const router = Router();
  *                 type: string
  *                 enum: [OPERATIVO, INOPERATIVO]
  *                 example: "OPERATIVO"
+ *               dateHydrostatic:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-01-15T00:00:00.000Z"
+ *               dateMaintenance:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-01-15T00:00:00.000Z"
  *               photo:
  *                 type: string
  *                 example: "url_de_la_foto.jpg"

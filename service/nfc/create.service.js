@@ -1,7 +1,14 @@
 import { CreateNFCRepository } from "../../repository/nfc/create.repository.js";
+import { safeDate } from "../../utils/date.util.js";
 
 export async function createExtintorService(data, usuarioId) {
-    const { sedeId, status, ...rest } = data;
+    const {
+        sedeId,
+        status,
+        dateHydrostatic,
+        dateMaintenance,
+        ...rest
+    } = data;
 
     if (rest.codeNFC === "") {
         rest.codeNFC = null;
@@ -9,21 +16,16 @@ export async function createExtintorService(data, usuarioId) {
 
     const historic = status === "OPERATIVO" ? 0 : 1;
 
-    const extintor = await CreateNFCRepository.create({
+    return CreateNFCRepository.create({
         ...rest,
         status,
         historic,
         dateLow: new Date(),
-        dateHydrostatic: new Date(),
-        dateMaintenance: new Date(),
 
-        sede: {
-            connect: { id: sedeId }
-        },
-        usuarioCreador: {
-            connect: { id: usuarioId }
-        }
+        dateHydrostatic: safeDate(dateHydrostatic),
+        dateMaintenance: safeDate(dateMaintenance),
+
+        sede: { connect: { id: sedeId } },
+        usuarioCreador: { connect: { id: usuarioId } }
     });
-
-    return extintor;
 }
