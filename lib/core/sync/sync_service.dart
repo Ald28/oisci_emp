@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../features/services/data/datasources/local_extinguisher_datasource.dart';
 import '../../features/services/data/datasources/http_extinguisher_datasource.dart';
+import '../../features/services/domain/entities/extinguisher_entity.dart';
+import '../../features/services/data/models/extinguisher_model.dart';
+import '../database/app_database.dart';
 
 /// Servicio de sincronización para enviar extintores pendientes al servidor
 /// Usa SQLite para almacenar pendientes
@@ -39,26 +42,126 @@ class SyncService {
         // Decodificar el payload JSON
         final data =
             jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+        final type = item['type'] as String;
 
-        // Intentar crear en el servidor y obtener el extintor creado
-        final extinguisher = await _httpDataSource.createExtinguisher(data);
+        Extinguisher extinguisher;
 
-        // Buscar el extintor temporal en extintor por serialNumber
-        // para actualizarlo con el ID real del servidor
-        final serialNumber = data['serialNumber'] as String?;
+        if (type == 'UPDATE_EXTINGUISHER') {
+          // Actualizar extintor existente
+          var extintorId = data['extintorId'] as int;
+          final originalExtintorId =
+              extintorId; // Guardar el ID original para actualizar relaciones
 
-        if (serialNumber != null) {
-          // Actualizar el registro existente en extintor con el ID real y synced = 1
-          await _localDataSource.updateExtinguisherAfterSync(
-            serialNumber: serialNumber,
-            extinguisher: extinguisher,
+          // Si el extintorId es negativo, necesitamos encontrar el ID real (positivo)
+          // antes de llamar al servidor, porque el servidor no conoce IDs negativos
+          if (extintorId < 0) {
+            final realExtintorId = await _findRealExtinguisherId(extintorId);
+            if (realExtintorId != null) {
+              extintorId = realExtintorId;
+            } else {
+              // Si no se encuentra el ID real, el extintor aún no se ha sincronizado
+              // No podemos actualizar en el servidor, marcar error y continuar con el siguiente
+              await _localDataSource.updateSyncError(
+                item['id'] as int,
+                'El extintor aún no está sincronizado. Sincronice primero el extintor antes de actualizarlo.',
+              );
+              continue;
+            }
+          }
+
+          // Construir payload limpio con solo los campos necesarios para el backend
+          // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
+          final extinguisherData = <String, dynamic>{
+            'serialNumber': data['serialNumber'],
+            'type': data['type'],
+            'capacity': data['capacity'],
+            'agent': data['agent'],
+            'cylinderNumber': data['cylinderNumber'],
+            'location': data['location'],
+            'status': data['status'],
+            'photo': data['photo'],
+            'pressure': data['pressure'],
+            'brand': data['brand'],
+            'model': data['model'],
+            'rating': data['rating'],
+            'yearManufacture': data['yearManufacture'],
+            'dateHydrostatic': data['dateHydrostatic'],
+            'dateMaintenance': data['dateMaintenance'],
+            'sedeId': data['sedeId'],
+            // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
+            // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
+          };
+
+          extinguisher = await _httpDataSource.updateExtinguisher(
+            extintorId,
+            extinguisherData,
+          );
+
+          // Si el extintorId original era negativo, actualizar las relaciones
+          // con el nuevo ID positivo devuelto por el servidor
+          if (originalExtintorId < 0 && extinguisher.id != originalExtintorId) {
+            await _localDataSource.updateExtinguisherRelationsAfterSync(
+              oldExtintorId: originalExtintorId,
+              newExtintorId: extinguisher.id,
+            );
+          }
+
+          // Guardar el extintor actualizado localmente
+          await _localDataSource.saveExtinguisher(
+            extinguisher as ExtinguisherModel,
           );
         } else {
-          // Si no hay serialNumber, insertar nuevo (caso raro)
-          await _localDataSource.saveExtinguisher(extinguisher);
+          // Crear nuevo extintor
+          // Construir payload limpio con solo los campos necesarios para el backend
+          // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
+          final extinguisherData = <String, dynamic>{
+            'serialNumber': data['serialNumber'],
+            'type': data['type'],
+            'capacity': data['capacity'],
+            'agent': data['agent'],
+            'cylinderNumber': data['cylinderNumber'],
+            'location': data['location'],
+            'status': data['status'],
+            'photo': data['photo'],
+            'pressure': data['pressure'],
+            'brand': data['brand'],
+            'model': data['model'],
+            'rating': data['rating'],
+            'yearManufacture': data['yearManufacture'],
+            'dateHydrostatic': data['dateHydrostatic'],
+            'dateMaintenance': data['dateMaintenance'],
+            'sedeId': data['sedeId'],
+            // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
+            // usuarioCreadorId (campos internos o manejados por el backend)
+          };
+
+          extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+
+          // Buscar el extintor temporal en extintor por serialNumber o tempId
+          // para actualizarlo con el ID real del servidor
+          final serialNumber = data['serialNumber'] as String?;
+          final tempId = data['tempId'] as int?;
+
+          if (serialNumber != null || tempId != null) {
+            // Actualizar el registro existente en extintor con el ID real y synced = 1
+            await _localDataSource.updateExtinguisherAfterSync(
+              serialNumber: serialNumber,
+              tempId: tempId,
+              extinguisher: extinguisher as ExtinguisherModel,
+            );
+          } else {
+            // Si no hay forma directa de identificar el extintor temporal,
+            // usar la búsqueda heurística basada en otros campos y relaciones.
+            await _localDataSource
+                .updateExtinguisherAfterSyncWithoutSerialNumber(
+              extinguisher: extinguisher as ExtinguisherModel,
+              originalData:
+                  data, // Datos originales del payload para buscar el tempId
+            );
+          }
         }
 
-        // Si se creó exitosamente, eliminar de la cola
+        // Si se procesó exitosamente, eliminar de la cola
         await _localDataSource.deleteQueueItem(item['id'] as int);
         syncedCount++;
       } catch (e) {
@@ -111,6 +214,7 @@ class SyncService {
         // Decodificar el payload JSON
         final data =
             jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+        final type = item['type'] as String;
 
         // Actualizar progreso
         yield {
@@ -120,25 +224,132 @@ class SyncService {
           'synced': syncedCount,
         };
 
-        // Intentar crear en el servidor y obtener el extintor creado
-        final extinguisher = await _httpDataSource.createExtinguisher(data);
+        Extinguisher extinguisher;
 
-        // Buscar el extintor temporal en extintor por serialNumber
-        // para actualizarlo con el ID real del servidor
-        final serialNumber = data['serialNumber'] as String?;
+        if (type == 'UPDATE_EXTINGUISHER') {
+          // Actualizar extintor existente
+          var extintorId = data['extintorId'] as int;
+          final originalExtintorId =
+              extintorId; // Guardar el ID original para actualizar relaciones
 
-        if (serialNumber != null) {
-          // Actualizar el registro existente en extintor con el ID real y synced = 1
-          await _localDataSource.updateExtinguisherAfterSync(
-            serialNumber: serialNumber,
-            extinguisher: extinguisher,
+          // Si el extintorId es negativo, necesitamos encontrar el ID real (positivo)
+          // antes de llamar al servidor, porque el servidor no conoce IDs negativos
+          if (extintorId < 0) {
+            final realExtintorId = await _findRealExtinguisherId(extintorId);
+            if (realExtintorId != null) {
+              extintorId = realExtintorId;
+            } else {
+              // Si no se encuentra el ID real, el extintor aún no se ha sincronizado
+              // No podemos actualizar en el servidor, marcar error y continuar con el siguiente
+              await _localDataSource.updateSyncError(
+                item['id'] as int,
+                'El extintor aún no está sincronizado. Sincronice primero el extintor antes de actualizarlo.',
+              );
+              // Reportar el error y continuar
+              yield {
+                'step': 'Error en registro ${i + 1} de $totalItems',
+                'progress': ((i + 1) / totalItems),
+                'total': totalItems,
+                'synced': syncedCount,
+                'error': 'El extintor aún no está sincronizado',
+              };
+              continue;
+            }
+          }
+
+          // Construir payload limpio con solo los campos necesarios para el backend
+          // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
+          final extinguisherData = <String, dynamic>{
+            'serialNumber': data['serialNumber'],
+            'type': data['type'],
+            'capacity': data['capacity'],
+            'agent': data['agent'],
+            'cylinderNumber': data['cylinderNumber'],
+            'location': data['location'],
+            'status': data['status'],
+            'photo': data['photo'],
+            'pressure': data['pressure'],
+            'brand': data['brand'],
+            'model': data['model'],
+            'rating': data['rating'],
+            'yearManufacture': data['yearManufacture'],
+            'dateHydrostatic': data['dateHydrostatic'],
+            'dateMaintenance': data['dateMaintenance'],
+            'sedeId': data['sedeId'],
+            // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
+            // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
+          };
+
+          extinguisher = await _httpDataSource.updateExtinguisher(
+            extintorId,
+            extinguisherData,
+          );
+
+          // Si el extintorId original era negativo, actualizar las relaciones
+          // con el nuevo ID positivo devuelto por el servidor
+          if (originalExtintorId < 0 && extinguisher.id != originalExtintorId) {
+            await _localDataSource.updateExtinguisherRelationsAfterSync(
+              oldExtintorId: originalExtintorId,
+              newExtintorId: extinguisher.id,
+            );
+          }
+
+          // Guardar el extintor actualizado localmente
+          await _localDataSource.saveExtinguisher(
+            extinguisher as ExtinguisherModel,
           );
         } else {
-          // Si no hay serialNumber, insertar nuevo (caso raro)
-          await _localDataSource.saveExtinguisher(extinguisher);
+          // Crear nuevo extintor
+          // Construir payload limpio con solo los campos necesarios para el backend
+          // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
+          final extinguisherData = <String, dynamic>{
+            'serialNumber': data['serialNumber'],
+            'type': data['type'],
+            'capacity': data['capacity'],
+            'agent': data['agent'],
+            'cylinderNumber': data['cylinderNumber'],
+            'location': data['location'],
+            'status': data['status'],
+            'photo': data['photo'],
+            'pressure': data['pressure'],
+            'brand': data['brand'],
+            'model': data['model'],
+            'rating': data['rating'],
+            'yearManufacture': data['yearManufacture'],
+            'dateHydrostatic': data['dateHydrostatic'],
+            'dateMaintenance': data['dateMaintenance'],
+            'sedeId': data['sedeId'],
+            // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
+            // usuarioCreadorId (campos internos o manejados por el backend)
+          };
+
+          extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+
+          // Buscar el extintor temporal en extintor por serialNumber o tempId
+          // para actualizarlo con el ID real del servidor
+          final serialNumber = data['serialNumber'] as String?;
+          final tempId = data['tempId'] as int?;
+
+          if (serialNumber != null || tempId != null) {
+            // Actualizar el registro existente en extintor con el ID real y synced = 1
+            await _localDataSource.updateExtinguisherAfterSync(
+              serialNumber: serialNumber,
+              tempId: tempId,
+              extinguisher: extinguisher as ExtinguisherModel,
+            );
+          } else {
+            // Si no hay forma directa de identificar el extintor temporal,
+            // usar la búsqueda heurística basada en otros campos y relaciones.
+            await _localDataSource
+                .updateExtinguisherAfterSyncWithoutSerialNumber(
+              extinguisher: extinguisher as ExtinguisherModel,
+              originalData:
+                  data, // Datos originales del payload para buscar el tempId
+            );
+          }
         }
 
-        // Si se creó exitosamente, eliminar de la cola
+        // Si se procesó exitosamente, eliminar de la cola
         await _localDataSource.deleteQueueItem(item['id'] as int);
         syncedCount++;
       } catch (e) {
@@ -197,32 +408,271 @@ class SyncService {
       // Decodificar el payload
       final data =
           jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+      final type = item['type'] as String;
 
-      // Intentar crear en el servidor y obtener el extintor creado
-      final extinguisher = await _httpDataSource.createExtinguisher(data);
+      Extinguisher extinguisher;
 
-      // Buscar el extintor temporal en extintor por serialNumber
-      // para actualizarlo con el ID real del servidor
-      final serialNumber = data['serialNumber'] as String?;
+      if (type == 'UPDATE_EXTINGUISHER') {
+        // Actualizar extintor existente
+        var extintorId = data['extintorId'] as int;
+        final originalExtintorId =
+            extintorId; // Guardar el ID original para actualizar relaciones
 
-      if (serialNumber != null) {
-        // Actualizar el registro existente en extintor con el ID real y synced = 1
-        await _localDataSource.updateExtinguisherAfterSync(
-          serialNumber: serialNumber,
-          extinguisher: extinguisher,
+        // Si el extintorId es negativo, necesitamos encontrar el ID real (positivo)
+        // antes de llamar al servidor, porque el servidor no conoce IDs negativos
+        if (extintorId < 0) {
+          final realExtintorId = await _findRealExtinguisherId(extintorId);
+          if (realExtintorId != null) {
+            extintorId = realExtintorId;
+          } else {
+            // Si no se encuentra el ID real, el extintor aún no se ha sincronizado
+            // No podemos actualizar en el servidor, marcar error y retornar false
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El extintor aún no está sincronizado. Sincronice primero el extintor antes de actualizarlo.',
+            );
+            return false;
+          }
+        }
+
+        // Construir payload limpio con solo los campos necesarios para el backend
+        // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
+        final extinguisherData = <String, dynamic>{
+          'serialNumber': data['serialNumber'],
+          'type': data['type'],
+          'capacity': data['capacity'],
+          'agent': data['agent'],
+          'cylinderNumber': data['cylinderNumber'],
+          'location': data['location'],
+          'status': data['status'],
+          'photo': data['photo'],
+          'pressure': data['pressure'],
+          'brand': data['brand'],
+          'model': data['model'],
+          'rating': data['rating'],
+          'yearManufacture': data['yearManufacture'],
+          'dateHydrostatic': data['dateHydrostatic'],
+          'dateMaintenance': data['dateMaintenance'],
+          'sedeId': data['sedeId'],
+          // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
+          // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
+        };
+
+        extinguisher = await _httpDataSource.updateExtinguisher(
+          extintorId,
+          extinguisherData,
+        );
+
+        // Si el extintorId original era negativo, actualizar las relaciones
+        // con el nuevo ID positivo devuelto por el servidor
+        if (originalExtintorId < 0 && extinguisher.id != originalExtintorId) {
+          await _localDataSource.updateExtinguisherRelationsAfterSync(
+            oldExtintorId: originalExtintorId,
+            newExtintorId: extinguisher.id,
+          );
+        }
+
+        // Guardar el extintor actualizado localmente
+        await _localDataSource.saveExtinguisher(
+          extinguisher as ExtinguisherModel,
         );
       } else {
-        // Si no hay serialNumber, insertar nuevo (caso raro)
-        await _localDataSource.saveExtinguisher(extinguisher);
+        // Crear nuevo extintor
+        // Construir payload limpio con solo los campos necesarios para el backend
+        // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
+        final extinguisherData = <String, dynamic>{
+          'serialNumber': data['serialNumber'],
+          'type': data['type'],
+          'capacity': data['capacity'],
+          'agent': data['agent'],
+          'cylinderNumber': data['cylinderNumber'],
+          'location': data['location'],
+          'status': data['status'],
+          'photo': data['photo'],
+          'pressure': data['pressure'],
+          'brand': data['brand'],
+          'model': data['model'],
+          'rating': data['rating'],
+          'yearManufacture': data['yearManufacture'],
+          'dateHydrostatic': data['dateHydrostatic'],
+          'dateMaintenance': data['dateMaintenance'],
+          'sedeId': data['sedeId'],
+          // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
+          // usuarioCreadorId (campos internos o manejados por el backend)
+        };
+
+        extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+
+        // Buscar el extintor temporal en extintor por serialNumber o tempId
+        // para actualizarlo con el ID real del servidor
+        final serialNumber = data['serialNumber'] as String?;
+        final tempId = data['tempId'] as int?;
+
+        if (serialNumber != null || tempId != null) {
+          // Actualizar el registro existente en extintor con el ID real y synced = 1
+          await _localDataSource.updateExtinguisherAfterSync(
+            serialNumber: serialNumber,
+            tempId: tempId,
+            extinguisher: extinguisher as ExtinguisherModel,
+          );
+        } else {
+          // Si no hay forma directa de identificar el extintor temporal,
+          // usar la búsqueda heurística basada en otros campos y relaciones.
+          await _localDataSource.updateExtinguisherAfterSyncWithoutSerialNumber(
+            extinguisher: extinguisher as ExtinguisherModel,
+            originalData:
+                data, // Datos originales del payload para buscar el tempId
+          );
+        }
       }
 
-      // Si se creó exitosamente, eliminar de la cola
+      // Si se procesó exitosamente, eliminar de la cola
       await _localDataSource.deleteQueueItem(queueId);
       return true;
     } catch (e) {
       await _localDataSource.updateSyncError(queueId, e.toString());
       return false;
     }
+  }
+
+  /// Encontrar el ID real (positivo) de un extintor a partir de su ID temporal (negativo)
+  /// Similar a _findRealExtinguisherId en service_sync_service.dart
+  Future<int?> _findRealExtinguisherId(int tempId) async {
+    final db = await AppDatabase.database;
+
+    // Buscar el extintor temporal
+    final tempExtinguisher = await db.query(
+      'extintor',
+      where: 'id = ?',
+      whereArgs: [tempId],
+      limit: 1,
+    );
+
+    if (tempExtinguisher.isNotEmpty) {
+      // El extintor temporal todavía existe
+      final temp = tempExtinguisher.first;
+      final serialNumber = temp['serialNumber'] as String?;
+
+      // Estrategia 1: Si tiene serialNumber, buscar por serialNumber
+      if (serialNumber != null && serialNumber.isNotEmpty) {
+        // Buscar el extintor sincronizado correspondiente (mismo serialNumber, pero ID positivo)
+        final syncedExtinguisher = await db.query(
+          'extintor',
+          where: 'serialNumber = ? AND id > 0',
+          whereArgs: [serialNumber],
+          limit: 1,
+        );
+
+        if (syncedExtinguisher.isNotEmpty) {
+          return syncedExtinguisher.first['id'] as int;
+        }
+      }
+
+      // Estrategia 2: Si no tiene serialNumber o no se encontró por serialNumber,
+      // buscar en servicio_extintor qué extintorId positivo se está usando
+      // que corresponda a este extintor temporal
+      final sedeId = temp['sedeId'] as int?;
+      final usuarioCreadorId = temp['usuarioCreadorId'] as int?;
+
+      if (sedeId != null && usuarioCreadorId != null) {
+        // Buscar extintores sincronizados con la misma sede y usuario
+        final syncedExtinguishers = await db.query(
+          'extintor',
+          where: 'sedeId = ? AND usuarioCreadorId = ? AND id > 0',
+          whereArgs: [sedeId, usuarioCreadorId],
+          orderBy: 'createdAt DESC',
+          limit: 10,
+        );
+
+        // Para cada extintor sincronizado, verificar si hay servicio_extintor
+        // que tenga extintorId positivo pero que originalmente apuntaba al negativo
+        for (final synced in syncedExtinguishers) {
+          final syncedId = synced['id'] as int;
+          // Buscar si hay servicio_extintor con este extintorId positivo
+          // que fue creado alrededor del mismo tiempo que el extintor temporal
+          final serviceExtinguishers = await db.query(
+            'servicio_extintor',
+            where: 'extintorId = ?',
+            whereArgs: [syncedId],
+            limit: 1,
+          );
+
+          if (serviceExtinguishers.isNotEmpty) {
+            // Verificar si los campos coinciden
+            final syncedType = synced['type'] as String?;
+            final syncedLocation = synced['location'] as String?;
+            final tempType = temp['type'] as String?;
+            final tempLocation = temp['location'] as String?;
+
+            int matches = 0;
+            if (syncedType != null &&
+                tempType != null &&
+                syncedType == tempType) {
+              matches++;
+            }
+            if (syncedLocation != null &&
+                tempLocation != null &&
+                syncedLocation == tempLocation) {
+              matches++;
+            }
+
+            // Si hay coincidencias, probablemente es el mismo extintor
+            if (matches >= 1) {
+              return syncedId;
+            }
+          }
+        }
+      }
+    }
+
+    // Estrategia 3: Buscar directamente en servicio_extintor
+    // Si hay servicio_extintor con extintorId positivo que fue actualizado recientemente
+    // y que corresponde a este extintor temporal
+    final serviceExtinguishers = await db.query(
+      'servicio_extintor',
+      where: 'extintorId > 0',
+      orderBy: 'createdAt DESC',
+      limit: 20,
+    );
+
+    for (final se in serviceExtinguishers) {
+      final extintorId = se['extintorId'] as int;
+      final extintor = await db.query(
+        'extintor',
+        where: 'id = ?',
+        whereArgs: [extintorId],
+        limit: 1,
+      );
+
+      if (extintor.isNotEmpty) {
+        final ext = extintor.first;
+        // Verificar si este extintor sincronizado corresponde al temporal
+        // comparando campos clave
+        if (tempExtinguisher.isNotEmpty) {
+          final temp = tempExtinguisher.first;
+          final tempSedeId = temp['sedeId'] as int?;
+          final tempUsuarioId = temp['usuarioCreadorId'] as int?;
+          final extSedeId = ext['sedeId'] as int?;
+          final extUsuarioId = ext['usuarioCreadorId'] as int?;
+
+          if (tempSedeId != null &&
+              extSedeId != null &&
+              tempSedeId == extSedeId &&
+              tempUsuarioId != null &&
+              extUsuarioId != null &&
+              tempUsuarioId == extUsuarioId) {
+            // Verificar si el serialNumber del sincronizado es null o vacío
+            // (indicando que fue creado sin serialNumber y luego sincronizado)
+            final extSerial = ext['serialNumber'] as String?;
+            if (extSerial == null || extSerial.isEmpty) {
+              return extintorId;
+            }
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   /// Obtener todos los extintores pendientes

@@ -201,19 +201,27 @@ class ExtinguisherSyncService {
             }
           }
 
-          // Buscar el extintor temporal en extintor por serialNumber
+          // Buscar el extintor temporal en extintor por serialNumber o tempId
           // para actualizarlo con el ID real del servidor
           final serialNumber = data['serialNumber'] as String?;
+          final tempId = data['tempId'] as int?;
 
-          if (serialNumber != null) {
+          if (serialNumber != null || tempId != null) {
             // Actualizar el registro existente en extintor con el ID real y synced = 1
             await _localDataSource.updateExtinguisherAfterSync(
               serialNumber: serialNumber,
+              tempId: tempId,
               extinguisher: extintor,
             );
           } else {
-            // Si no hay serialNumber, insertar nuevo (caso raro)
-            await _localDataSource.saveExtinguisher(extintor);
+            // Si no hay forma directa de identificar el extintor temporal,
+            // usar la búsqueda heurística basada en otros campos y relaciones.
+            await _localDataSource
+                .updateExtinguisherAfterSyncWithoutSerialNumber(
+              extinguisher: extintor,
+              originalData:
+                  data, // Datos originales del payload para buscar el tempId
+            );
           }
 
           // Eliminar de la cola

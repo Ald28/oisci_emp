@@ -17,7 +17,10 @@ import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../domain/repositories/service_repository.dart';
+import '../../domain/repositories/extinguisher_repository.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 import '../../data/datasources/local_extinguisher_datasource.dart';
+import '../../../../core/database/app_database.dart';
 import '../../domain/constants/extinguisher_types.dart';
 import 'service_data_page.dart';
 
@@ -65,9 +68,15 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   bool _isLoading = false;
   bool _isLoadingSedes = false;
   List<Sede> _sedes = [];
+  
+  // Para vincular con extintor existente sin número de serie
+  Extinguisher? _selectedExtinguisher; // Extintor seleccionado para actualizar
+  bool _isLoadingExtinguishers = false;
 
   late final CreateExtinguisherUseCase _createUseCase =
       CreateExtinguisherUseCase(ExtinguisherRepositoryImpl());
+  late final ExtinguisherRepository _extinguisherRepository =
+      ExtinguisherRepositoryImpl();
   late final GetSedesUseCase _getSedesUseCase = GetSedesUseCase(
     SedeRepositoryImpl(),
   );
@@ -79,7 +88,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   void initState() {
     super.initState();
     // Autocompletar número de serie si viene desde NFC o búsqueda
-    if (widget.initialSerial != null) {
+    if (widget.initialSerial != null && widget.initialSerial!.isNotEmpty) {
       _numeroSerieController.text = widget.initialSerial!;
     }
     // Pre-seleccionar sede si viene como parámetro o obtenerla del servicio
@@ -101,10 +110,46 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         setState(() {
           _sedeId = service.sedeId;
         });
+      } else if (mounted) {
+        // Si no se encuentra el servicio, intentar obtener desde local directamente
+        debugPrint('Servicio no encontrado, intentando obtener desde local...');
+        try {
+          final db = await AppDatabase.database;
+          final result = await db.query(
+            'servicio',
+            where: 'id = ?',
+            whereArgs: [widget.servicioId],
+            limit: 1,
+          );
+          if (result.isNotEmpty && mounted) {
+            setState(() {
+              _sedeId = result.first['sedeId'] as int?;
+            });
+          }
+        } catch (e2) {
+          debugPrint('Error al obtener sede desde local: $e2');
+        }
       }
     } catch (e) {
       // Si hay error, continuar sin pre-seleccionar sede
       debugPrint('Error al obtener sede del servicio: $e');
+      // Intentar obtener desde local como último recurso
+      try {
+        final db = await AppDatabase.database;
+        final result = await db.query(
+          'servicio',
+          where: 'id = ?',
+          whereArgs: [widget.servicioId],
+          limit: 1,
+        );
+        if (result.isNotEmpty && mounted) {
+          setState(() {
+            _sedeId = result.first['sedeId'] as int?;
+          });
+        }
+      } catch (e2) {
+        debugPrint('Error al obtener sede desde local: $e2');
+      }
     }
   }
 
@@ -269,7 +314,17 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       // Verificar conectividad antes de registrar
       final hasInternet = await InternetConnectionChecker().hasConnection;
 
-      final extinguisher = await _createUseCase.call(data);
+      final Extinguisher extinguisher;
+      
+      // Si hay un extintor seleccionado, hacer UPDATE en lugar de CREATE
+      if (_selectedExtinguisher != null) {
+        extinguisher = await _extinguisherRepository.updateExtinguisher(
+          _selectedExtinguisher!.id,
+          data,
+        );
+      } else {
+        extinguisher = await _createUseCase.call(data);
+      }
 
       if (!mounted) return;
 
@@ -443,12 +498,96 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       ),
                       const SizedBox(height: 24),
                       // Campos del formulario (orden según imagen)
-                      // 1. Nro. Serie
-                      FloatingLabelTextField(
-                        controller: _numeroSerieController,
-                        label: 'Nro. Serie',
-                        hintText: 'Nro. Serie',
+                      // 1. Nro. Serie con botón para vincular extintor existente
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: FloatingLabelTextField(
+                              controller: _numeroSerieController,
+                              label: 'Nro. Serie',
+                              hintText: 'Nro. Serie',
+                            ),
+                          ),
+                          if (_sedeId != null) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: _isLoadingExtinguishers
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE84343)),
+                                      ),
+                                    )
+                                  : const Icon(Icons.link),
+                              tooltip: 'Vincular con extintor existente sin número de serie',
+                              onPressed: _isLoadingExtinguishers ? null : _showLinkExtinguisherModal,
+                              color: const Color(0xFFE84343),
+                            ),
+                          ],
+                        ],
                       ),
+                      // Mostrar información si hay un extintor seleccionado
+                      if (_selectedExtinguisher != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.blue[700], size: 22),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Actualizando extintor ID: ${_selectedExtinguisher!.id}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.blue[900],
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Vinculando Nro Serie: ${_numeroSerieController.text.trim().isEmpty ? "N/A" : _numeroSerieController.text.trim()}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.blue[900],
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: _clearFormData,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Cancelar',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       // 2. Ubicación
                       FloatingLabelTextField(
@@ -555,7 +694,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       const SizedBox(height: 32),
                       // Botón Registrar
                       PrimaryButton(
-                        text: 'Registrar',
+                        text: _selectedExtinguisher != null ? 'Actualizar' : 'Registrar',
                         onPressed: _isLoading ? null : _handleRegister,
                         isLoading: _isLoading,
                       ),
@@ -1036,5 +1175,248 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           ),
       ],
     );
+  }
+
+  Future<void> _showLinkExtinguisherModal() async {
+    if (_sedeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona una sede primero'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingExtinguishers = true;
+    });
+
+    try {
+      final extinguishers = await _extinguisherRepository.getExtinguishersWithoutSerialNumber(
+        sedeId: _sedeId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingExtinguishers = false;
+      });
+
+      if (extinguishers.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay extintores sin número de serie en esta sede'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Mostrar modal con lista de extintores
+      final selected = await showDialog<Extinguisher>(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE84343),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Vincular con Extintor Existente',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                // Lista de extintores
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: extinguishers.length,
+                    itemBuilder: (context, index) {
+                      final extinguisher = extinguishers[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFFE84343),
+                            child: Text(
+                              '${extinguisher.id}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            'ID: ${extinguisher.id}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (extinguisher.type != null)
+                                Text('Tipo: ${extinguisher.type}'),
+                              if (extinguisher.location != null)
+                                Text('Ubicación: ${extinguisher.location}'),
+                              if (extinguisher.status != null)
+                                Text('Estado: ${extinguisher.status}'),
+                            ],
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.pop(context, extinguisher);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      if (selected != null && mounted) {
+        _fillFormWithExtinguisher(selected);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingExtinguishers = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar extintores: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _fillFormWithExtinguisher(Extinguisher extinguisher) {
+    setState(() {
+      _selectedExtinguisher = extinguisher;
+      
+      // Autocompletar campos del formulario
+      // El número de serie ya está en el campo (viene del escaneo/búsqueda)
+      // No lo sobrescribimos
+      
+      if (extinguisher.location != null) {
+        _ubicacionController.text = extinguisher.location!;
+      }
+      if (extinguisher.cylinderNumber != null) {
+        _numeroCilindroController.text = extinguisher.cylinderNumber!;
+      }
+      if (extinguisher.type != null) {
+        _tipo = extinguisher.type;
+      }
+      if (extinguisher.agent != null) {
+        _agente = extinguisher.agent;
+        _agenteController.text = extinguisher.agent!;
+      }
+      if (extinguisher.capacity != null) {
+        _capacidadController.text = extinguisher.capacity!;
+      }
+      if (extinguisher.status != null) {
+        _estado = extinguisher.status;
+      }
+      if (extinguisher.pressure != null) {
+        _pressureController.text = extinguisher.pressure!;
+      }
+      if (extinguisher.brand != null) {
+        _brandController.text = extinguisher.brand!;
+      }
+      if (extinguisher.model != null) {
+        _modelController.text = extinguisher.model!;
+      }
+      if (extinguisher.rating != null) {
+        _ratingController.text = extinguisher.rating!;
+      }
+      if (extinguisher.yearManufacture != null) {
+        _selectedYearManufacture = int.tryParse(extinguisher.yearManufacture!);
+      }
+      if (extinguisher.dateHydrostatic != null) {
+        try {
+          _selectedDateHydrostatic = DateTime.parse(extinguisher.dateHydrostatic!);
+        } catch (e) {
+          // Ignorar error de parsing
+        }
+      }
+      if (extinguisher.dateMaintenance != null) {
+        try {
+          _selectedDateMaintenance = DateTime.parse(extinguisher.dateMaintenance!);
+        } catch (e) {
+          // Ignorar error de parsing
+        }
+      }
+      // La sede ya está seleccionada, no la cambiamos
+    });
+  }
+
+  void _clearFormData() {
+    setState(() {
+      // Limpiar el extintor seleccionado
+      _selectedExtinguisher = null;
+      
+      // Limpiar todos los campos excepto el número de serie
+      // El número de serie se mantiene porque viene del escaneo/búsqueda
+      _ubicacionController.clear();
+      _numeroCilindroController.clear();
+      _tipo = null;
+      _agente = null;
+      _agenteController.clear();
+      _capacidadController.clear();
+      _estado = null;
+      _pressureController.clear();
+      _brandController.clear();
+      _modelController.clear();
+      _ratingController.clear();
+      _selectedYearManufacture = null;
+      _selectedDateHydrostatic = null;
+      _selectedDateMaintenance = null;
+      
+      // La sede se mantiene porque es del servicio actual
+    });
   }
 }

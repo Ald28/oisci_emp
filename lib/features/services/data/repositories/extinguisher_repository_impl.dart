@@ -191,4 +191,75 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
 
     return [];
   }
+
+  @override
+  Future<Extinguisher> updateExtinguisher(
+    int extintorId,
+    Map<String, dynamic> data,
+  ) async {
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    if (hasInternet) {
+      try {
+        // Intentar actualizar en el servidor
+        final remoteDataSource = await _getDataSource(preferLocal: false);
+        final updatedExtinguisher = await remoteDataSource.updateExtinguisher(
+          extintorId,
+          data,
+        );
+
+        // Guardar también localmente
+        if (localDataSource is LocalExtinguisherDataSource) {
+          await (localDataSource as LocalExtinguisherDataSource)
+              .saveExtinguisher(updatedExtinguisher as ExtinguisherModel);
+        }
+
+        return updatedExtinguisher;
+      } catch (e) {
+        // Si falla HTTP, guardar solo localmente (con sync_queue)
+        final dataSource = await _getDataSource(preferLocal: true);
+        return await dataSource.updateExtinguisher(extintorId, data);
+      }
+    } else {
+      // Sin internet, guardar solo localmente (con sync_queue)
+      final dataSource = await _getDataSource(preferLocal: true);
+      return await dataSource.updateExtinguisher(extintorId, data);
+    }
+  }
+
+  @override
+  Future<List<Extinguisher>> getExtinguishersWithoutSerialNumber({int? sedeId}) async {
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    if (hasInternet) {
+      try {
+        // Intentar obtener desde el backend
+        final remoteDataSource = await _getDataSource(preferLocal: false);
+        final extinguishers = await remoteDataSource.getExtinguishersWithoutSerialNumber(
+          sedeId: sedeId,
+        );
+
+        // Guardar también localmente para uso offline
+        if (localDataSource is LocalExtinguisherDataSource &&
+            extinguishers.isNotEmpty) {
+          for (final ext in extinguishers) {
+            await (localDataSource as LocalExtinguisherDataSource)
+                .saveExtinguisher(ext as ExtinguisherModel);
+          }
+        }
+
+        return extinguishers;
+      } catch (_) {
+        // Si falla HTTP, continuamos con la lectura local como fallback
+      }
+    }
+
+    // Sin internet o si falló el request, obtener desde la base de datos local
+    if (localDataSource is LocalExtinguisherDataSource) {
+      return await (localDataSource as LocalExtinguisherDataSource)
+          .getExtinguishersWithoutSerialNumber(sedeId: sedeId);
+    }
+
+    return [];
+  }
 }

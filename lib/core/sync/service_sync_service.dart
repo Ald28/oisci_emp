@@ -393,9 +393,9 @@ class ServiceSyncService {
   }
 
   /// Encontrar el ID real (positivo) del servicio sincronizado basado en el ID temporal
-  /// Si el servicio temporal ya no existe (fue sincronizado), busca el servicio_extintor
-  /// que tenía referencia al ID negativo y obtiene su servicioId actualizado
-  Future<int?> _findRealServiceId(int tempId, Database db) async {
+  /// Si el servicio temporal ya no existe (fue sincronizado), busca servicios sincronizados
+  /// recientemente que coincidan con el tipo y sede
+  Future<int?> _findRealServiceId(int tempId, Database db, {String? type, int? sedeId}) async {
     // Primero intentar buscar el servicio temporal (puede que aún no se haya sincronizado)
     final tempService = await db.query(
       'servicio',
@@ -406,15 +406,15 @@ class ServiceSyncService {
 
     if (tempService.isNotEmpty) {
       // El servicio temporal todavía existe, buscar el sincronizado por los campos
-      final type = tempService.first['type'] as String;
+      final serviceType = tempService.first['type'] as String;
       final dateStart = tempService.first['dateStart'] as String;
-      final sedeId = tempService.first['sedeId'] as int;
+      final serviceSedeId = tempService.first['sedeId'] as int;
 
       // Buscar el servicio sincronizado correspondiente (mismo tipo, fecha, sede, pero ID positivo)
       final syncedService = await db.query(
         'servicio',
         where: 'type = ? AND dateStart = ? AND sedeId = ? AND id > 0',
-        whereArgs: [type, dateStart, sedeId],
+        whereArgs: [serviceType, dateStart, serviceSedeId],
         limit: 1,
       );
 
@@ -423,59 +423,40 @@ class ServiceSyncService {
       }
     }
 
-    // Si el servicio temporal ya no existe, significa que fue sincronizado y eliminado
-    // Buscar servicio_extintor que aún tenga referencia al ID negativo original
-    // Si ya fue actualizado por _updateServiceId, el servicioId ya será positivo
-    // Buscar cualquier servicio_extintor que tenga servicioId positivo y que haya sido creado
-    // recientemente, pero esto es difícil sin más información.
+    // Si el servicio temporal ya no existe, buscar servicios sincronizados recientemente
+    // que coincidan con el tipo y sede (si se proporcionan)
+    String? whereClause;
+    List<dynamic> whereArgs = [];
 
-    // Mejor estrategia: buscar servicio_extintor con servicioId negativo que coincida,
-    // y verificar si hay un servicio sincronizado que coincida con los datos
-    // Pero como ya actualizamos las referencias en _updateServiceId, si el servicio fue sincronizado,
-    // los servicio_extintor ya deberían tener servicioId positivo
+    if (type != null && sedeId != null) {
+      whereClause = 'type = ? AND sedeId = ? AND id > 0';
+      whereArgs = [type, sedeId];
+    } else if (type != null) {
+      whereClause = 'type = ? AND id > 0';
+      whereArgs = [type];
+    } else if (sedeId != null) {
+      whereClause = 'sedeId = ? AND id > 0';
+      whereArgs = [sedeId];
+    } else {
+      whereClause = 'id > 0';
+      whereArgs = [];
+    }
 
-    // Buscar servicio_extintor que tenga servicioId = tempId (si aún no se actualizó)
-    // o buscar servicio_extintor que tenga servicioId positivo pero que originalmente
-    // apuntaba al tempId (esto es difícil sin un campo de mapeo)
+    // Buscar servicios sincronizados recientemente (últimos 10) ordenados por createdAt DESC
+    final recentServices = await db.query(
+      'servicio',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: 'createdAt DESC',
+      limit: 10,
+    );
 
-    // La mejor solución: buscar en servicio_extintor y si encuentro uno con servicioId positivo,
-    // ese es el ID real. Pero necesito saber cuál servicio_extintor corresponde.
+    if (recentServices.isNotEmpty) {
+      // Usar el servicio más reciente que coincida
+      // Esto funciona porque los servicios se sincronizan en orden cronológico
+      return recentServices.first['id'] as int;
+    }
 
-    // Alternativa más simple: buscar todos los servicios con ID positivo que fueron creados
-    // recientemente y ver si alguno coincide, pero esto no es confiable.
-
-    // Solución más robusta: cuando sincronizamos CREATE_SERVICE_EXTINGUISHER, el payload
-    // tiene servicioId negativo, pero después de actualizar el servicio, los servicio_extintor
-    // ya tienen servicioId positivo. Así que si busco servicio_extintor con servicioId = tempId
-    // y no encuentro nada, pero busco servicio_extintor con servicioId > 0 que tenga
-    // el mismo extintorId y createdAt similar, puedo obtener el servicioId.
-
-    // Por ahora, si el servicio temporal no existe, buscar cualquier servicio_extintor
-    // que tenga servicioId positivo reciente (pero esto no es confiable).
-
-    // La solución correcta: cuando llamo a _findRealServiceId desde syncSingleService
-    // para CREATE_SERVICE_EXTINGUISHER, el payload tiene el servicioId negativo.
-    // En ese caso, después de que el servicio se sincroniza, los servicio_extintor
-    // ya deberían tener servicioId positivo porque _updateServiceId actualiza las referencias.
-
-    // Entonces, si el servicio temporal no existe, debería buscar servicio_extintor
-    // que tenga servicioId positivo reciente. Pero para ser más preciso, puedo buscar
-    // servicio_extintor que tenga el extintorId del payload y obtener su servicioId.
-
-    // Pero no tengo el extintorId aquí en _findRealServiceId...
-
-    // Solución temporal: si el servicio temporal no existe, retornar null y
-    // confiar en que _updateServiceId actualizó las referencias correctamente.
-    // Si las referencias fueron actualizadas, cuando busco servicio_extintor
-    // con servicioId negativo en syncSingleService, no lo encontraré, pero
-    // el servicioId en el payload es negativo, así que necesito mapearlo.
-
-    // Mejor solución: en syncSingleService para CREATE_SERVICE_EXTINGUISHER,
-    // antes de mapear el servicioId, verificar si ya hay servicio_extintor
-    // con servicioId positivo que corresponda.
-
-    // Por ahora, si el servicio temporal no existe, retornar null
-    // y el código que llama manejará el error apropiadamente
     return null;
   }
 
@@ -560,6 +541,38 @@ class ServiceSyncService {
         where: 'servicioId = ?',
         whereArgs: [oldId],
       );
+
+      // Actualizar referencias en sync_queue para CREATE_SERVICE_EXTINGUISHER
+      // Necesitamos actualizar el payload JSON que contiene servicioId
+      final serviceExtinguisherItems = await txn.query(
+        'sync_queue',
+        where: 'type = ?',
+        whereArgs: ['CREATE_SERVICE_EXTINGUISHER'],
+      );
+
+      for (final item in serviceExtinguisherItems) {
+        try {
+          final payloadStr = item['payload'] as String?;
+          if (payloadStr != null) {
+            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+            final payloadServicioId = payload['servicioId'] as int?;
+
+            // Si el servicioId en el payload coincide con el oldId, actualizarlo
+            if (payloadServicioId == oldId) {
+              payload['servicioId'] = newId;
+              await txn.update(
+                'sync_queue',
+                {'payload': jsonEncode(payload)},
+                where: 'id = ?',
+                whereArgs: [item['id']],
+              );
+            }
+          }
+        } catch (e) {
+          // Si hay error al parsear el JSON, continuar con el siguiente item
+          continue;
+        }
+      }
 
       // Actualizar referencias en sync_queue para FINALIZE_SERVICE
       // Necesitamos actualizar el payload JSON que contiene servicioId
@@ -1344,12 +1357,61 @@ class ServiceSyncService {
         var extintorId = data['extintorId'] as int;
 
         // Mapear servicioId negativo a positivo si es necesario
+        // Estrategia profesional y eficiente:
+        // 1. Si el servicio_extintor ya tiene servicioId positivo (actualizado por _updateServiceId),
+        //    usar ese directamente (más eficiente - 1 query)
+        // 2. Si no, buscar el servicio temporal y su correspondiente sincronizado
+        final originalServicioId = servicioId; // Guardar el ID original
         if (servicioId < 0) {
-          final realServicioId = await _findRealServiceId(servicioId, db);
-          if (realServicioId == null) {
-            // Si no se encuentra por el método normal, buscar por servicio_extintor
-            // que tenga servicioId positivo pero que originalmente apuntaba al negativo
-            final serviceExtinguishers = await db.query(
+          int? realServicioId;
+
+          // Estrategia más eficiente: buscar directamente el servicio_extintor que tiene
+          // el servicioId negativo original. Si _updateServiceId ya lo actualizó,
+          // tendrá servicioId positivo y podemos obtenerlo directamente
+          final seWithOriginalId = await db.query(
+            'servicio_extintor',
+            where: 'servicioId = ? AND extintorId = ?',
+            whereArgs: [originalServicioId, extintorId],
+            orderBy: 'createdAt DESC',
+            limit: 1,
+          );
+
+          if (seWithOriginalId.isNotEmpty) {
+            final seServicioId = seWithOriginalId.first['servicioId'] as int;
+            // Si el servicioId ya es positivo, significa que _updateServiceId ya lo actualizó
+            if (seServicioId > 0) {
+              realServicioId = seServicioId;
+            } else {
+              // Aún tiene servicioId negativo, buscar el servicio temporal y su sincronizado
+              final tempService = await db.query(
+                'servicio',
+                where: 'id = ?',
+                whereArgs: [originalServicioId],
+                limit: 1,
+              );
+
+              if (tempService.isNotEmpty) {
+                // Buscar el servicio sincronizado por campos exactos
+                final serviceType = tempService.first['type'] as String;
+                final dateStart = tempService.first['dateStart'] as String;
+                final serviceSedeId = tempService.first['sedeId'] as int;
+
+                final syncedService = await db.query(
+                  'servicio',
+                  where: 'type = ? AND dateStart = ? AND sedeId = ? AND id > 0',
+                  whereArgs: [serviceType, dateStart, serviceSedeId],
+                  limit: 1,
+                );
+
+                if (syncedService.isNotEmpty) {
+                  realServicioId = syncedService.first['id'] as int;
+                }
+              }
+            }
+          } else {
+            // No encontramos servicio_extintor con servicioId negativo original
+            // Puede que ya fue actualizado o eliminado. Buscar por extintorId y servicioId positivo
+            final seWithPositive = await db.query(
               'servicio_extintor',
               where: 'extintorId = ? AND servicioId > 0',
               whereArgs: [extintorId],
@@ -1357,20 +1419,63 @@ class ServiceSyncService {
               limit: 5,
             );
 
-            // Si encontramos servicio_extintor con servicioId positivo, usar ese servicioId
-            // Esto funciona porque cuando se sincroniza el servicio, _updateServiceId
-            // actualiza las referencias en servicio_extintor
-            if (serviceExtinguishers.isNotEmpty) {
-              // Buscar el más reciente que probablemente corresponde
-              final latest = serviceExtinguishers.first;
-              servicioId = latest['servicioId'] as int;
-            } else {
-              await _localDataSource.updateSyncError(
-                queueId,
-                'El servicio padre aún no está sincronizado',
+            // Buscar el servicio que corresponde verificando el createdAt
+            for (final se in seWithPositive) {
+              final seServicioId = se['servicioId'] as int;
+              final seCreatedAt = se['createdAt'] as String;
+
+              final servicio = await db.query(
+                'servicio',
+                where: 'id = ?',
+                whereArgs: [seServicioId],
+                limit: 1,
               );
-              return false;
+
+              if (servicio.isNotEmpty) {
+                final servicioCreatedAt = servicio.first['createdAt'] as String;
+                final seTime = DateTime.parse(seCreatedAt);
+                final servicioTime = DateTime.parse(servicioCreatedAt);
+                final diff = seTime.difference(servicioTime).abs().inSeconds;
+
+                // Si el servicio fue creado cerca del servicio_extintor (dentro de 5 segundos)
+                if (diff <= 5) {
+                  realServicioId = seServicioId;
+                  break;
+                }
+              }
             }
+          }
+
+          // Fallback: usar _findRealServiceId si aún no encontramos
+          if (realServicioId == null) {
+            final tempService = await db.query(
+              'servicio',
+              where: 'id = ?',
+              whereArgs: [originalServicioId],
+              limit: 1,
+            );
+
+            String? serviceType;
+            int? serviceSedeId;
+            if (tempService.isNotEmpty) {
+              serviceType = tempService.first['type'] as String?;
+              serviceSedeId = tempService.first['sedeId'] as int?;
+            }
+
+            realServicioId = await _findRealServiceId(
+              originalServicioId,
+              db,
+              type: serviceType,
+              sedeId: serviceSedeId,
+            );
+          }
+
+          if (realServicioId == null) {
+            await _localDataSource.updateSyncError(
+              queueId,
+              'El servicio padre aún no está sincronizado',
+            );
+            return false;
           } else {
             servicioId = realServicioId;
           }
@@ -1409,10 +1514,12 @@ class ServiceSyncService {
           );
 
           // Si no se encuentra con servicioId negativo (porque ya fue actualizado por _updateServiceId),
-          // buscar con el servicioId positivo mapeado
+          // buscar con el servicioId positivo mapeado que acabamos de encontrar
           if (tempServiceExtinguisherId == null &&
               servicioId > 0 &&
               originalServicioId < 0) {
+            // Buscar servicio_extintor que tenga el servicioId positivo mapeado y el extintorId,
+            // y que aún tenga ID negativo (no sincronizado)
             final seWithPositive = await db.query(
               'servicio_extintor',
               where: 'servicioId = ? AND extintorId = ? AND id < 0',
@@ -1421,6 +1528,27 @@ class ServiceSyncService {
             );
             if (seWithPositive.isNotEmpty) {
               tempServiceExtinguisherId = seWithPositive.first['id'] as int;
+            } else {
+              // Si tampoco se encuentra, buscar cualquier servicio_extintor con este extintorId
+              // que tenga ID negativo y que haya sido creado recientemente
+              // Esto maneja el caso donde _updateServiceId ya actualizó el servicioId
+              final seAny = await db.query(
+                'servicio_extintor',
+                where: 'extintorId = ? AND id < 0',
+                whereArgs: [data['extintorId'] as int],
+                orderBy: 'createdAt DESC',
+                limit: 5,
+              );
+
+              // Buscar el que corresponde al servicioId mapeado
+              for (final se in seAny) {
+                final seServicioId = se['servicioId'] as int;
+                // Si el servicioId coincide con el mapeado, usar este
+                if (seServicioId == servicioId) {
+                  tempServiceExtinguisherId = se['id'] as int;
+                  break;
+                }
+              }
             }
           }
 

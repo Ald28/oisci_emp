@@ -8,13 +8,16 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   final Dio _dio = DioClient().dio;
 
   @override
-  Future<ExtinguisherModel?> searchExtinguisher(String searchTerm, {int? sedeId}) async {
+  Future<ExtinguisherModel?> searchExtinguisher(
+    String searchTerm, {
+    int? sedeId,
+  }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (sedeId != null) {
         queryParams['sedeId'] = sedeId;
       }
-      
+
       final response = await _dio.get(
         '/nfc/search/$searchTerm',
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
@@ -95,6 +98,72 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   @override
+  Future<Extinguisher> updateExtinguisher(
+    int extintorId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await _dio.patch('/nfc/$extintorId', data: data);
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['ok'] == true && responseData['data'] != null) {
+        return ExtinguisherModel.fromJson(
+          responseData['data'] as Map<String, dynamic>,
+        );
+      }
+
+      throw Exception(
+        'Error al actualizar extintor: ${responseData['message'] ?? 'Error desconocido'}',
+      );
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response!.data as Map<String, dynamic>?;
+        final message =
+            errorData?['message'] as String? ?? 'Error al actualizar extintor';
+        final code = errorData?['code'] as String?;
+        throw Exception(code != null ? '$message (code: $code)' : message);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Extinguisher>> getExtinguishersWithoutSerialNumber({
+    int? sedeId,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (sedeId != null) {
+        queryParams['sedeId'] = sedeId;
+      }
+
+      final response = await _dio.get(
+        '/nfc/list-extintor-number',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['ok'] == true && responseData['data'] != null) {
+        final list = responseData['data'] as List;
+        return list
+            .map(
+              (json) =>
+                  ExtinguisherModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
     try {
       final response = await _dio.get('/nfc/ext-sede/$sedeId');
@@ -128,7 +197,9 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   /// Obtener extintores modificados después de un timestamp (sincronización incremental)
   /// GET /nfc/sync/incremental?since=2026-01-22T10:00:00Z
   /// Retorna solo extintores modificados desde el timestamp proporcionado
-  Future<List<ExtinguisherModel>> getExtinguishersUpdatedSince(String since) async {
+  Future<List<ExtinguisherModel>> getExtinguishersUpdatedSince(
+    String since,
+  ) async {
     try {
       final response = await _dio.get(
         '/nfc/sync/incremental',
