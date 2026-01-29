@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/network/error_handler.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
-import '../../../../core/widgets/floating_label_date_picker.dart';
 import '../../../../core/widgets/floating_label_year_picker.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
@@ -55,11 +53,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _ratingController = TextEditingController();
-  
-  // Para año y fechas
+
+  // Para año de fabricación (único campo de fecha manual)
   int? _selectedYearManufacture;
-  DateTime? _selectedDateHydrostatic;
-  DateTime? _selectedDateMaintenance;
 
   String? _tipo;
   String? _agente;
@@ -68,7 +64,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   bool _isLoading = false;
   bool _isLoadingSedes = false;
   List<Sede> _sedes = [];
-  
+
   // Para vincular con extintor existente sin número de serie
   Extinguisher? _selectedExtinguisher; // Extintor seleccionado para actualizar
   bool _isLoadingExtinguishers = false;
@@ -102,10 +98,12 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     _agenteController.addListener(_onAgenteChanged);
     _loadSedes();
   }
-  
+
   Future<void> _loadServiceSede() async {
     try {
-      final service = await _serviceRepository.getServiceById(widget.servicioId);
+      final service = await _serviceRepository.getServiceById(
+        widget.servicioId,
+      );
       if (service != null && mounted) {
         setState(() {
           _sedeId = service.sedeId;
@@ -259,12 +257,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ratingController.text.trim(),
         'yearManufacture': _selectedYearManufacture?.toString(),
-        'dateHydrostatic': _selectedDateHydrostatic != null
-            ? DateFormat('yyyy-MM-dd').format(_selectedDateHydrostatic!)
-            : null,
-        'dateMaintenance': _selectedDateMaintenance != null
-            ? DateFormat('yyyy-MM-dd').format(_selectedDateMaintenance!)
-            : null,
+        // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+        // No se envían desde la interfaz (similar a como no se envía la foto)
         'sedeId': _sedeId,
       };
 
@@ -315,7 +309,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       final hasInternet = await InternetConnectionChecker().hasConnection;
 
       final Extinguisher extinguisher;
-      
+
       // Si hay un extintor seleccionado, hacer UPDATE en lugar de CREATE
       if (_selectedExtinguisher != null) {
         extinguisher = await _extinguisherRepository.updateExtinguisher(
@@ -518,12 +512,18 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE84343)),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFFE84343),
+                                            ),
                                       ),
                                     )
                                   : const Icon(Icons.link),
-                              tooltip: 'Vincular con extintor existente sin número de serie',
-                              onPressed: _isLoadingExtinguishers ? null : _showLinkExtinguisherModal,
+                              tooltip:
+                                  'Vincular con extintor existente sin número de serie',
+                              onPressed: _isLoadingExtinguishers
+                                  ? null
+                                  : _showLinkExtinguisherModal,
                               color: const Color(0xFFE84343),
                             ),
                           ],
@@ -533,7 +533,10 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                       if (_selectedExtinguisher != null) ...[
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.blue[50],
                             borderRadius: BorderRadius.circular(8),
@@ -542,7 +545,11 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue[700], size: 22),
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue[700],
+                                size: 22,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -575,9 +582,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                               TextButton(
                                 onPressed: _clearFormData,
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
                                   'Cancelar',
@@ -661,40 +672,16 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      // 13. Fecha Hidrostática
-                      FloatingLabelDatePicker(
-                        selectedDate: _selectedDateHydrostatic,
-                        label: 'Fecha Hidrostática',
-                        hintText: 'Fecha Hidrostática',
-                        firstDate: DateTime(1950),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-                        onDateSelected: (date) {
-                          setState(() {
-                            _selectedDateHydrostatic = date;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      // 14. Fecha de Mantenimiento
-                      FloatingLabelDatePicker(
-                        selectedDate: _selectedDateMaintenance,
-                        label: 'Fecha de Mantenimiento',
-                        hintText: 'Fecha de Mantenimiento',
-                        firstDate: DateTime(1950),
-                        lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
-                        onDateSelected: (date) {
-                          setState(() {
-                            _selectedDateMaintenance = date;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
+                      // son manejadas automáticamente por el backend, no se ingresan manualmente
                       // Dropdown para Sede
                       _buildSedeDropdown(),
                       const SizedBox(height: 32),
                       // Botón Registrar
                       PrimaryButton(
-                        text: _selectedExtinguisher != null ? 'Actualizar' : 'Registrar',
+                        text: _selectedExtinguisher != null
+                            ? 'Actualizar'
+                            : 'Registrar',
                         onPressed: _isLoading ? null : _handleRegister,
                         isLoading: _isLoading,
                       ),
@@ -1193,9 +1180,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     });
 
     try {
-      final extinguishers = await _extinguisherRepository.getExtinguishersWithoutSerialNumber(
-        sedeId: _sedeId,
-      );
+      final extinguishers = await _extinguisherRepository
+          .getExtinguishersWithoutSerialNumber(sedeId: _sedeId);
 
       if (!mounted) return;
 
@@ -1285,9 +1271,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                           ),
                           title: Text(
                             'ID: ${extinguisher.id}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1337,11 +1321,11 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   void _fillFormWithExtinguisher(Extinguisher extinguisher) {
     setState(() {
       _selectedExtinguisher = extinguisher;
-      
+
       // Autocompletar campos del formulario
       // El número de serie ya está en el campo (viene del escaneo/búsqueda)
       // No lo sobrescribimos
-      
+
       if (extinguisher.location != null) {
         _ubicacionController.text = extinguisher.location!;
       }
@@ -1376,20 +1360,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       if (extinguisher.yearManufacture != null) {
         _selectedYearManufacture = int.tryParse(extinguisher.yearManufacture!);
       }
-      if (extinguisher.dateHydrostatic != null) {
-        try {
-          _selectedDateHydrostatic = DateTime.parse(extinguisher.dateHydrostatic!);
-        } catch (e) {
-          // Ignorar error de parsing
-        }
-      }
-      if (extinguisher.dateMaintenance != null) {
-        try {
-          _selectedDateMaintenance = DateTime.parse(extinguisher.dateMaintenance!);
-        } catch (e) {
-          // Ignorar error de parsing
-        }
-      }
+      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
+      // son manejadas automáticamente por el backend, no se autocompletan
       // La sede ya está seleccionada, no la cambiamos
     });
   }
@@ -1398,7 +1370,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     setState(() {
       // Limpiar el extintor seleccionado
       _selectedExtinguisher = null;
-      
+
       // Limpiar todos los campos excepto el número de serie
       // El número de serie se mantiene porque viene del escaneo/búsqueda
       _ubicacionController.clear();
@@ -1413,9 +1385,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       _modelController.clear();
       _ratingController.clear();
       _selectedYearManufacture = null;
-      _selectedDateHydrostatic = null;
-      _selectedDateMaintenance = null;
-      
+      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
+      // son manejadas automáticamente por el backend, no se limpian
+
       // La sede se mantiene porque es del servicio actual
     });
   }

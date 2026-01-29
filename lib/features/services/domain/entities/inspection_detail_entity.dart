@@ -6,35 +6,27 @@ class InspectionDetailEntity {
   final String? foto1Url;
   final String? foto2Url;
   final String? foto3Url;
+
   /// Paths locales para modo offline (no vienen del backend)
   final String? foto1Path;
   final String? foto2Path;
   final String? foto3Path;
-  final String? visibilidad;
-  final String? visualizacion;
   final String? accesibilidad;
-  final String? altura;
-  final String? situacion;
-  final String? conservacion;
-  final String? inscripciones;
-  final String? recorrido;
-  final String? peso;
   final String? observaciones;
   final String? ubicacion;
-  final String? acceso;
-  final String? fijacion;
-  final String? uso;
-  final String? clase;
+  final String? instalacion;
+  final String? instrucciones;
+  final String? clasificacion;
   final String? recarga;
-  final String? hidrostatica;
+  final String? certificacion;
   final String? presion;
-  final String? precinto;
-  final String? cilindro;
+  final String? seguridad;
+  final String? estado;
   final String? carga;
   final String? soporte;
-  final String? manija;
+  final String? activacion;
   final String? manguera;
-  final String? tobera;
+  final String? boquilla;
   final String? abrazadera;
   final int usuarioCreadorId;
   final int? usuarioActualizadorId;
@@ -50,31 +42,22 @@ class InspectionDetailEntity {
     this.foto1Path,
     this.foto2Path,
     this.foto3Path,
-    this.visibilidad,
-    this.visualizacion,
     this.accesibilidad,
-    this.altura,
-    this.situacion,
-    this.conservacion,
-    this.inscripciones,
-    this.recorrido,
-    this.peso,
     this.observaciones,
     this.ubicacion,
-    this.acceso,
-    this.fijacion,
-    this.uso,
-    this.clase,
+    this.instalacion,
+    this.instrucciones,
+    this.clasificacion,
     this.recarga,
-    this.hidrostatica,
+    this.certificacion,
     this.presion,
-    this.precinto,
-    this.cilindro,
+    this.seguridad,
+    this.estado,
     this.carga,
     this.soporte,
-    this.manija,
+    this.activacion,
     this.manguera,
-    this.tobera,
+    this.boquilla,
     this.abrazadera,
     required this.usuarioCreadorId,
     this.usuarioActualizadorId,

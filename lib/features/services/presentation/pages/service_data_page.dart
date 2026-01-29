@@ -199,22 +199,32 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
                     if (widget.extinguisher.rating != null)
                       const SizedBox(height: 12),
                     if (widget.extinguisher.yearManufacture != null)
-                      _buildField('Año de Fabricación', widget.extinguisher.yearManufacture!),
+                      _buildField(
+                        'Año de Fabricación',
+                        widget.extinguisher.yearManufacture!,
+                      ),
                     if (widget.extinguisher.yearManufacture != null)
                       const SizedBox(height: 12),
                     if (widget.extinguisher.dateHydrostatic != null)
                       _buildField(
                         'Fecha Hidrostática',
-                        _formatDate(widget.extinguisher.dateHydrostatic!),
+                        _formatDate(widget.extinguisher.dateHydrostatic),
                       ),
                     if (widget.extinguisher.dateHydrostatic != null)
                       const SizedBox(height: 12),
                     if (widget.extinguisher.dateMaintenance != null)
                       _buildField(
                         'Fecha de Mantenimiento',
-                        _formatDate(widget.extinguisher.dateMaintenance!),
+                        _formatDate(widget.extinguisher.dateMaintenance),
                       ),
                     if (widget.extinguisher.dateMaintenance != null)
+                      const SizedBox(height: 12),
+                    if (widget.extinguisher.rechargeDate != null)
+                      _buildField(
+                        'Fecha de Recarga',
+                        _formatDate(widget.extinguisher.rechargeDate),
+                      ),
+                    if (widget.extinguisher.rechargeDate != null)
                       const SizedBox(height: 12),
                     if (widget.extinguisher.sedeName != null)
                       _buildField('Sede', widget.extinguisher.sedeName!),
@@ -245,14 +255,21 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
   }
 
   /// Formatear fecha desde String (puede venir en formato ISO o dd/MM/yyyy)
-  String _formatDate(String dateString) {
+  String _formatDate(dynamic dateValue) {
+    if (dateValue == null) return '';
     try {
-      // Intentar parsear como ISO (yyyy-MM-dd)
-      final date = DateTime.parse(dateString);
+      DateTime date;
+      if (dateValue is DateTime) {
+        date = dateValue;
+      } else if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else {
+        return dateValue.toString();
+      }
       return DateFormat('dd/MM/yyyy').format(date);
     } catch (e) {
       // Si no se puede parsear, retornar el string original
-      return dateString;
+      return dateValue.toString();
     }
   }
 

@@ -85,8 +85,8 @@ class SyncService {
             'model': data['model'],
             'rating': data['rating'],
             'yearManufacture': data['yearManufacture'],
-            'dateHydrostatic': data['dateHydrostatic'],
-            'dateMaintenance': data['dateMaintenance'],
+            // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+            // No se envían desde el frontend (similar a como no se envía la foto)
             'sedeId': data['sedeId'],
             // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
             // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
@@ -128,14 +128,16 @@ class SyncService {
             'model': data['model'],
             'rating': data['rating'],
             'yearManufacture': data['yearManufacture'],
-            'dateHydrostatic': data['dateHydrostatic'],
-            'dateMaintenance': data['dateMaintenance'],
+            // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+            // No se envían desde el frontend (similar a como no se envía la foto)
             'sedeId': data['sedeId'],
             // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
             // usuarioCreadorId (campos internos o manejados por el backend)
           };
 
-          extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+          extinguisher = await _httpDataSource.createExtinguisher(
+            extinguisherData,
+          );
 
           // Buscar el extintor temporal en extintor por serialNumber o tempId
           // para actualizarlo con el ID real del servidor
@@ -154,10 +156,10 @@ class SyncService {
             // usar la búsqueda heurística basada en otros campos y relaciones.
             await _localDataSource
                 .updateExtinguisherAfterSyncWithoutSerialNumber(
-              extinguisher: extinguisher as ExtinguisherModel,
-              originalData:
-                  data, // Datos originales del payload para buscar el tempId
-            );
+                  extinguisher: extinguisher as ExtinguisherModel,
+                  originalData:
+                      data, // Datos originales del payload para buscar el tempId
+                );
           }
         }
 
@@ -273,8 +275,8 @@ class SyncService {
             'model': data['model'],
             'rating': data['rating'],
             'yearManufacture': data['yearManufacture'],
-            'dateHydrostatic': data['dateHydrostatic'],
-            'dateMaintenance': data['dateMaintenance'],
+            // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+            // No se envían desde el frontend (similar a como no se envía la foto)
             'sedeId': data['sedeId'],
             // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
             // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
@@ -316,14 +318,16 @@ class SyncService {
             'model': data['model'],
             'rating': data['rating'],
             'yearManufacture': data['yearManufacture'],
-            'dateHydrostatic': data['dateHydrostatic'],
-            'dateMaintenance': data['dateMaintenance'],
+            // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+            // No se envían desde el frontend (similar a como no se envía la foto)
             'sedeId': data['sedeId'],
             // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
             // usuarioCreadorId (campos internos o manejados por el backend)
           };
 
-          extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+          extinguisher = await _httpDataSource.createExtinguisher(
+            extinguisherData,
+          );
 
           // Buscar el extintor temporal en extintor por serialNumber o tempId
           // para actualizarlo con el ID real del servidor
@@ -342,10 +346,10 @@ class SyncService {
             // usar la búsqueda heurística basada en otros campos y relaciones.
             await _localDataSource
                 .updateExtinguisherAfterSyncWithoutSerialNumber(
-              extinguisher: extinguisher as ExtinguisherModel,
-              originalData:
-                  data, // Datos originales del payload para buscar el tempId
-            );
+                  extinguisher: extinguisher as ExtinguisherModel,
+                  originalData:
+                      data, // Datos originales del payload para buscar el tempId
+                );
           }
         }
 
@@ -451,8 +455,8 @@ class SyncService {
           'model': data['model'],
           'rating': data['rating'],
           'yearManufacture': data['yearManufacture'],
-          'dateHydrostatic': data['dateHydrostatic'],
-          'dateMaintenance': data['dateMaintenance'],
+          // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+          // No se envían desde el frontend (similar a como no se envía la foto)
           'sedeId': data['sedeId'],
           // No incluir: extintorId (está en la URL), tempId, updatedAt, createdAt,
           // synced, photoPath, usuarioCreadorId (campos internos o manejados por el backend)
@@ -494,14 +498,16 @@ class SyncService {
           'model': data['model'],
           'rating': data['rating'],
           'yearManufacture': data['yearManufacture'],
-          'dateHydrostatic': data['dateHydrostatic'],
-          'dateMaintenance': data['dateMaintenance'],
+          // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
+          // No se envían desde el frontend (similar a como no se envía la foto)
           'sedeId': data['sedeId'],
           // No incluir: tempId, photoPath, createdAt, updatedAt, synced,
           // usuarioCreadorId (campos internos o manejados por el backend)
         };
 
-        extinguisher = await _httpDataSource.createExtinguisher(extinguisherData);
+        extinguisher = await _httpDataSource.createExtinguisher(
+          extinguisherData,
+        );
 
         // Buscar el extintor temporal en extintor por serialNumber o tempId
         // para actualizarlo con el ID real del servidor

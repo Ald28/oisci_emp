@@ -19,9 +19,8 @@ import '../../core/database/app_database.dart';
 class ServiceDownloadSyncService {
   final HttpServiceDataSource _http;
 
-  ServiceDownloadSyncService({
-    HttpServiceDataSource? httpDataSource,
-  }) : _http = httpDataSource ?? HttpServiceDataSource();
+  ServiceDownloadSyncService({HttpServiceDataSource? httpDataSource})
+    : _http = httpDataSource ?? HttpServiceDataSource();
 
   /// Descarga TODOS los servicios con TODOS sus detalles en una sola llamada,
   /// usando transacciones SQLite para asegurar consistencia.
@@ -250,16 +249,23 @@ class ServiceDownloadSyncService {
       foto1Path: foto1Path ?? inspection.foto1Path,
       foto2Path: foto2Path ?? inspection.foto2Path,
       foto3Path: foto3Path ?? inspection.foto3Path,
-      visibilidad: inspection.visibilidad,
-      visualizacion: inspection.visualizacion,
       accesibilidad: inspection.accesibilidad,
-      altura: inspection.altura,
-      situacion: inspection.situacion,
-      conservacion: inspection.conservacion,
-      inscripciones: inspection.inscripciones,
-      recorrido: inspection.recorrido,
-      peso: inspection.peso,
       observaciones: inspection.observaciones,
+      ubicacion: inspection.ubicacion,
+      instalacion: inspection.instalacion,
+      instrucciones: inspection.instrucciones,
+      clasificacion: inspection.clasificacion,
+      recarga: inspection.recarga,
+      certificacion: inspection.certificacion,
+      presion: inspection.presion,
+      seguridad: inspection.seguridad,
+      estado: inspection.estado,
+      carga: inspection.carga,
+      soporte: inspection.soporte,
+      activacion: inspection.activacion,
+      manguera: inspection.manguera,
+      boquilla: inspection.boquilla,
+      abrazadera: inspection.abrazadera,
       usuarioCreadorId: inspection.usuarioCreadorId,
       usuarioActualizadorId: inspection.usuarioActualizadorId,
       createdAt: inspection.createdAt,
@@ -281,7 +287,8 @@ class ServiceDownloadSyncService {
         await inspectionDir.create(recursive: true);
       }
 
-      final fileName = 'servicioExtintor_${serviceExtinguisherId}_foto$index.jpg';
+      final fileName =
+          'servicioExtintor_${serviceExtinguisherId}_foto$index.jpg';
       final filePath = path.join(inspectionDir.path, fileName);
 
       // Re-descargar siempre (si cambió en servidor)
@@ -306,4 +313,3 @@ class ServiceDownloadSyncService {
     }
   }
 }
-

@@ -16,8 +16,9 @@ class Extinguisher {
   final String? model;
   final String? rating;
   final String? yearManufacture;
-  final String? dateHydrostatic;
-  final String? dateMaintenance;
+  final DateTime? dateHydrostatic;
+  final DateTime? dateMaintenance;
+  final DateTime? rechargeDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int sedeId;
@@ -42,6 +43,7 @@ class Extinguisher {
     this.yearManufacture,
     this.dateHydrostatic,
     this.dateMaintenance,
+    this.rechargeDate,
     this.createdAt,
     this.updatedAt,
     required this.sedeId,

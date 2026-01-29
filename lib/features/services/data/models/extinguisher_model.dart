@@ -21,12 +21,28 @@ class ExtinguisherModel extends Extinguisher {
     super.yearManufacture,
     super.dateHydrostatic,
     super.dateMaintenance,
+    super.rechargeDate,
     super.createdAt,
     super.updatedAt,
     required super.sedeId,
     required super.usuarioCreadorId,
     super.sedeName,
   });
+
+  /// Helper para parsear DateTime desde JSON
+  /// Maneja tanto String ISO como objetos DateTime directamente
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
 
   /// Constructor desde JSON del backend
   /// El backend retorna: { ok: true, data: {...} }
@@ -76,14 +92,11 @@ class ExtinguisherModel extends Extinguisher {
       model: json['model'] as String?,
       rating: json['rating'] as String?,
       yearManufacture: json['yearManufacture'] as String?,
-      dateHydrostatic: json['dateHydrostatic'] as String?,
-      dateMaintenance: json['dateMaintenance'] as String?,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
+      dateHydrostatic: _parseDateTime(json['dateHydrostatic']),
+      dateMaintenance: _parseDateTime(json['dateMaintenance']),
+      rechargeDate: _parseDateTime(json['rechargeDate']),
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
       sedeId: sedeId,
       usuarioCreadorId: usuarioCreadorId,
       sedeName: sedeName,
@@ -106,8 +119,9 @@ class ExtinguisherModel extends Extinguisher {
       'model': model,
       'rating': rating,
       'yearManufacture': yearManufacture,
-      'dateHydrostatic': dateHydrostatic,
-      'dateMaintenance': dateMaintenance,
+      'dateHydrostatic': dateHydrostatic?.toIso8601String(),
+      'dateMaintenance': dateMaintenance?.toIso8601String(),
+      'rechargeDate': rechargeDate?.toIso8601String(),
       'sedeId': sedeId,
     };
   }
@@ -130,8 +144,15 @@ class ExtinguisherModel extends Extinguisher {
       model: map['model'] as String?,
       rating: map['rating'] as String?,
       yearManufacture: map['yearManufacture'] as String?,
-      dateHydrostatic: map['dateHydrostatic'] as String?,
-      dateMaintenance: map['dateMaintenance'] as String?,
+      dateHydrostatic: map['dateHydrostatic'] != null
+          ? DateTime.parse(map['dateHydrostatic'] as String)
+          : null,
+      dateMaintenance: map['dateMaintenance'] != null
+          ? DateTime.parse(map['dateMaintenance'] as String)
+          : null,
+      rechargeDate: map['rechargeDate'] != null
+          ? DateTime.parse(map['rechargeDate'] as String)
+          : null,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -140,7 +161,9 @@ class ExtinguisherModel extends Extinguisher {
           : null,
       sedeId: map['sedeId'] as int,
       usuarioCreadorId: map['usuarioCreadorId'] as int,
-      sedeName: map['sede_name'] as String?, // Incluir nombre de sede si viene del JOIN
+      sedeName:
+          map['sede_name']
+              as String?, // Incluir nombre de sede si viene del JOIN
     );
   }
 }

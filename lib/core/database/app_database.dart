@@ -19,7 +19,8 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 9, // Versión 9: agregar nuevos campos a extintor e inspeccion_detalle
+      version:
+          10, // Versión 10: agregar rechargeDate a extintor, actualizar tipos de dateHydrostatic/dateMaintenance, eliminar campos de inspeccion_detalle
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -90,6 +91,7 @@ class AppDatabase {
         yearManufacture TEXT,
         dateHydrostatic TEXT,
         dateMaintenance TEXT,
+        rechargeDate TEXT,
         sedeId INTEGER NOT NULL,
         usuarioCreadorId INTEGER NOT NULL,
         createdAt TEXT,
@@ -221,31 +223,22 @@ class AppDatabase {
         foto1Path TEXT,
         foto2Path TEXT,
         foto3Path TEXT,
-        visibilidad TEXT,
-        visualizacion TEXT,
         accesibilidad TEXT,
-        altura TEXT,
-        situacion TEXT,
-        conservacion TEXT,
-        inscripciones TEXT,
-        recorrido TEXT,
-        peso TEXT,
         observaciones TEXT,
         ubicacion TEXT,
-        acceso TEXT,
-        fijacion TEXT,
-        uso TEXT,
-        clase TEXT,
+        instalacion TEXT,
+        instrucciones TEXT,
+        clasificacion TEXT,
         recarga TEXT,
-        hidrostatica TEXT,
+        certificacion TEXT,
         presion TEXT,
-        precinto TEXT,
-        cilindro TEXT,
+        seguridad TEXT,
+        estado TEXT,
         carga TEXT,
         soporte TEXT,
-        manija TEXT,
+        activacion TEXT,
         manguera TEXT,
-        tobera TEXT,
+        boquilla TEXT,
         abrazadera TEXT,
         usuarioCreadorId INTEGER NOT NULL,
         usuarioActualizadorId INTEGER,
@@ -529,34 +522,46 @@ class AppDatabase {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE extintor ADD COLUMN yearManufacture TEXT');
+        await db.execute(
+          'ALTER TABLE extintor ADD COLUMN yearManufacture TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE extintor ADD COLUMN dateHydrostatic TEXT');
+        await db.execute(
+          'ALTER TABLE extintor ADD COLUMN dateHydrostatic TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE extintor ADD COLUMN dateMaintenance TEXT');
+        await db.execute(
+          'ALTER TABLE extintor ADD COLUMN dateMaintenance TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
 
       // Agregar nuevos campos a inspeccion_detalle
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN ubicacion TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN ubicacion TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN acceso TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN acceso TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN fijacion TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN fijacion TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
@@ -566,62 +571,155 @@ class AppDatabase {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN clase TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN clase TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN recarga TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN recarga TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN hidrostatica TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN hidrostatica TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN presion TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN presion TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN precinto TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN precinto TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN cilindro TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN cilindro TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN carga TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN carga TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN soporte TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN soporte TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN manija TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN manija TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN manguera TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN manguera TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN tobera TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN tobera TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }
       try {
-        await db.execute('ALTER TABLE inspeccion_detalle ADD COLUMN abrazadera TEXT');
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN abrazadera TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+    }
+
+    if (oldVersion < 10) {
+      // Agregar rechargeDate a extintor (siguiendo el patrón de versiones anteriores)
+      try {
+        await db.execute('ALTER TABLE extintor ADD COLUMN rechargeDate TEXT');
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+
+      // Agregar nuevos campos a inspeccion_detalle (siguiendo el patrón de versión 9)
+      // Los campos eliminados (visibilidad, visualizacion, acceso, altura, etc.)
+      // permanecerán en la base de datos pero no se usarán
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN instalacion TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN instrucciones TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN clasificacion TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN certificacion TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN seguridad TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN estado TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN activacion TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN boquilla TEXT',
+        );
       } catch (e) {
         // Ignorar si la columna ya existe
       }

@@ -273,11 +273,7 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                               extinguisher.pressure!,
                             ),
                           if (extinguisher.brand != null)
-                            _buildDetailRow(
-                              '9',
-                              'Marca',
-                              extinguisher.brand!,
-                            ),
+                            _buildDetailRow('9', 'Marca', extinguisher.brand!),
                           if (extinguisher.model != null)
                             _buildDetailRow(
                               '10',
@@ -300,13 +296,19 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                             _buildDetailRow(
                               '13',
                               'Fecha Hidrostática',
-                              _formatDate(extinguisher.dateHydrostatic!),
+                              _formatDate(extinguisher.dateHydrostatic),
                             ),
                           if (extinguisher.dateMaintenance != null)
                             _buildDetailRow(
                               '14',
                               'Fecha de Mantenimiento',
-                              _formatDate(extinguisher.dateMaintenance!),
+                              _formatDate(extinguisher.dateMaintenance),
+                            ),
+                          if (extinguisher.rechargeDate != null)
+                            _buildDetailRow(
+                              '15',
+                              'Fecha de Recarga',
+                              _formatDate(extinguisher.rechargeDate),
                             ),
                         ],
                       ),
@@ -318,15 +320,22 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
     );
   }
 
-  /// Formatear fecha desde String (puede venir en formato ISO o dd/MM/yyyy)
-  String _formatDate(String dateString) {
+  /// Formatear fecha desde String o DateTime
+  String _formatDate(dynamic dateValue) {
+    if (dateValue == null) return '';
     try {
-      // Intentar parsear como ISO (yyyy-MM-dd)
-      final date = DateTime.parse(dateString);
+      DateTime date;
+      if (dateValue is DateTime) {
+        date = dateValue;
+      } else if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else {
+        return dateValue.toString();
+      }
       return DateFormat('dd/MM/yyyy').format(date);
     } catch (e) {
       // Si no se puede parsear, retornar el string original
-      return dateString;
+      return dateValue.toString();
     }
   }
 

@@ -43,30 +43,21 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
     with SingleTickerProviderStateMixin {
   // Estado de los items del checklist (true/false)
   Map<String, bool> _checklistItems = {
-    'VISIBILIDAD': false,
-    'SEÑALIZACIÓN': false,
     'ACCESIBILIDAD': false,
-    'ALTURA': false,
-    'SITUACIÓN': false,
-    'ESTADO_DE_CONSERVACIÓN': false,
-    'INSCRIPCIONES': false,
-    'RECORRIDO': false,
-    'PESO': false,
     'UBICACIÓN': false,
-    'ACCESO': false,
-    'FIJACIÓN': false,
-    'USO': false,
-    'CLASE': false,
+    'INSTALACIÓN': false,
+    'INSTRUCCIONES': false,
+    'CLASIFICACIÓN': false,
     'RECARGA': false,
-    'HIDROSTÁTICA': false,
+    'CERTIFICACIÓN': false,
     'PRESIÓN': false,
-    'PRECINTO': false,
-    'CILINDRO': false,
+    'SEGURIDAD': false,
+    'ESTADO': false,
     'CARGA': false,
     'SOPORTE': false,
-    'MANIJA': false,
+    'ACTIVACIÓN': false,
     'MANGUERA': false,
-    'TOBERA': false,
+    'BOQUILLA': false,
     'ABRAZADERA': false,
   };
 
@@ -164,30 +155,21 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
           // Cargar los datos existentes en el estado
           // Convertir 'SI'/'NO'/null a booleanos: 'SI' -> true, 'NO' o null -> false
           _checklistItems = {
-            'VISIBILIDAD': existingDetail.visibilidad == 'SI',
-            'SEÑALIZACIÓN': existingDetail.visualizacion == 'SI',
             'ACCESIBILIDAD': existingDetail.accesibilidad == 'SI',
-            'ALTURA': existingDetail.altura == 'SI',
-            'SITUACIÓN': existingDetail.situacion == 'SI',
-            'ESTADO_DE_CONSERVACIÓN': existingDetail.conservacion == 'SI',
-            'INSCRIPCIONES': existingDetail.inscripciones == 'SI',
-            'RECORRIDO': existingDetail.recorrido == 'SI',
-            'PESO': existingDetail.peso == 'SI',
             'UBICACIÓN': existingDetail.ubicacion == 'SI',
-            'ACCESO': existingDetail.acceso == 'SI',
-            'FIJACIÓN': existingDetail.fijacion == 'SI',
-            'USO': existingDetail.uso == 'SI',
-            'CLASE': existingDetail.clase == 'SI',
+            'INSTALACIÓN': existingDetail.instalacion == 'SI',
+            'INSTRUCCIONES': existingDetail.instrucciones == 'SI',
+            'CLASIFICACIÓN': existingDetail.clasificacion == 'SI',
             'RECARGA': existingDetail.recarga == 'SI',
-            'HIDROSTÁTICA': existingDetail.hidrostatica == 'SI',
+            'CERTIFICACIÓN': existingDetail.certificacion == 'SI',
             'PRESIÓN': existingDetail.presion == 'SI',
-            'PRECINTO': existingDetail.precinto == 'SI',
-            'CILINDRO': existingDetail.cilindro == 'SI',
+            'SEGURIDAD': existingDetail.seguridad == 'SI',
+            'ESTADO': existingDetail.estado == 'SI',
             'CARGA': existingDetail.carga == 'SI',
             'SOPORTE': existingDetail.soporte == 'SI',
-            'MANIJA': existingDetail.manija == 'SI',
+            'ACTIVACIÓN': existingDetail.activacion == 'SI',
             'MANGUERA': existingDetail.manguera == 'SI',
-            'TOBERA': existingDetail.tobera == 'SI',
+            'BOQUILLA': existingDetail.boquilla == 'SI',
             'ABRAZADERA': existingDetail.abrazadera == 'SI',
           };
 
@@ -325,32 +307,21 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
       // Mapear los datos del checklist al formato del backend
       // Convertir booleanos a 'SI'/'NO': true -> 'SI', false -> 'NO'
       final inspectionData = <String, dynamic>{
-        'visibilidad': _checklistItems['VISIBILIDAD'] == true ? 'SI' : 'NO',
-        'visualizacion': _checklistItems['SEÑALIZACIÓN'] == true ? 'SI' : 'NO',
         'accesibilidad': _checklistItems['ACCESIBILIDAD'] == true ? 'SI' : 'NO',
-        'altura': _checklistItems['ALTURA'] == true ? 'SI' : 'NO',
-        'situacion': _checklistItems['SITUACIÓN'] == true ? 'SI' : 'NO',
-        'conservacion': _checklistItems['ESTADO_DE_CONSERVACIÓN'] == true
-            ? 'SI'
-            : 'NO',
-        'inscripciones': _checklistItems['INSCRIPCIONES'] == true ? 'SI' : 'NO',
-        'recorrido': _checklistItems['RECORRIDO'] == true ? 'SI' : 'NO',
-        'peso': _checklistItems['PESO'] == true ? 'SI' : 'NO',
         'ubicacion': _checklistItems['UBICACIÓN'] == true ? 'SI' : 'NO',
-        'acceso': _checklistItems['ACCESO'] == true ? 'SI' : 'NO',
-        'fijacion': _checklistItems['FIJACIÓN'] == true ? 'SI' : 'NO',
-        'uso': _checklistItems['USO'] == true ? 'SI' : 'NO',
-        'clase': _checklistItems['CLASE'] == true ? 'SI' : 'NO',
+        'instalacion': _checklistItems['INSTALACIÓN'] == true ? 'SI' : 'NO',
+        'instrucciones': _checklistItems['INSTRUCCIONES'] == true ? 'SI' : 'NO',
+        'clasificacion': _checklistItems['CLASIFICACIÓN'] == true ? 'SI' : 'NO',
         'recarga': _checklistItems['RECARGA'] == true ? 'SI' : 'NO',
-        'hidrostatica': _checklistItems['HIDROSTÁTICA'] == true ? 'SI' : 'NO',
+        'certificacion': _checklistItems['CERTIFICACIÓN'] == true ? 'SI' : 'NO',
         'presion': _checklistItems['PRESIÓN'] == true ? 'SI' : 'NO',
-        'precinto': _checklistItems['PRECINTO'] == true ? 'SI' : 'NO',
-        'cilindro': _checklistItems['CILINDRO'] == true ? 'SI' : 'NO',
+        'seguridad': _checklistItems['SEGURIDAD'] == true ? 'SI' : 'NO',
+        'estado': _checklistItems['ESTADO'] == true ? 'SI' : 'NO',
         'carga': _checklistItems['CARGA'] == true ? 'SI' : 'NO',
         'soporte': _checklistItems['SOPORTE'] == true ? 'SI' : 'NO',
-        'manija': _checklistItems['MANIJA'] == true ? 'SI' : 'NO',
+        'activacion': _checklistItems['ACTIVACIÓN'] == true ? 'SI' : 'NO',
         'manguera': _checklistItems['MANGUERA'] == true ? 'SI' : 'NO',
-        'tobera': _checklistItems['TOBERA'] == true ? 'SI' : 'NO',
+        'boquilla': _checklistItems['BOQUILLA'] == true ? 'SI' : 'NO',
         'abrazadera': _checklistItems['ABRAZADERA'] == true ? 'SI' : 'NO',
         'observaciones':
             null, // Se agregará después en la página de observaciones
@@ -569,56 +540,10 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                     child: Column(
                       children: [
                         InspectionChecklistItem(
-                          title: 'VISIBILIDAD',
-                          value: _checklistItems['VISIBILIDAD'] ?? false,
-                          onChanged: (value) =>
-                              _toggleItem('VISIBILIDAD', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'SEÑALIZACIÓN',
-                          value: _checklistItems['SEÑALIZACIÓN'] ?? false,
-                          onChanged: (value) =>
-                              _toggleItem('SEÑALIZACIÓN', value),
-                        ),
-                        InspectionChecklistItem(
                           title: 'ACCESIBILIDAD',
                           value: _checklistItems['ACCESIBILIDAD'] ?? false,
                           onChanged: (value) =>
                               _toggleItem('ACCESIBILIDAD', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'ALTURA',
-                          value: _checklistItems['ALTURA'] ?? false,
-                          onChanged: (value) => _toggleItem('ALTURA', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'SITUACIÓN',
-                          value: _checklistItems['SITUACIÓN'] ?? false,
-                          onChanged: (value) => _toggleItem('SITUACIÓN', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'ESTADO DE CONSERVACIÓN',
-                          value:
-                              _checklistItems['ESTADO_DE_CONSERVACIÓN'] ??
-                              false,
-                          onChanged: (value) =>
-                              _toggleItem('ESTADO_DE_CONSERVACIÓN', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'INSCRIPCIONES',
-                          value: _checklistItems['INSCRIPCIONES'] ?? false,
-                          onChanged: (value) =>
-                              _toggleItem('INSCRIPCIONES', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'RECORRIDO',
-                          value: _checklistItems['RECORRIDO'] ?? false,
-                          onChanged: (value) => _toggleItem('RECORRIDO', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'PESO',
-                          value: _checklistItems['PESO'] ?? false,
-                          onChanged: (value) => _toggleItem('PESO', value),
                         ),
                         InspectionChecklistItem(
                           title: 'UBICACIÓN',
@@ -626,24 +551,22 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           onChanged: (value) => _toggleItem('UBICACIÓN', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'ACCESO',
-                          value: _checklistItems['ACCESO'] ?? false,
-                          onChanged: (value) => _toggleItem('ACCESO', value),
+                          title: 'INSTALACIÓN',
+                          value: _checklistItems['INSTALACIÓN'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('INSTALACIÓN', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'FIJACIÓN',
-                          value: _checklistItems['FIJACIÓN'] ?? false,
-                          onChanged: (value) => _toggleItem('FIJACIÓN', value),
+                          title: 'INSTRUCCIONES',
+                          value: _checklistItems['INSTRUCCIONES'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('INSTRUCCIONES', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'USO',
-                          value: _checklistItems['USO'] ?? false,
-                          onChanged: (value) => _toggleItem('USO', value),
-                        ),
-                        InspectionChecklistItem(
-                          title: 'CLASE',
-                          value: _checklistItems['CLASE'] ?? false,
-                          onChanged: (value) => _toggleItem('CLASE', value),
+                          title: 'CLASIFICACIÓN',
+                          value: _checklistItems['CLASIFICACIÓN'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('CLASIFICACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'RECARGA',
@@ -651,9 +574,10 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           onChanged: (value) => _toggleItem('RECARGA', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'HIDROSTÁTICA',
-                          value: _checklistItems['HIDROSTÁTICA'] ?? false,
-                          onChanged: (value) => _toggleItem('HIDROSTÁTICA', value),
+                          title: 'CERTIFICACIÓN',
+                          value: _checklistItems['CERTIFICACIÓN'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('CERTIFICACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'PRESIÓN',
@@ -661,14 +585,14 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           onChanged: (value) => _toggleItem('PRESIÓN', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'PRECINTO',
-                          value: _checklistItems['PRECINTO'] ?? false,
-                          onChanged: (value) => _toggleItem('PRECINTO', value),
+                          title: 'SEGURIDAD',
+                          value: _checklistItems['SEGURIDAD'] ?? false,
+                          onChanged: (value) => _toggleItem('SEGURIDAD', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'CILINDRO',
-                          value: _checklistItems['CILINDRO'] ?? false,
-                          onChanged: (value) => _toggleItem('CILINDRO', value),
+                          title: 'ESTADO',
+                          value: _checklistItems['ESTADO'] ?? false,
+                          onChanged: (value) => _toggleItem('ESTADO', value),
                         ),
                         InspectionChecklistItem(
                           title: 'CARGA',
@@ -681,9 +605,10 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           onChanged: (value) => _toggleItem('SOPORTE', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'MANIJA',
-                          value: _checklistItems['MANIJA'] ?? false,
-                          onChanged: (value) => _toggleItem('MANIJA', value),
+                          title: 'ACTIVACIÓN',
+                          value: _checklistItems['ACTIVACIÓN'] ?? false,
+                          onChanged: (value) =>
+                              _toggleItem('ACTIVACIÓN', value),
                         ),
                         InspectionChecklistItem(
                           title: 'MANGUERA',
@@ -691,22 +616,23 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           onChanged: (value) => _toggleItem('MANGUERA', value),
                         ),
                         InspectionChecklistItem(
-                          title: 'TOBERA',
-                          value: _checklistItems['TOBERA'] ?? false,
-                          onChanged: (value) => _toggleItem('TOBERA', value),
+                          title: 'BOQUILLA',
+                          value: _checklistItems['BOQUILLA'] ?? false,
+                          onChanged: (value) => _toggleItem('BOQUILLA', value),
                         ),
                         InspectionChecklistItem(
                           title: 'ABRAZADERA',
                           value: _checklistItems['ABRAZADERA'] ?? false,
-                          onChanged: (value) => _toggleItem('ABRAZADERA', value),
+                          onChanged: (value) =>
+                              _toggleItem('ABRAZADERA', value),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Botón Continuar
+                  // Botón Guardar checklist y continuar
                   PrimaryButton(
-                    text: 'Continuar',
+                    text: 'Guardar checklist y continuar',
                     onPressed: _isLoading ? null : _handleContinue,
                     isLoading: _isLoading,
                   ),

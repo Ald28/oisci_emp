@@ -88,11 +88,12 @@ class ServiceSyncService {
               );
 
           // Buscar el servicio_extintor temporal por su ID negativo
-          final tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
-            servicioId,
-            data['extintorId'] as int,
-            db,
-          );
+          final tempServiceExtinguisherId =
+              await _findTempServiceExtinguisherId(
+                servicioId,
+                data['extintorId'] as int,
+                db,
+              );
           if (tempServiceExtinguisherId != null) {
             // Actualizar servicio_extintor: reemplazar ID negativo con positivo
             await _updateServiceExtinguisherId(
@@ -110,11 +111,11 @@ class ServiceSyncService {
           final errorMessage = e.response?.data is Map<String, dynamic>
               ? (e.response!.data as Map<String, dynamic>)['message'] as String?
               : e.message;
-          
+
           if (errorMessage != null &&
               (errorMessage.toLowerCase().contains('ya está agregado') ||
-               errorMessage.toLowerCase().contains('duplicate') ||
-               errorMessage.toLowerCase().contains('unique'))) {
+                  errorMessage.toLowerCase().contains('duplicate') ||
+                  errorMessage.toLowerCase().contains('unique'))) {
             // El extintor ya está agregado en el servidor
             // Buscar el servicio_extintor existente en la base de datos local
             final existing = await db.query(
@@ -127,13 +128,15 @@ class ServiceSyncService {
             if (existing.isNotEmpty) {
               // Ya existe un registro sincronizado, actualizar el temporal si existe
               final existingId = existing.first['id'] as int;
-              final tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
-                servicioId,
-                data['extintorId'] as int,
-                db,
-              );
-              
-              if (tempServiceExtinguisherId != null && tempServiceExtinguisherId != existingId) {
+              final tempServiceExtinguisherId =
+                  await _findTempServiceExtinguisherId(
+                    servicioId,
+                    data['extintorId'] as int,
+                    db,
+                  );
+
+              if (tempServiceExtinguisherId != null &&
+                  tempServiceExtinguisherId != existingId) {
                 // Eliminar el registro temporal duplicado
                 await db.delete(
                   'servicio_extintor',
@@ -141,7 +144,7 @@ class ServiceSyncService {
                   whereArgs: [tempServiceExtinguisherId],
                 );
               }
-              
+
               // Eliminar de la cola porque ya existe en el servidor
               await _localDataSource.deleteQueueItem(item['id'] as int);
               syncedCount++;
@@ -154,10 +157,16 @@ class ServiceSyncService {
             }
           } else {
             // Otro tipo de error, guardar normalmente
-            await _localDataSource.updateSyncError(item['id'] as int, e.toString());
+            await _localDataSource.updateSyncError(
+              item['id'] as int,
+              e.toString(),
+            );
           }
         } catch (e) {
-          await _localDataSource.updateSyncError(item['id'] as int, e.toString());
+          await _localDataSource.updateSyncError(
+            item['id'] as int,
+            e.toString(),
+          );
         }
       } catch (e) {
         await _localDataSource.updateSyncError(item['id'] as int, e.toString());
@@ -291,32 +300,22 @@ class ServiceSyncService {
           'foto1Url': data['foto1Url'] as String?,
           'foto2Url': data['foto2Url'] as String?,
           'foto3Url': data['foto3Url'] as String?,
-          'visibilidad': data['visibilidad'],
-          'visualizacion': data['visualizacion'],
           'accesibilidad': data['accesibilidad'],
-          'altura': data['altura'],
-          'situacion': data['situacion'],
-          'conservacion': data['conservacion'],
-          'inscripciones': data['inscripciones'],
-          'recorrido': data['recorrido'],
-          'peso': data['peso'],
           'observaciones': data['observaciones'],
-          // Nuevos campos del checklist
           'ubicacion': data['ubicacion'],
-          'acceso': data['acceso'],
-          'fijacion': data['fijacion'],
-          'uso': data['uso'],
-          'clase': data['clase'],
+          'instalacion': data['instalacion'],
+          'instrucciones': data['instrucciones'],
+          'clasificacion': data['clasificacion'],
           'recarga': data['recarga'],
-          'hidrostatica': data['hidrostatica'],
+          'certificacion': data['certificacion'],
           'presion': data['presion'],
-          'precinto': data['precinto'],
-          'cilindro': data['cilindro'],
+          'seguridad': data['seguridad'],
+          'estado': data['estado'],
           'carga': data['carga'],
           'soporte': data['soporte'],
-          'manija': data['manija'],
+          'activacion': data['activacion'],
           'manguera': data['manguera'],
-          'tobera': data['tobera'],
+          'boquilla': data['boquilla'],
           'abrazadera': data['abrazadera'],
         };
 
@@ -395,7 +394,12 @@ class ServiceSyncService {
   /// Encontrar el ID real (positivo) del servicio sincronizado basado en el ID temporal
   /// Si el servicio temporal ya no existe (fue sincronizado), busca servicios sincronizados
   /// recientemente que coincidan con el tipo y sede
-  Future<int?> _findRealServiceId(int tempId, Database db, {String? type, int? sedeId}) async {
+  Future<int?> _findRealServiceId(
+    int tempId,
+    Database db, {
+    String? type,
+    int? sedeId,
+  }) async {
     // Primero intentar buscar el servicio temporal (puede que aún no se haya sincronizado)
     final tempService = await db.query(
       'servicio',
@@ -1045,36 +1049,57 @@ class ServiceSyncService {
     final foto3Url =
         inspectionDetailFromServer?.foto3Url ??
         inspectionDetailData['foto3Url'] as String?;
-    final visibilidad =
-        inspectionDetailFromServer?.visibilidad ??
-        inspectionDetailData['visibilidad'] as String?;
-    final visualizacion =
-        inspectionDetailFromServer?.visualizacion ??
-        inspectionDetailData['visualizacion'] as String?;
     final accesibilidad =
         inspectionDetailFromServer?.accesibilidad ??
         inspectionDetailData['accesibilidad'] as String?;
-    final altura =
-        inspectionDetailFromServer?.altura ??
-        inspectionDetailData['altura'] as String?;
-    final situacion =
-        inspectionDetailFromServer?.situacion ??
-        inspectionDetailData['situacion'] as String?;
-    final conservacion =
-        inspectionDetailFromServer?.conservacion ??
-        inspectionDetailData['conservacion'] as String?;
-    final inscripciones =
-        inspectionDetailFromServer?.inscripciones ??
-        inspectionDetailData['inscripciones'] as String?;
-    final recorrido =
-        inspectionDetailFromServer?.recorrido ??
-        inspectionDetailData['recorrido'] as String?;
-    final peso =
-        inspectionDetailFromServer?.peso ??
-        inspectionDetailData['peso'] as String?;
     final observaciones =
         inspectionDetailFromServer?.observaciones ??
         inspectionDetailData['observaciones'] as String?;
+    final ubicacion =
+        inspectionDetailFromServer?.ubicacion ??
+        inspectionDetailData['ubicacion'] as String?;
+    final instalacion =
+        inspectionDetailFromServer?.instalacion ??
+        inspectionDetailData['instalacion'] as String?;
+    final instrucciones =
+        inspectionDetailFromServer?.instrucciones ??
+        inspectionDetailData['instrucciones'] as String?;
+    final clasificacion =
+        inspectionDetailFromServer?.clasificacion ??
+        inspectionDetailData['clasificacion'] as String?;
+    final recarga =
+        inspectionDetailFromServer?.recarga ??
+        inspectionDetailData['recarga'] as String?;
+    final certificacion =
+        inspectionDetailFromServer?.certificacion ??
+        inspectionDetailData['certificacion'] as String?;
+    final presion =
+        inspectionDetailFromServer?.presion ??
+        inspectionDetailData['presion'] as String?;
+    final seguridad =
+        inspectionDetailFromServer?.seguridad ??
+        inspectionDetailData['seguridad'] as String?;
+    final estado =
+        inspectionDetailFromServer?.estado ??
+        inspectionDetailData['estado'] as String?;
+    final carga =
+        inspectionDetailFromServer?.carga ??
+        inspectionDetailData['carga'] as String?;
+    final soporte =
+        inspectionDetailFromServer?.soporte ??
+        inspectionDetailData['soporte'] as String?;
+    final activacion =
+        inspectionDetailFromServer?.activacion ??
+        inspectionDetailData['activacion'] as String?;
+    final manguera =
+        inspectionDetailFromServer?.manguera ??
+        inspectionDetailData['manguera'] as String?;
+    final boquilla =
+        inspectionDetailFromServer?.boquilla ??
+        inspectionDetailData['boquilla'] as String?;
+    final abrazadera =
+        inspectionDetailFromServer?.abrazadera ??
+        inspectionDetailData['abrazadera'] as String?;
     final usuarioCreadorId =
         inspectionDetailFromServer?.usuarioCreadorId ??
         inspectionDetailData['usuarioCreadorId'] as int;
@@ -1103,16 +1128,23 @@ class ServiceSyncService {
         'foto1Path': foto1Path,
         'foto2Path': foto2Path,
         'foto3Path': foto3Path,
-        'visibilidad': visibilidad,
-        'visualizacion': visualizacion,
         'accesibilidad': accesibilidad,
-        'altura': altura,
-        'situacion': situacion,
-        'conservacion': conservacion,
-        'inscripciones': inscripciones,
-        'recorrido': recorrido,
-        'peso': peso,
         'observaciones': observaciones,
+        'ubicacion': ubicacion,
+        'instalacion': instalacion,
+        'instrucciones': instrucciones,
+        'clasificacion': clasificacion,
+        'recarga': recarga,
+        'certificacion': certificacion,
+        'presion': presion,
+        'seguridad': seguridad,
+        'estado': estado,
+        'carga': carga,
+        'soporte': soporte,
+        'activacion': activacion,
+        'manguera': manguera,
+        'boquilla': boquilla,
+        'abrazadera': abrazadera,
         'usuarioCreadorId': usuarioCreadorId,
         'usuarioActualizadorId': usuarioActualizadorId,
         'createdAt': createdAt,
@@ -1566,11 +1598,11 @@ class ServiceSyncService {
           final errorMessage = e.response?.data is Map<String, dynamic>
               ? (e.response!.data as Map<String, dynamic>)['message'] as String?
               : e.message;
-          
+
           if (errorMessage != null &&
               (errorMessage.toLowerCase().contains('ya está agregado') ||
-               errorMessage.toLowerCase().contains('duplicate') ||
-               errorMessage.toLowerCase().contains('unique'))) {
+                  errorMessage.toLowerCase().contains('duplicate') ||
+                  errorMessage.toLowerCase().contains('unique'))) {
             // El extintor ya está agregado en el servidor
             // Buscar el servicio_extintor existente en la base de datos local
             final existing = await db.query(
@@ -1584,13 +1616,15 @@ class ServiceSyncService {
               // Ya existe un registro sincronizado, actualizar el temporal si existe
               final existingId = existing.first['id'] as int;
               final originalServicioId = data['servicioId'] as int;
-              int? tempServiceExtinguisherId = await _findTempServiceExtinguisherId(
-                originalServicioId,
-                data['extintorId'] as int,
-                db,
-              );
-              
-              if (tempServiceExtinguisherId != null && tempServiceExtinguisherId != existingId) {
+              int? tempServiceExtinguisherId =
+                  await _findTempServiceExtinguisherId(
+                    originalServicioId,
+                    data['extintorId'] as int,
+                    db,
+                  );
+
+              if (tempServiceExtinguisherId != null &&
+                  tempServiceExtinguisherId != existingId) {
                 // Eliminar el registro temporal duplicado
                 await db.delete(
                   'servicio_extintor',
@@ -1598,7 +1632,7 @@ class ServiceSyncService {
                   whereArgs: [tempServiceExtinguisherId],
                 );
               }
-              
+
               // Eliminar de la cola porque ya existe en el servidor
               await _localDataSource.deleteQueueItem(queueId);
               return true;
@@ -1792,32 +1826,22 @@ class ServiceSyncService {
           'foto1Url': data['foto1Url'] as String?,
           'foto2Url': data['foto2Url'] as String?,
           'foto3Url': data['foto3Url'] as String?,
-          'visibilidad': data['visibilidad'],
-          'visualizacion': data['visualizacion'],
           'accesibilidad': data['accesibilidad'],
-          'altura': data['altura'],
-          'situacion': data['situacion'],
-          'conservacion': data['conservacion'],
-          'inscripciones': data['inscripciones'],
-          'recorrido': data['recorrido'],
-          'peso': data['peso'],
           'observaciones': data['observaciones'],
-          // Nuevos campos del checklist
           'ubicacion': data['ubicacion'],
-          'acceso': data['acceso'],
-          'fijacion': data['fijacion'],
-          'uso': data['uso'],
-          'clase': data['clase'],
+          'instalacion': data['instalacion'],
+          'instrucciones': data['instrucciones'],
+          'clasificacion': data['clasificacion'],
           'recarga': data['recarga'],
-          'hidrostatica': data['hidrostatica'],
+          'certificacion': data['certificacion'],
           'presion': data['presion'],
-          'precinto': data['precinto'],
-          'cilindro': data['cilindro'],
+          'seguridad': data['seguridad'],
+          'estado': data['estado'],
           'carga': data['carga'],
           'soporte': data['soporte'],
-          'manija': data['manija'],
+          'activacion': data['activacion'],
           'manguera': data['manguera'],
-          'tobera': data['tobera'],
+          'boquilla': data['boquilla'],
           'abrazadera': data['abrazadera'],
         };
 
@@ -1903,32 +1927,22 @@ class ServiceSyncService {
           'foto1Url': data['foto1Url'] as String?,
           'foto2Url': data['foto2Url'] as String?,
           'foto3Url': data['foto3Url'] as String?,
-          'visibilidad': data['visibilidad'],
-          'visualizacion': data['visualizacion'],
           'accesibilidad': data['accesibilidad'],
-          'altura': data['altura'],
-          'situacion': data['situacion'],
-          'conservacion': data['conservacion'],
-          'inscripciones': data['inscripciones'],
-          'recorrido': data['recorrido'],
-          'peso': data['peso'],
           'observaciones': data['observaciones'],
-          // Nuevos campos del checklist
           'ubicacion': data['ubicacion'],
-          'acceso': data['acceso'],
-          'fijacion': data['fijacion'],
-          'uso': data['uso'],
-          'clase': data['clase'],
+          'instalacion': data['instalacion'],
+          'instrucciones': data['instrucciones'],
+          'clasificacion': data['clasificacion'],
           'recarga': data['recarga'],
-          'hidrostatica': data['hidrostatica'],
+          'certificacion': data['certificacion'],
           'presion': data['presion'],
-          'precinto': data['precinto'],
-          'cilindro': data['cilindro'],
+          'seguridad': data['seguridad'],
+          'estado': data['estado'],
           'carga': data['carga'],
           'soporte': data['soporte'],
-          'manija': data['manija'],
+          'activacion': data['activacion'],
           'manguera': data['manguera'],
-          'tobera': data['tobera'],
+          'boquilla': data['boquilla'],
           'abrazadera': data['abrazadera'],
         };
 

@@ -120,8 +120,7 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
         final errorData = e.response!.data as Map<String, dynamic>?;
         final message =
             errorData?['message'] as String? ?? 'Error al actualizar extintor';
-        final code = errorData?['code'] as String?;
-        throw Exception(code != null ? '$message (code: $code)' : message);
+        throw Exception(message);
       }
       rethrow;
     }

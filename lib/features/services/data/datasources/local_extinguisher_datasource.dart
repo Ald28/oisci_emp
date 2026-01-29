@@ -127,8 +127,15 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'model': data['model'] as String?,
       'rating': data['rating'] as String?,
       'yearManufacture': data['yearManufacture'] as String?,
-      'dateHydrostatic': data['dateHydrostatic'] as String?,
-      'dateMaintenance': data['dateMaintenance'] as String?,
+      'dateHydrostatic': data['dateHydrostatic'] is DateTime
+          ? (data['dateHydrostatic'] as DateTime).toIso8601String()
+          : data['dateHydrostatic'] as String?,
+      'dateMaintenance': data['dateMaintenance'] is DateTime
+          ? (data['dateMaintenance'] as DateTime).toIso8601String()
+          : data['dateMaintenance'] as String?,
+      'rechargeDate': data['rechargeDate'] is DateTime
+          ? (data['rechargeDate'] as DateTime).toIso8601String()
+          : data['rechargeDate'] as String?,
       'sedeId': sedeId,
       'usuarioCreadorId': usuarioCreadorId,
       'createdAt': now.toIso8601String(),
@@ -139,20 +146,14 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // También guardar en sync_queue para rastreo de sincronización.
     // Incluimos tempId en el payload para poder identificar y fusionar
     // cambios posteriores (UPDATE) mientras el extintor siga con ID negativo.
-    await db.insert(
-      'sync_queue',
-      {
-        'type': 'CREATE_EXTINGUISHER',
-        'payload': jsonEncode({
-          'tempId': tempId,
-          ...data,
-        }),
-        'createdAt': now.toIso8601String(),
-        'lastSyncError': null,
-        'syncAttempts': 0,
-        'lastSyncAttempt': null,
-      },
-    );
+    await db.insert('sync_queue', {
+      'type': 'CREATE_EXTINGUISHER',
+      'payload': jsonEncode({'tempId': tempId, ...data}),
+      'createdAt': now.toIso8601String(),
+      'lastSyncError': null,
+      'syncAttempts': 0,
+      'lastSyncAttempt': null,
+    });
 
     // Retornar el Extinguisher con ID temporal
     return ExtinguisherModel(
@@ -171,8 +172,15 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       model: data['model'] as String?,
       rating: data['rating'] as String?,
       yearManufacture: data['yearManufacture'] as String?,
-      dateHydrostatic: data['dateHydrostatic'] as String?,
-      dateMaintenance: data['dateMaintenance'] as String?,
+      dateHydrostatic: data['dateHydrostatic'] != null
+          ? DateTime.parse(data['dateHydrostatic'] as String)
+          : null,
+      dateMaintenance: data['dateMaintenance'] != null
+          ? DateTime.parse(data['dateMaintenance'] as String)
+          : null,
+      rechargeDate: data['rechargeDate'] != null
+          ? DateTime.parse(data['rechargeDate'] as String)
+          : null,
       sedeId: sedeId,
       usuarioCreadorId: usuarioCreadorId,
       createdAt: now,
@@ -218,8 +226,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'model': extinguisher.model,
       'rating': extinguisher.rating,
       'yearManufacture': extinguisher.yearManufacture,
-      'dateHydrostatic': extinguisher.dateHydrostatic,
-      'dateMaintenance': extinguisher.dateMaintenance,
+      'dateHydrostatic': extinguisher.dateHydrostatic?.toIso8601String(),
+      'dateMaintenance': extinguisher.dateMaintenance?.toIso8601String(),
+      'rechargeDate': extinguisher.rechargeDate?.toIso8601String(),
       'sedeId': extinguisher.sedeId,
       'usuarioCreadorId': extinguisher.usuarioCreadorId,
       'createdAt': extinguisher.createdAt?.toIso8601String(),
@@ -300,8 +309,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
           'model': extinguisher.model,
           'rating': extinguisher.rating,
           'yearManufacture': extinguisher.yearManufacture,
-          'dateHydrostatic': extinguisher.dateHydrostatic,
-          'dateMaintenance': extinguisher.dateMaintenance,
+          'dateHydrostatic': extinguisher.dateHydrostatic?.toIso8601String(),
+          'dateMaintenance': extinguisher.dateMaintenance?.toIso8601String(),
+          'rechargeDate': extinguisher.rechargeDate?.toIso8601String(),
           'sedeId': extinguisher.sedeId,
           'usuarioCreadorId': extinguisher.usuarioCreadorId,
           'createdAt': extinguisher.createdAt?.toIso8601String(),
@@ -499,8 +509,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
             'model': extinguisher.model,
             'rating': extinguisher.rating,
             'yearManufacture': extinguisher.yearManufacture,
-            'dateHydrostatic': extinguisher.dateHydrostatic,
-            'dateMaintenance': extinguisher.dateMaintenance,
+            'dateHydrostatic': extinguisher.dateHydrostatic?.toIso8601String(),
+            'dateMaintenance': extinguisher.dateMaintenance?.toIso8601String(),
+            'rechargeDate': extinguisher.rechargeDate?.toIso8601String(),
             'sedeId': extinguisher.sedeId,
             'usuarioCreadorId': extinguisher.usuarioCreadorId,
             'createdAt': extinguisher.createdAt?.toIso8601String(),
@@ -881,10 +892,15 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'rating': data['rating'] ?? existingData['rating'],
       'yearManufacture':
           data['yearManufacture'] ?? existingData['yearManufacture'],
-      'dateHydrostatic':
-          data['dateHydrostatic'] ?? existingData['dateHydrostatic'],
-      'dateMaintenance':
-          data['dateMaintenance'] ?? existingData['dateMaintenance'],
+      'dateHydrostatic': data['dateHydrostatic'] is DateTime
+          ? (data['dateHydrostatic'] as DateTime).toIso8601String()
+          : (data['dateHydrostatic'] ?? existingData['dateHydrostatic']),
+      'dateMaintenance': data['dateMaintenance'] is DateTime
+          ? (data['dateMaintenance'] as DateTime).toIso8601String()
+          : (data['dateMaintenance'] ?? existingData['dateMaintenance']),
+      'rechargeDate': data['rechargeDate'] is DateTime
+          ? (data['rechargeDate'] as DateTime).toIso8601String()
+          : (data['rechargeDate'] ?? existingData['rechargeDate']),
       'updatedAt': now.toIso8601String(),
       'synced': 0, // Marcar como no sincronizado
     };
@@ -920,8 +936,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
           final payloadStr = item['payload'] as String?;
           if (payloadStr == null) continue;
 
-          final payload =
-              jsonDecode(payloadStr) as Map<String, dynamic>? ?? {};
+          final payload = jsonDecode(payloadStr) as Map<String, dynamic>? ?? {};
           final payloadTempId = payload['tempId'];
 
           if (payloadTempId is int && payloadTempId == extintorId) {
