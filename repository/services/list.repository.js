@@ -155,17 +155,19 @@ export const ListRepository = {
                             OR: [
                                 { updatedAt: { gte: sinceDate } },
                                 { createdAt: { gte: sinceDate } },
+                                // Para mantenimientoDetalle e inspeccionDetalle,
+                                // incluimos servicios que tienen estos detalles si el servicioExtintor fue modificado
                                 {
-                                    mantenimientoDetalle: {
-                                        isNot: null,
-                                        updatedAt: { gte: sinceDate }
-                                    }
+                                    AND: [
+                                        { mantenimientoDetalle: { isNot: null } },
+                                        { updatedAt: { gte: sinceDate } }
+                                    ]
                                 },
                                 {
-                                    inspeccionDetalle: {
-                                        isNot: null,
-                                        updatedAt: { gte: sinceDate }
-                                    }
+                                    AND: [
+                                        { inspeccionDetalle: { isNot: null } },
+                                        { updatedAt: { gte: sinceDate } }
+                                    ]
                                 }
                             ]
                         }
