@@ -12,7 +12,8 @@ class ServiceExtinguisherEntity {
   final int? usuarioActualizadorId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final String? serialNumber; // Número de serie del extintor (desde tabla extintor)
+  final String? codeExtintor;
+  final String? serialNumberNFC;
 
   const ServiceExtinguisherEntity({
     required this.id,
@@ -26,6 +27,7 @@ class ServiceExtinguisherEntity {
     this.usuarioActualizadorId,
     this.createdAt,
     this.updatedAt,
-    this.serialNumber,
+    this.codeExtintor,
+    this.serialNumberNFC,
   });
 }

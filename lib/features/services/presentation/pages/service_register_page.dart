@@ -4,6 +4,7 @@ import 'package:internet_connection_checker/internet_connection_checker.dart';
 import '../../../../core/network/error_handler.dart';
 import '../../../../core/sync/sync_service.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
+import '../../../../core/widgets/floating_label_date_picker.dart';
 import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../../../core/widgets/floating_label_year_picker.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -25,15 +26,20 @@ import 'service_data_page.dart';
 /// Pantalla: Registro de extintor nuevo
 class ServiceRegisterPage extends StatefulWidget {
   final ServiceType serviceType;
-  final String?
-  initialSerial; // Número de serie autocompletado desde NFC o búsqueda
+
+  /// Número de serie NFC leído al escanear la tarjeta. Si viene, se prellena "Número de serie NFC" y se muestra opción Vincular.
+  final String? initialSerial;
+
+  /// Código del extintor ingresado en búsqueda manual. Si viene, se prellena "Código extintor" y no se muestra Vincular.
+  final String? initialCodeExtintor;
   final int servicioId;
-  final int? initialSedeId; // Sede pre-seleccionada del servicio
+  final int? initialSedeId;
 
   const ServiceRegisterPage({
     super.key,
     required this.serviceType,
     this.initialSerial,
+    this.initialCodeExtintor,
     required this.servicioId,
     this.initialSedeId,
   });
@@ -44,7 +50,8 @@ class ServiceRegisterPage extends StatefulWidget {
 
 class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _numeroSerieController = TextEditingController();
+  final _codigoExtintorController = TextEditingController();
+  final _numeroSerieController = TextEditingController(); // Número de serie NFC
   final _capacidadController = TextEditingController();
   final _numeroCilindroController = TextEditingController();
   final _ubicacionController = TextEditingController();
@@ -56,6 +63,12 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
   // Para año de fabricación (único campo de fecha manual)
   int? _selectedYearManufacture;
+
+  /// Fecha de prueba hidrostática (ingreso manual por interfaz).
+  DateTime? _selectedDateHydrostatic;
+
+  /// Fecha de mantenimiento (ingreso manual por interfaz).
+  DateTime? _selectedDateMaintenance;
 
   String? _tipo;
   String? _agente;
@@ -83,9 +96,14 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
   @override
   void initState() {
     super.initState();
-    // Autocompletar número de serie si viene desde NFC o búsqueda
+    // Escaneo NFC: prellenar Número de serie NFC (y se mostrará opción Vincular)
     if (widget.initialSerial != null && widget.initialSerial!.isNotEmpty) {
       _numeroSerieController.text = widget.initialSerial!;
+    }
+    // Búsqueda manual: prellenar Código extintor (no se muestra Vincular)
+    if (widget.initialCodeExtintor != null &&
+        widget.initialCodeExtintor!.isNotEmpty) {
+      _codigoExtintorController.text = widget.initialCodeExtintor!;
     }
     // Pre-seleccionar sede si viene como parámetro o obtenerla del servicio
     if (widget.initialSedeId != null) {
@@ -163,6 +181,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
   @override
   void dispose() {
+    _codigoExtintorController.dispose();
     _numeroSerieController.dispose();
     _capacidadController.dispose();
     _numeroCilindroController.dispose();
@@ -229,7 +248,10 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
 
     try {
       final data = {
-        'serialNumber': _numeroSerieController.text.trim().isEmpty
+        'codeExtintor': _codigoExtintorController.text.trim().isEmpty
+            ? null
+            : _codigoExtintorController.text.trim(),
+        'serialNumberNFC': _numeroSerieController.text.trim().isEmpty
             ? null
             : _numeroSerieController.text.trim(),
         'type': _tipo,
@@ -257,8 +279,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
             ? null
             : _ratingController.text.trim(),
         'yearManufacture': _selectedYearManufacture?.toString(),
-        // dateHydrostatic, dateMaintenance y rechargeDate son manejados automáticamente por el backend
-        // No se envían desde la interfaz (similar a como no se envía la foto)
+        // Fechas manuales: se envían como ISO 8601 (igual que createdAt/updatedAt en backend)
+        'dateHydrostatic': _selectedDateHydrostatic?.toIso8601String(),
+        'dateMaintenance': _selectedDateMaintenance?.toIso8601String(),
         'sedeId': _sedeId,
       };
 
@@ -275,31 +298,58 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
         return;
       }
 
-      // Validar unicidad de serialNumber antes de registrar
-      final serialNumber = _numeroSerieController.text.trim().isEmpty
+      final codeExtintor = _codigoExtintorController.text.trim().isEmpty
+          ? null
+          : _codigoExtintorController.text.trim();
+      final serialNumberNFC = _numeroSerieController.text.trim().isEmpty
           ? null
           : _numeroSerieController.text.trim();
 
-      // Verificar si ya existe en SQLite (tanto sincronizados como pendientes)
-      final duplicates = await _localDataSource.checkDuplicates(
-        serialNumber: serialNumber,
-      );
+      // Solo validar duplicados cuando vamos a CREAR uno nuevo. Al vincular (actualizar) no aplica.
+      if (_selectedExtinguisher == null) {
+        final duplicates = await _localDataSource.checkDuplicates(
+          codeExtintor: codeExtintor,
+          serialNumberNFC: serialNumberNFC,
+        );
 
-      if (duplicates['serialNumber'] == true) {
+        if (duplicates['codeExtintor'] == true ||
+            duplicates['serialNumberNFC'] == true) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          final which = <String>[];
+          if (duplicates['codeExtintor'] == true) which.add('Código extintor');
+          if (duplicates['serialNumberNFC'] == true) {
+            which.add('Número de serie NFC');
+          }
+          final errorMessage =
+              'Ya existe un extintor con el mismo ${which.join(' o ')}.\n\n'
+              'Estos campos deben ser únicos. Si continúa, tendrá problemas al sincronizar.';
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          return;
+        }
+      }
+
+      if (codeExtintor == null && serialNumberNFC == null) {
         setState(() {
           _isLoading = false;
         });
-
-        const errorMessage =
-            'Ya existe un extintor con el mismo número de serie.\n\n'
-            'Nota: El número de serie debe ser único. Si continúa, tendrá problemas al sincronizar.';
-
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+          const SnackBar(
+            content: Text(
+              'Ingrese al menos Código extintor o Número de serie NFC.',
+            ),
+            backgroundColor: Colors.orange,
           ),
         );
         return;
@@ -344,10 +394,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           ),
         );
       } else {
-        // Se guardó en el servidor
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Extintor registrado exitosamente'),
+          SnackBar(
+            content: Text(
+              _selectedExtinguisher != null
+                  ? 'Extintor actualizado exitosamente (vinculado)'
+                  : 'Extintor registrado exitosamente',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -491,19 +544,30 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Campos del formulario (orden según imagen)
-                      // 1. Nro. Serie con botón para vincular extintor existente
+                      // Campos del formulario: Código extintor y Número de serie NFC
+                      FloatingLabelTextField(
+                        controller: _codigoExtintorController,
+                        label: 'Código extintor',
+                        hintText: 'Código extintor',
+                      ),
+                      const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: FloatingLabelTextField(
                               controller: _numeroSerieController,
-                              label: 'Nro. Serie',
-                              hintText: 'Nro. Serie',
+                              label: 'Número de serie NFC',
+                              hintText: 'Número de serie NFC',
+                              readOnly:
+                                  true, // Solo lectura: se autocompleta al escanear o queda vacío en búsqueda manual
                             ),
                           ),
-                          if (_sedeId != null) ...[
+                          // Mostrar opción de vincular solo cuando el usuario llegó por escaneo NFC
+                          // (tiene número de serie de la tarjeta). Búsqueda manual es por código extintor.
+                          if (_sedeId != null &&
+                              widget.initialSerial != null &&
+                              widget.initialSerial!.isNotEmpty) ...[
                             const SizedBox(width: 8),
                             IconButton(
                               icon: _isLoadingExtinguishers
@@ -557,7 +621,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Actualizando extintor ID: ${_selectedExtinguisher!.id}',
+                                      'Se está vinculando nro Serie: ${_numeroSerieController.text.trim().isEmpty ? "—" : _numeroSerieController.text.trim()}',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.blue[900],
@@ -567,7 +631,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Vinculando Nro Serie: ${_numeroSerieController.text.trim().isEmpty ? "N/A" : _numeroSerieController.text.trim()}',
+                                      'Extintor ID: ${_selectedExtinguisher!.id} · Código: ${_codigoExtintorController.text.trim().isEmpty ? "—" : _codigoExtintorController.text.trim()}',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.blue[900],
@@ -672,8 +736,30 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
-                      // son manejadas automáticamente por el backend, no se ingresan manualmente
+                      // 13. Fecha prueba hidrostática (manual, se envía como ISO 8601)
+                      FloatingLabelDatePicker(
+                        selectedDate: _selectedDateHydrostatic,
+                        label: 'Fecha prueba hidrostática',
+                        hintText: 'Fecha prueba hidrostática',
+                        onDateSelected: (picked) {
+                          setState(() {
+                            _selectedDateHydrostatic = picked;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // 14. Fecha mantenimiento (manual, se envía como ISO 8601)
+                      FloatingLabelDatePicker(
+                        selectedDate: _selectedDateMaintenance,
+                        label: 'Fecha mantenimiento',
+                        hintText: 'Fecha mantenimiento',
+                        onDateSelected: (picked) {
+                          setState(() {
+                            _selectedDateMaintenance = picked;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
                       // Dropdown para Sede
                       _buildSedeDropdown(),
                       const SizedBox(height: 32),
@@ -1276,6 +1362,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (extinguisher.codeExtintor != null &&
+                                  extinguisher.codeExtintor!.isNotEmpty)
+                                Text('Código: ${extinguisher.codeExtintor}'),
                               if (extinguisher.type != null)
                                 Text('Tipo: ${extinguisher.type}'),
                               if (extinguisher.location != null)
@@ -1322,9 +1411,12 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     setState(() {
       _selectedExtinguisher = extinguisher;
 
-      // Autocompletar campos del formulario
-      // El número de serie ya está en el campo (viene del escaneo/búsqueda)
-      // No lo sobrescribimos
+      // Autocompletar campos del formulario (incl. código extintor)
+      if (extinguisher.codeExtintor != null &&
+          extinguisher.codeExtintor!.isNotEmpty) {
+        _codigoExtintorController.text = extinguisher.codeExtintor!;
+      }
+      // El número de serie NFC ya está en el campo (viene del escaneo); no lo sobrescribimos
 
       if (extinguisher.location != null) {
         _ubicacionController.text = extinguisher.location!;
@@ -1360,19 +1452,22 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       if (extinguisher.yearManufacture != null) {
         _selectedYearManufacture = int.tryParse(extinguisher.yearManufacture!);
       }
-      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
-      // son manejadas automáticamente por el backend, no se autocompletan
+      if (extinguisher.dateHydrostatic != null) {
+        _selectedDateHydrostatic = extinguisher.dateHydrostatic;
+      }
+      if (extinguisher.dateMaintenance != null) {
+        _selectedDateMaintenance = extinguisher.dateMaintenance;
+      }
       // La sede ya está seleccionada, no la cambiamos
     });
   }
 
   void _clearFormData() {
     setState(() {
-      // Limpiar el extintor seleccionado
       _selectedExtinguisher = null;
 
-      // Limpiar todos los campos excepto el número de serie
-      // El número de serie se mantiene porque viene del escaneo/búsqueda
+      // Mantener número de serie NFC (viene del escaneo); limpiar el resto
+      _codigoExtintorController.clear();
       _ubicacionController.clear();
       _numeroCilindroController.clear();
       _tipo = null;
@@ -1385,8 +1480,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       _modelController.clear();
       _ratingController.clear();
       _selectedYearManufacture = null;
-      // Las fechas dateHydrostatic, dateMaintenance y rechargeDate
-      // son manejadas automáticamente por el backend, no se limpian
+      _selectedDateHydrostatic = null;
+      _selectedDateMaintenance = null;
 
       // La sede se mantiene porque es del servicio actual
     });

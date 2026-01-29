@@ -721,7 +721,8 @@ class LocalServiceDataSource {
       '''
       SELECT 
         se.*,
-        e.serialNumber,
+        e.codeExtintor,
+        e.serialNumberNFC,
         e.location,
         e.cylinderNumber,
         e.type,

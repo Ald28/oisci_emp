@@ -806,7 +806,9 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             title: Text(
-              extinguisher.serialNumber ?? 'Sin serie',
+              extinguisher.codeExtintor ??
+                  extinguisher.serialNumberNFC ??
+                  'Sin serie',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(

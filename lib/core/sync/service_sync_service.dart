@@ -475,15 +475,14 @@ class ServiceSyncService {
     );
 
     if (tempExtinguisher.isNotEmpty) {
-      // El extintor temporal todavía existe, buscar el sincronizado por serialNumber
-      final serialNumber = tempExtinguisher.first['serialNumber'] as String?;
+      final row = tempExtinguisher.first;
+      final serialNumberNFC = row['serialNumberNFC'] as String?;
 
-      if (serialNumber != null) {
-        // Buscar el extintor sincronizado correspondiente (mismo serialNumber, pero ID positivo)
+      if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
         final syncedExtinguisher = await db.query(
           'extintor',
-          where: 'serialNumber = ? AND id > 0',
-          whereArgs: [serialNumber],
+          where: 'serialNumberNFC = ? AND id > 0',
+          whereArgs: [serialNumberNFC],
           limit: 1,
         );
 

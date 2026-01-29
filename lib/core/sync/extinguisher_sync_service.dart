@@ -69,7 +69,8 @@ class ExtinguisherSyncService {
               // Crear un nuevo modelo con el photoPath actualizado
               final extintorWithPath = ExtinguisherModel(
                 id: extintor.id,
-                serialNumber: extintor.serialNumber,
+                codeExtintor: extintor.codeExtintor,
+                serialNumberNFC: extintor.serialNumberNFC,
                 type: extintor.type,
                 capacity: extintor.capacity,
                 agent: extintor.agent,
@@ -172,7 +173,8 @@ class ExtinguisherSyncService {
                 // Crear un nuevo modelo con el photoPath actualizado
                 extintor = ExtinguisherModel(
                   id: extintor.id,
-                  serialNumber: extintor.serialNumber,
+                  codeExtintor: extintor.codeExtintor,
+                  serialNumberNFC: extintor.serialNumberNFC,
                   type: extintor.type,
                   capacity: extintor.capacity,
                   agent: extintor.agent,
@@ -201,15 +203,12 @@ class ExtinguisherSyncService {
             }
           }
 
-          // Buscar el extintor temporal en extintor por serialNumber o tempId
-          // para actualizarlo con el ID real del servidor
-          final serialNumber = data['serialNumber'] as String?;
+          final serialNumberNFC = data['serialNumberNFC'] as String?;
           final tempId = data['tempId'] as int?;
 
-          if (serialNumber != null || tempId != null) {
-            // Actualizar el registro existente en extintor con el ID real y synced = 1
+          if (serialNumberNFC != null || tempId != null) {
             await _localDataSource.updateExtinguisherAfterSync(
-              serialNumber: serialNumber,
+              serialNumberNFC: serialNumberNFC,
               tempId: tempId,
               extinguisher: extintor,
             );
@@ -218,10 +217,10 @@ class ExtinguisherSyncService {
             // usar la búsqueda heurística basada en otros campos y relaciones.
             await _localDataSource
                 .updateExtinguisherAfterSyncWithoutSerialNumber(
-              extinguisher: extintor,
-              originalData:
-                  data, // Datos originales del payload para buscar el tempId
-            );
+                  extinguisher: extintor,
+                  originalData:
+                      data, // Datos originales del payload para buscar el tempId
+                );
           }
 
           // Eliminar de la cola

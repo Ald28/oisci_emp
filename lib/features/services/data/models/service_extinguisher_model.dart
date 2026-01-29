@@ -14,13 +14,15 @@ class ServiceExtinguisherModel extends ServiceExtinguisherEntity {
     super.usuarioActualizadorId,
     super.createdAt,
     super.updatedAt,
-    super.serialNumber,
+    super.codeExtintor,
+    super.serialNumberNFC,
   });
 
   factory ServiceExtinguisherModel.fromJson(Map<String, dynamic> json) {
     // El backend retorna el objeto extintor anidado con include: { extintor: true }
     final extintor = json['extintor'] as Map<String, dynamic>?;
-    final serialNumber = extintor?['serialNumber'] as String?;
+    final codeExtintor = extintor?['codeExtintor'] as String?;
+    final serialNumberNFC = extintor?['serialNumberNFC'] as String?;
 
     return ServiceExtinguisherModel(
       id: json['id'] as int,
@@ -38,7 +40,8 @@ class ServiceExtinguisherModel extends ServiceExtinguisherEntity {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
-      serialNumber: serialNumber,
+      codeExtintor: codeExtintor,
+      serialNumberNFC: serialNumberNFC,
     );
   }
 
@@ -59,7 +62,7 @@ class ServiceExtinguisherModel extends ServiceExtinguisherEntity {
   }
 
   factory ServiceExtinguisherModel.fromMap(Map<String, dynamic> map) {
-    // El JOIN en local_service_datasource incluye serialNumber directamente
+    // El JOIN en local_service_datasource incluye codeExtintor y serialNumberNFC
     return ServiceExtinguisherModel(
       id: map['id'] as int,
       servicioId: map['servicioId'] as int,
@@ -76,7 +79,8 @@ class ServiceExtinguisherModel extends ServiceExtinguisherEntity {
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
-      serialNumber: map['serialNumber'] as String?,
+      codeExtintor: map['codeExtintor'] as String?,
+      serialNumberNFC: map['serialNumberNFC'] as String?,
     );
   }
 

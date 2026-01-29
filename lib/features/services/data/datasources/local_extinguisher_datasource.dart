@@ -15,9 +15,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   }) async {
     final db = await AppDatabase.database;
 
-    // Buscar en extintor con JOIN a sede para obtener el nombre de la sede
-    String whereClause = 'e.serialNumber = ?';
-    List<dynamic> whereArgs = [searchTerm];
+    // Buscar en extintor por serialNumberNFC o codeExtintor
+    String whereClause = '(e.serialNumberNFC = ? OR e.codeExtintor = ?)';
+    List<dynamic> whereArgs = [searchTerm, searchTerm];
 
     // Si se proporciona sedeId, filtrar también por sede
     if (sedeId != null) {
@@ -113,7 +113,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // Esto permite que esté disponible para búsqueda offline inmediatamente
     await db.insert('extintor', {
       'id': tempId,
-      'serialNumber': data['serialNumber'] as String?,
+      'codeExtintor': data['codeExtintor'] as String?,
+      'serialNumberNFC': data['serialNumberNFC'] as String?,
       'type': data['type'] as String?,
       'capacity': data['capacity'] as String?,
       'agent': data['agent'] as String?,
@@ -158,7 +159,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     // Retornar el Extinguisher con ID temporal
     return ExtinguisherModel(
       id: tempId,
-      serialNumber: data['serialNumber'] as String?,
+      codeExtintor: data['codeExtintor'] as String?,
+      serialNumberNFC: data['serialNumberNFC'] as String?,
       type: data['type'] as String?,
       capacity: data['capacity'] as String?,
       agent: data['agent'] as String?,
@@ -212,7 +214,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
     await db.insert('extintor', {
       'id': extinguisher.id,
-      'serialNumber': extinguisher.serialNumber,
+      'codeExtintor': extinguisher.codeExtintor,
+      'serialNumberNFC': extinguisher.serialNumberNFC,
       'type': extinguisher.type,
       'capacity': extinguisher.capacity,
       'agent': extinguisher.agent,
@@ -239,9 +242,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
   /// Actualizar extintor después de sincronización
   /// Busca el extintor temporal (con ID negativo) y lo actualiza con el ID real del servidor
-  /// Puede buscar por serialNumber o por tempId (ID negativo original)
+  /// Puede buscar por serialNumberNFC o por tempId (ID negativo original)
   Future<void> updateExtinguisherAfterSync({
-    String? serialNumber,
+    String? serialNumberNFC,
     int? tempId, // ID negativo original del extintor temporal
     required ExtinguisherModel extinguisher,
   }) async {
@@ -258,12 +261,12 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
         whereArgs: [tempId],
         limit: 1,
       );
-    } else if (serialNumber != null && serialNumber.isNotEmpty) {
-      // Buscar por serialNumber
+    } else if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
+      // Buscar por serialNumberNFC
       tempExtinguisher = await db.query(
         'extintor',
-        where: 'serialNumber = ? AND id < 0',
-        whereArgs: [serialNumber],
+        where: 'serialNumberNFC = ? AND id < 0',
+        whereArgs: [serialNumberNFC],
         limit: 1,
       );
     } else {
@@ -295,7 +298,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
         'extintor',
         {
           'id': newExtintorId,
-          'serialNumber': extinguisher.serialNumber,
+          'codeExtintor': extinguisher.codeExtintor,
+          'serialNumberNFC': extinguisher.serialNumberNFC,
           'type': extinguisher.type,
           'capacity': extinguisher.capacity,
           'agent': extinguisher.agent,
@@ -364,7 +368,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     });
   }
 
-  /// Actualizar extintor después de sincronización cuando no tiene serialNumber
+  /// Actualizar extintor después de sincronización cuando no tiene serialNumberNFC
   /// Busca el extintor temporal por otros campos o por relaciones en servicio_extintor
   Future<void> updateExtinguisherAfterSyncWithoutSerialNumber({
     required ExtinguisherModel extinguisher,
@@ -377,11 +381,11 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     final sedeId = extinguisher.sedeId;
     final usuarioCreadorId = extinguisher.usuarioCreadorId;
 
-    // Buscar extintores temporales con la misma sede y usuario, sin serialNumber
+    // Buscar extintores temporales con la misma sede y usuario, sin serialNumberNFC
     final tempExtinguishers = await db.query(
       'extintor',
       where:
-          'sedeId = ? AND usuarioCreadorId = ? AND id < 0 AND (serialNumber IS NULL OR serialNumber = ?)',
+          'sedeId = ? AND usuarioCreadorId = ? AND id < 0 AND (serialNumberNFC IS NULL OR serialNumberNFC = ?)',
       whereArgs: [sedeId, usuarioCreadorId, ''],
       orderBy: 'createdAt DESC',
       limit: 10, // Limitar búsqueda
@@ -446,8 +450,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
         if (tempExt.isNotEmpty) {
           final temp = tempExt.first;
-          // Verificar si no tiene serialNumber o tiene serialNumber vacío
-          final tempSerial = temp['serialNumber'] as String?;
+          // Verificar si no tiene serialNumberNFC o tiene serialNumberNFC vacío
+          final tempSerial = temp['serialNumberNFC'] as String?;
           if (tempSerial == null || tempSerial.isEmpty) {
             // Verificar coincidencias
             final tempType = temp['type'] as String?;
@@ -494,8 +498,8 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
           'extintor',
           {
             'id': newExtintorId,
-            'serialNumber': extinguisher
-                .serialNumber, // Puede ser null o el nuevo serialNumber
+            'codeExtintor': extinguisher.codeExtintor,
+            'serialNumberNFC': extinguisher.serialNumberNFC,
             'type': extinguisher.type,
             'capacity': extinguisher.capacity,
             'agent': extinguisher.agent,
@@ -703,93 +707,109 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     await db.delete('sync_queue', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Verificar si existe un extintor con el mismo serialNumber
-  /// Busca tanto en extintores sincronizados como en pendientes
-  Future<bool> existsExtinguisher({String? serialNumber}) async {
+  /// Verificar si existe un extintor con el mismo serialNumberNFC o codeExtintor
+  Future<bool> existsExtinguisher({
+    String? serialNumberNFC,
+    String? codeExtintor,
+  }) async {
     final db = await AppDatabase.database;
-
-    // Validar que el campo esté presente
-    if (serialNumber == null) {
+    if ((serialNumberNFC == null || serialNumberNFC.isEmpty) &&
+        (codeExtintor == null || codeExtintor.isEmpty)) {
       return false;
     }
-
-    // Buscar en extintores sincronizados
-    final result = await db.query(
-      'extintor',
-      where: 'serialNumber = ?',
-      whereArgs: [serialNumber],
-      limit: 1,
-    );
-    if (result.isNotEmpty) {
-      return true;
+    if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
+      final r = await db.query(
+        'extintor',
+        where: 'serialNumberNFC = ?',
+        whereArgs: [serialNumberNFC],
+        limit: 1,
+      );
+      if (r.isNotEmpty) return true;
     }
-
-    // Buscar en extintores pendientes (sync_queue)
+    if (codeExtintor != null && codeExtintor.isNotEmpty) {
+      final r = await db.query(
+        'extintor',
+        where: 'codeExtintor = ?',
+        whereArgs: [codeExtintor],
+        limit: 1,
+      );
+      if (r.isNotEmpty) return true;
+    }
     final pendingItems = await db.query(
       'sync_queue',
       where: 'type = ?',
       whereArgs: ['CREATE_EXTINGUISHER'],
     );
-
     for (final item in pendingItems) {
       try {
         final payload =
             jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        final pendingSerialNumber = payload['serialNumber'] as String?;
-
-        // Verificar serialNumber
-        if (pendingSerialNumber != null &&
-            pendingSerialNumber == serialNumber) {
+        final pSn = payload['serialNumberNFC'] as String?;
+        final pCe = payload['codeExtintor'] as String?;
+        if (serialNumberNFC != null && pSn == serialNumberNFC) return true;
+        if (codeExtintor != null && pCe != null && pCe == codeExtintor) {
           return true;
         }
       } catch (e) {
-        // Si hay error al parsear, continuar con el siguiente
         continue;
       }
     }
-
     return false;
   }
 
   /// Obtener información sobre qué campo está duplicado
-  Future<Map<String, bool>> checkDuplicates({String? serialNumber}) async {
+  Future<Map<String, bool>> checkDuplicates({
+    String? codeExtintor,
+    String? serialNumberNFC,
+  }) async {
     final db = await AppDatabase.database;
-    final result = <String, bool>{'serialNumber': false};
+    final result = <String, bool>{
+      'codeExtintor': false,
+      'serialNumberNFC': false,
+    };
 
-    // Verificar serialNumber en extintores sincronizados
-    if (serialNumber != null && serialNumber.isNotEmpty) {
-      final syncedResult = await db.query(
+    Future<void> check(String column, String value, String key) async {
+      if (value.isEmpty) return;
+      final synced = await db.query(
         'extintor',
-        where: 'serialNumber = ?',
-        whereArgs: [serialNumber],
+        where: '$column = ?',
+        whereArgs: [value],
         limit: 1,
       );
-      if (syncedResult.isNotEmpty) {
-        result['serialNumber'] = true;
-      } else {
-        // Verificar en pendientes
-        final pendingItems = await db.query(
-          'sync_queue',
-          where: 'type = ?',
-          whereArgs: ['CREATE_EXTINGUISHER'],
-        );
-        for (final item in pendingItems) {
-          try {
-            final payload =
-                jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-            final pendingSerialNumber = payload['serialNumber'] as String?;
-            if (pendingSerialNumber != null &&
-                pendingSerialNumber == serialNumber) {
-              result['serialNumber'] = true;
-              break;
-            }
-          } catch (e) {
-            continue;
+      if (synced.isNotEmpty) {
+        result[key] = true;
+        return;
+      }
+      final pendingItems = await db.query(
+        'sync_queue',
+        where: 'type = ?',
+        whereArgs: ['CREATE_EXTINGUISHER'],
+      );
+      for (final item in pendingItems) {
+        try {
+          final payload =
+              jsonDecode(item['payload'] as String) as Map<String, dynamic>;
+          final p =
+              payload[column == 'codeExtintor'
+                      ? 'codeExtintor'
+                      : 'serialNumberNFC']
+                  as String?;
+          if (p != null && p == value) {
+            result[key] = true;
+            return;
           }
+        } catch (e) {
+          continue;
         }
       }
     }
 
+    if (codeExtintor != null && codeExtintor.isNotEmpty) {
+      await check('codeExtintor', codeExtintor, 'codeExtintor');
+    }
+    if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
+      await check('serialNumberNFC', serialNumberNFC, 'serialNumberNFC');
+    }
     return result;
   }
 
@@ -828,7 +848,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       'extintor',
       where: 'sedeId = ?',
       whereArgs: [sedeId],
-      orderBy: 'serialNumber ASC',
+      orderBy: 'serialNumberNFC ASC',
     );
 
     return results.map((map) => ExtinguisherModel.fromMap(map)).toList();
@@ -878,7 +898,9 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
     // Preparar datos para actualizar, preservando valores existentes si no se proporcionan
     final updateData = {
-      'serialNumber': data['serialNumber'] ?? existingData['serialNumber'],
+      'codeExtintor': data['codeExtintor'] ?? existingData['codeExtintor'],
+      'serialNumberNFC':
+          data['serialNumberNFC'] ?? existingData['serialNumberNFC'],
       'type': data['type'] ?? existingData['type'],
       'capacity': data['capacity'] ?? existingData['capacity'],
       'agent': data['agent'] ?? existingData['agent'],
@@ -1003,7 +1025,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
   }) async {
     final db = await AppDatabase.database;
 
-    String whereClause = '(serialNumber IS NULL OR serialNumber = ?)';
+    String whereClause = '(serialNumberNFC IS NULL OR serialNumberNFC = ?)';
     List<dynamic> whereArgs = [''];
 
     // Si se proporciona sedeId, filtrar también por sede

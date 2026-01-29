@@ -2,7 +2,8 @@
 /// Coincide con el modelo Extintor del backend (Prisma)
 class Extinguisher {
   final int id;
-  final String? serialNumber;
+  final String? codeExtintor;
+  final String? serialNumberNFC;
   final String? type; // Polvo Químico, CO2, Agua, etc.
   final String? capacity; // EJ: "5kg"
   final String? agent; // EJ: "ABC"
@@ -27,7 +28,8 @@ class Extinguisher {
 
   const Extinguisher({
     required this.id,
-    this.serialNumber,
+    this.codeExtintor,
+    this.serialNumberNFC,
     this.type,
     this.capacity,
     this.agent,

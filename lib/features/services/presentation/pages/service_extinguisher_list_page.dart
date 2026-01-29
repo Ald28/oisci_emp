@@ -322,8 +322,10 @@ class _ServiceExtinguisherListPageState
           ),
         ),
         title: Text(
-          item.serialNumber != null && item.serialNumber!.isNotEmpty
-              ? 'Código: ${item.serialNumber}'
+          (item.codeExtintor != null && item.codeExtintor!.isNotEmpty) ||
+                  (item.serialNumberNFC != null &&
+                      item.serialNumberNFC!.isNotEmpty)
+              ? 'Código: ${item.codeExtintor ?? item.serialNumberNFC}'
               : 'Extintor ID: ${item.extintorId}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),

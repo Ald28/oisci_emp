@@ -30,7 +30,10 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
   }
 
   @override
-  Future<Extinguisher?> searchExtinguisher(String searchTerm, {int? sedeId}) async {
+  Future<Extinguisher?> searchExtinguisher(
+    String searchTerm, {
+    int? sedeId,
+  }) async {
     final hasInternet = await InternetConnectionChecker().hasConnection;
 
     // Si hay internet, buscar primero en el servidor
@@ -123,8 +126,7 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
       // Si no se encuentra y el ID es negativo, buscar el extintor sincronizado
       // que corresponde a este ID negativo (el extintor puede haberse sincronizado)
       if (localExtinguisher == null && extintorId < 0) {
-        // Buscar el extintor temporal para obtener su serialNumber
-        // Usar AppDatabase directamente para acceder a la base de datos
+        // Buscar el extintor temporal para obtener serialNumberNFC o codeExtintor
         final db = await AppDatabase.database;
         final tempResult = await db.query(
           'extintor',
@@ -134,12 +136,14 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
         );
 
         if (tempResult.isNotEmpty) {
-          // Si encontramos el temporal, buscar el sincronizado por serialNumber
-          final serialNumber = tempResult.first['serialNumber'] as String?;
-          if (serialNumber != null) {
+          final row = tempResult.first;
+          final searchTerm =
+              row['serialNumberNFC'] as String? ??
+              row['codeExtintor'] as String?;
+          if (searchTerm != null && searchTerm.isNotEmpty) {
             final syncedExtinguisher =
                 await (localDataSource as LocalExtinguisherDataSource)
-                    .searchExtinguisher(serialNumber);
+                    .searchExtinguisher(searchTerm);
             if (syncedExtinguisher != null && syncedExtinguisher.id > 0) {
               localExtinguisher = syncedExtinguisher;
             }
@@ -228,16 +232,17 @@ class ExtinguisherRepositoryImpl implements ExtinguisherRepository {
   }
 
   @override
-  Future<List<Extinguisher>> getExtinguishersWithoutSerialNumber({int? sedeId}) async {
+  Future<List<Extinguisher>> getExtinguishersWithoutSerialNumber({
+    int? sedeId,
+  }) async {
     final hasInternet = await InternetConnectionChecker().hasConnection;
 
     if (hasInternet) {
       try {
         // Intentar obtener desde el backend
         final remoteDataSource = await _getDataSource(preferLocal: false);
-        final extinguishers = await remoteDataSource.getExtinguishersWithoutSerialNumber(
-          sedeId: sedeId,
-        );
+        final extinguishers = await remoteDataSource
+            .getExtinguishersWithoutSerialNumber(sedeId: sedeId);
 
         // Guardar también localmente para uso offline
         if (localDataSource is LocalExtinguisherDataSource &&

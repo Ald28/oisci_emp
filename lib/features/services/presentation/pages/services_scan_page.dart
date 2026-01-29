@@ -46,7 +46,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     ServiceRepositoryImpl(),
   );
   late final ServiceRepository _serviceRepository = ServiceRepositoryImpl();
-  
+
   int? _sedeId; // Sede del servicio actual
 
   @override
@@ -55,10 +55,12 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     _loadServiceExtinguishers();
     _loadServiceSede();
   }
-  
+
   Future<void> _loadServiceSede() async {
     try {
-      final service = await _serviceRepository.getServiceById(widget.servicioId);
+      final service = await _serviceRepository.getServiceById(
+        widget.servicioId,
+      );
       if (service != null && mounted) {
         setState(() {
           _sedeId = service.sedeId;
@@ -185,23 +187,23 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         return;
       }
 
-      // Usar serialNumber si está disponible (leído del NDEF), sino usar UID
-      final searchTerm = result.serialNumber ?? result.uid;
+      // Usar valor leído del NDEF si está disponible, sino UID
+      final searchTerm = result.serialFromNdef ?? result.uid;
 
       // Mostrar mensaje informativo
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result.serialNumber != null
-                ? 'Número de serie leído: ${result.serialNumber}'
+            result.serialFromNdef != null
+                ? 'Número de serie leído: ${result.serialFromNdef}'
                 : 'UID leído: ${result.uid}',
           ),
           duration: const Duration(seconds: 2),
         ),
       );
 
-      // Buscar extintor
-      await _searchExtinguisher(searchTerm);
+      // Búsqueda por escaneo: el término es serialNumberNFC (leído de la tarjeta)
+      await _searchExtinguisher(searchTerm, fromScan: true);
     } catch (e) {
       if (!mounted) return;
 
@@ -221,12 +223,15 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   Future<void> _handleManualSearch() async {
     if (_codeController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa un número de serie')),
+        const SnackBar(
+          content: Text('Por favor ingresa el código del extintor'),
+        ),
       );
       return;
     }
 
-    await _searchExtinguisher(_codeController.text.trim());
+    // Búsqueda manual: el término es el código del extintor (visible en el equipo)
+    await _searchExtinguisher(_codeController.text.trim(), fromScan: false);
   }
 
   Future<void> _handleBackButton(BuildContext context) async {
@@ -263,7 +268,11 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     // Si no puede hacer pop, no hacer nada (no debería pasar en flujo normal)
   }
 
-  Future<void> _searchExtinguisher(String searchTerm) async {
+  /// [fromScan] true = término es serialNumberNFC (leído de la tarjeta); false = término es codeExtintor (búsqueda manual).
+  Future<void> _searchExtinguisher(
+    String searchTerm, {
+    required bool fromScan,
+  }) async {
     if (!mounted) return;
 
     setState(() {
@@ -272,7 +281,10 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
 
     try {
       // Paso 1: Buscar extintor filtrando por sede si está disponible
-      final extinguisher = await _searchUseCase.call(searchTerm, sedeId: _sedeId);
+      final extinguisher = await _searchUseCase.call(
+        searchTerm,
+        sedeId: _sedeId,
+      );
 
       if (!mounted) return;
 
@@ -297,7 +309,10 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
       // Paso 2: Si no se encontró en la sede actual, buscar sin filtro de sede
       // para verificar si existe en otra sede
       if (_sedeId != null) {
-        final extinguisherInOtherSede = await _searchUseCase.call(searchTerm, sedeId: null);
+        final extinguisherInOtherSede = await _searchUseCase.call(
+          searchTerm,
+          sedeId: null,
+        );
 
         if (!mounted) return;
 
@@ -319,14 +334,17 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         _isSearching = false;
       });
 
+      // Escaneo: prellenar Número de serie NFC y mostrar opción Vincular.
+      // Manual: prellenar Código extintor y no mostrar Vincular (no se puede vincular un código).
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ServiceRegisterPage(
             serviceType: widget.serviceType,
-            initialSerial: searchTerm,
+            initialSerial: fromScan ? searchTerm : null,
+            initialCodeExtintor: fromScan ? null : searchTerm,
             servicioId: widget.servicioId,
-            initialSedeId: _sedeId, // Pasar la sede del servicio
+            initialSedeId: _sedeId,
           ),
         ),
       );
@@ -424,7 +442,10 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     );
   }
 
-  void _showExtinguisherInOtherSedeDialog(String sedeName, String serialNumber) {
+  void _showExtinguisherInOtherSedeDialog(
+    String sedeName,
+    String codigoOSerie,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -435,10 +456,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             Expanded(
               child: Text(
                 'Extintor ya registrado',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -448,11 +466,8 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'El extintor con número de serie "$serialNumber" ya está registrado en la sede:',
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-              ),
+              'El extintor con código/serie "$codigoOSerie" ya está registrado en la sede:',
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
             ),
             const SizedBox(height: 12),
             Container(
@@ -481,7 +496,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Por favor, use un número de serie diferente para registrar este extintor en la sede actual.',
+              'Por favor, use un código o número de serie diferente para registrar este extintor en la sede actual.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black54,

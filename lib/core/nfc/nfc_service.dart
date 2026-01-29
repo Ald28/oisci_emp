@@ -4,9 +4,11 @@ import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 /// Resultado del escaneo NFC
 class NfcResult {
   final String uid;
-  final String? serialNumber; // Número de serie leído del NDEF
 
-  NfcResult({required this.uid, this.serialNumber});
+  /// Valor de serie leído del NDEF (se usa como término de búsqueda → serialNumberNFC en extintor)
+  final String? serialFromNdef;
+
+  NfcResult({required this.uid, this.serialFromNdef});
 }
 
 /// Servicio para escanear tarjetas NFC
@@ -22,9 +24,9 @@ class NfcService {
       // UID viene como String
       final String uid = tag.id;
 
-      String? serialNumber;
+      String? serialFromNdef;
 
-      // Intentar leer NDEF (si la tarjeta tiene datos - contiene el número de serie)
+      // Intentar leer NDEF (si la tarjeta tiene datos con el número de serie)
       try {
         final records = await FlutterNfcKit.readNDEFRecords();
 
@@ -37,7 +39,7 @@ class NfcService {
             final languageCodeLength = statusByte & 0x3F;
 
             final textBytes = payload.sublist(1 + languageCodeLength);
-            serialNumber = String.fromCharCodes(textBytes).trim();
+            serialFromNdef = String.fromCharCodes(textBytes).trim();
           }
         }
       } catch (_) {
@@ -46,7 +48,7 @@ class NfcService {
 
       await FlutterNfcKit.finish();
 
-      return NfcResult(uid: _formatUid(uid), serialNumber: serialNumber);
+      return NfcResult(uid: _formatUid(uid), serialFromNdef: serialFromNdef);
     } catch (e) {
       try {
         await FlutterNfcKit.finish();

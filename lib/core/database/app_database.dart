@@ -19,8 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version:
-          10, // Versión 10: agregar rechargeDate a extintor, actualizar tipos de dateHydrostatic/dateMaintenance, eliminar campos de inspeccion_detalle
+      version: 11, // Versión 11: codeExtintor y serialNumberNFC
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -75,7 +74,8 @@ class AppDatabase {
     await db.execute('''
       CREATE TABLE extintor (
         id INTEGER PRIMARY KEY,
-        serialNumber TEXT,
+        codeExtintor TEXT,
+        serialNumberNFC TEXT,
         type TEXT,
         capacity TEXT,
         agent TEXT,
@@ -106,7 +106,10 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE INDEX idx_extintor_serialNumber ON extintor(serialNumber)
+      CREATE INDEX idx_extintor_codeExtintor ON extintor(codeExtintor)
+    ''');
+    await db.execute('''
+      CREATE INDEX idx_extintor_serialNumberNFC ON extintor(serialNumberNFC)
     ''');
 
     // Tabla para cola de sincronización (extintores pendientes)
@@ -722,6 +725,30 @@ class AppDatabase {
         );
       } catch (e) {
         // Ignorar si la columna ya existe
+      }
+    }
+
+    if (oldVersion < 11) {
+      // Agregar columnas codeExtintor y serialNumberNFC
+      try {
+        await db.execute('ALTER TABLE extintor ADD COLUMN codeExtintor TEXT');
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      try {
+        await db.execute(
+          'ALTER TABLE extintor ADD COLUMN serialNumberNFC TEXT',
+        );
+      } catch (e) {
+        // Ignorar si la columna ya existe
+      }
+      // Migrar valor previo a serialNumberNFC (solo si la tabla tenía columna legacy)
+      try {
+        await db.execute(
+          'UPDATE extintor SET serialNumberNFC = serialNumber WHERE serialNumberNFC IS NULL AND serialNumber IS NOT NULL',
+        );
+      } catch (e) {
+        // Ignorar si la tabla no tenía la columna legacy (instalación nueva)
       }
     }
   }

@@ -167,7 +167,8 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFEAEAEA),
       appBar: HomeAppBar(
-        title: 'Equipo ${extinguisher.serialNumber ?? 'N/A'}',
+        title:
+            'Equipo ${extinguisher.codeExtintor ?? extinguisher.serialNumberNFC ?? 'N/A'}',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -233,80 +234,85 @@ class _EquipmentDetailPageState extends State<EquipmentDetailPage> {
                           const SizedBox(height: 16),
                           _buildDetailRow(
                             '1',
-                            'Nro. Serie',
-                            extinguisher.serialNumber ?? 'N/A',
+                            'Código extintor',
+                            extinguisher.codeExtintor ?? 'N/A',
                           ),
                           _buildDetailRow(
                             '2',
+                            'Nro. Serie NFC',
+                            extinguisher.serialNumberNFC ?? 'N/A',
+                          ),
+                          _buildDetailRow(
+                            '3',
                             'Ubicación',
                             extinguisher.location ?? 'N/A',
                           ),
                           _buildDetailRow(
-                            '3',
+                            '4',
                             'Nro. Cilindro',
                             extinguisher.cylinderNumber ?? 'N/A',
                           ),
                           _buildDetailRow(
-                            '4',
+                            '5',
                             'Tipo',
                             extinguisher.type ?? 'N/A',
                           ),
                           _buildDetailRow(
-                            '5',
+                            '6',
                             'Agente',
                             extinguisher.agent ?? 'N/A',
                           ),
                           _buildDetailRow(
-                            '6',
+                            '7',
                             'Capacidad',
                             extinguisher.capacity ?? 'N/A',
                           ),
                           _buildDetailRow(
-                            '7',
+                            '8',
                             'Estado',
                             extinguisher.status ?? 'N/A',
                           ),
                           if (extinguisher.pressure != null)
                             _buildDetailRow(
-                              '8',
+                              '9',
                               'Presión',
                               extinguisher.pressure!,
                             ),
                           if (extinguisher.brand != null)
-                            _buildDetailRow('9', 'Marca', extinguisher.brand!),
+                            _buildDetailRow('10', 'Marca', extinguisher.brand!),
                           if (extinguisher.model != null)
                             _buildDetailRow(
-                              '10',
+                              '11',
                               'Modelo',
                               extinguisher.model!,
                             ),
                           if (extinguisher.rating != null)
                             _buildDetailRow(
-                              '11',
+                              '12',
                               'Clasificación',
                               extinguisher.rating!,
                             ),
                           if (extinguisher.yearManufacture != null)
                             _buildDetailRow(
-                              '12',
+                              '13',
                               'Año de Fabricación',
                               extinguisher.yearManufacture!,
                             ),
                           if (extinguisher.dateHydrostatic != null)
                             _buildDetailRow(
-                              '13',
+                              '14',
                               'Fecha Hidrostática',
                               _formatDate(extinguisher.dateHydrostatic),
                             ),
                           if (extinguisher.dateMaintenance != null)
                             _buildDetailRow(
-                              '14',
+                              '15',
                               'Fecha de Mantenimiento',
                               _formatDate(extinguisher.dateMaintenance),
                             ),
                           if (extinguisher.rechargeDate != null)
                             _buildDetailRow(
-                              '15',
+                              '16',
                               'Fecha de Recarga',
                               _formatDate(extinguisher.rechargeDate),
                             ),

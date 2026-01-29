@@ -72,7 +72,8 @@ class SyncService {
           // Construir payload limpio con solo los campos necesarios para el backend
           // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
           final extinguisherData = <String, dynamic>{
-            'serialNumber': data['serialNumber'],
+            'codeExtintor': data['codeExtintor'],
+            'serialNumberNFC': data['serialNumberNFC'],
             'type': data['type'],
             'capacity': data['capacity'],
             'agent': data['agent'],
@@ -115,7 +116,8 @@ class SyncService {
           // Construir payload limpio con solo los campos necesarios para el backend
           // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
           final extinguisherData = <String, dynamic>{
-            'serialNumber': data['serialNumber'],
+            'codeExtintor': data['codeExtintor'],
+            'serialNumberNFC': data['serialNumberNFC'],
             'type': data['type'],
             'capacity': data['capacity'],
             'agent': data['agent'],
@@ -139,15 +141,13 @@ class SyncService {
             extinguisherData,
           );
 
-          // Buscar el extintor temporal en extintor por serialNumber o tempId
-          // para actualizarlo con el ID real del servidor
-          final serialNumber = data['serialNumber'] as String?;
+          // Buscar el extintor temporal en extintor por serialNumberNFC o tempId
+          final serialNumberNFC = data['serialNumberNFC'] as String?;
           final tempId = data['tempId'] as int?;
 
-          if (serialNumber != null || tempId != null) {
-            // Actualizar el registro existente en extintor con el ID real y synced = 1
+          if (serialNumberNFC != null || tempId != null) {
             await _localDataSource.updateExtinguisherAfterSync(
-              serialNumber: serialNumber,
+              serialNumberNFC: serialNumberNFC,
               tempId: tempId,
               extinguisher: extinguisher as ExtinguisherModel,
             );
@@ -262,7 +262,8 @@ class SyncService {
           // Construir payload limpio con solo los campos necesarios para el backend
           // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
           final extinguisherData = <String, dynamic>{
-            'serialNumber': data['serialNumber'],
+            'codeExtintor': data['codeExtintor'],
+            'serialNumberNFC': data['serialNumberNFC'],
             'type': data['type'],
             'capacity': data['capacity'],
             'agent': data['agent'],
@@ -305,7 +306,8 @@ class SyncService {
           // Construir payload limpio con solo los campos necesarios para el backend
           // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
           final extinguisherData = <String, dynamic>{
-            'serialNumber': data['serialNumber'],
+            'codeExtintor': data['codeExtintor'],
+            'serialNumberNFC': data['serialNumberNFC'],
             'type': data['type'],
             'capacity': data['capacity'],
             'agent': data['agent'],
@@ -329,15 +331,13 @@ class SyncService {
             extinguisherData,
           );
 
-          // Buscar el extintor temporal en extintor por serialNumber o tempId
-          // para actualizarlo con el ID real del servidor
-          final serialNumber = data['serialNumber'] as String?;
+          // Buscar el extintor temporal en extintor por serialNumberNFC o tempId
+          final serialNumberNFC = data['serialNumberNFC'] as String?;
           final tempId = data['tempId'] as int?;
 
-          if (serialNumber != null || tempId != null) {
-            // Actualizar el registro existente en extintor con el ID real y synced = 1
+          if (serialNumberNFC != null || tempId != null) {
             await _localDataSource.updateExtinguisherAfterSync(
-              serialNumber: serialNumber,
+              serialNumberNFC: serialNumberNFC,
               tempId: tempId,
               extinguisher: extinguisher as ExtinguisherModel,
             );
@@ -442,7 +442,8 @@ class SyncService {
         // Construir payload limpio con solo los campos necesarios para el backend
         // (siguiendo el mismo patrón que UPDATE_MAINTENANCE_DETAIL y UPDATE_INSPECTION_DETAIL)
         final extinguisherData = <String, dynamic>{
-          'serialNumber': data['serialNumber'],
+          'codeExtintor': data['codeExtintor'],
+          'serialNumberNFC': data['serialNumberNFC'],
           'type': data['type'],
           'capacity': data['capacity'],
           'agent': data['agent'],
@@ -485,7 +486,8 @@ class SyncService {
         // Construir payload limpio con solo los campos necesarios para el backend
         // (excluyendo campos internos como tempId, photoPath, createdAt, updatedAt, synced)
         final extinguisherData = <String, dynamic>{
-          'serialNumber': data['serialNumber'],
+          'codeExtintor': data['codeExtintor'],
+          'serialNumberNFC': data['serialNumberNFC'],
           'type': data['type'],
           'capacity': data['capacity'],
           'agent': data['agent'],
@@ -509,25 +511,19 @@ class SyncService {
           extinguisherData,
         );
 
-        // Buscar el extintor temporal en extintor por serialNumber o tempId
-        // para actualizarlo con el ID real del servidor
-        final serialNumber = data['serialNumber'] as String?;
+        final serialNumberNFC = data['serialNumberNFC'] as String?;
         final tempId = data['tempId'] as int?;
 
-        if (serialNumber != null || tempId != null) {
-          // Actualizar el registro existente en extintor con el ID real y synced = 1
+        if (serialNumberNFC != null || tempId != null) {
           await _localDataSource.updateExtinguisherAfterSync(
-            serialNumber: serialNumber,
+            serialNumberNFC: serialNumberNFC,
             tempId: tempId,
             extinguisher: extinguisher as ExtinguisherModel,
           );
         } else {
-          // Si no hay forma directa de identificar el extintor temporal,
-          // usar la búsqueda heurística basada en otros campos y relaciones.
           await _localDataSource.updateExtinguisherAfterSyncWithoutSerialNumber(
             extinguisher: extinguisher as ExtinguisherModel,
-            originalData:
-                data, // Datos originales del payload para buscar el tempId
+            originalData: data,
           );
         }
       }
@@ -555,17 +551,15 @@ class SyncService {
     );
 
     if (tempExtinguisher.isNotEmpty) {
-      // El extintor temporal todavía existe
       final temp = tempExtinguisher.first;
-      final serialNumber = temp['serialNumber'] as String?;
+      final serialNumberNFC = temp['serialNumberNFC'] as String?;
 
-      // Estrategia 1: Si tiene serialNumber, buscar por serialNumber
-      if (serialNumber != null && serialNumber.isNotEmpty) {
-        // Buscar el extintor sincronizado correspondiente (mismo serialNumber, pero ID positivo)
+      // Estrategia 1: Si tiene serialNumberNFC, buscar por serialNumberNFC
+      if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
         final syncedExtinguisher = await db.query(
           'extintor',
-          where: 'serialNumber = ? AND id > 0',
-          whereArgs: [serialNumber],
+          where: 'serialNumberNFC = ? AND id > 0',
+          whereArgs: [serialNumberNFC],
           limit: 1,
         );
 
@@ -574,7 +568,7 @@ class SyncService {
         }
       }
 
-      // Estrategia 2: Si no tiene serialNumber o no se encontró por serialNumber,
+      // Estrategia 2: Si no tiene serialNumberNFC o no se encontró,
       // buscar en servicio_extintor qué extintorId positivo se está usando
       // que corresponda a este extintor temporal
       final sedeId = temp['sedeId'] as int?;
@@ -667,9 +661,7 @@ class SyncService {
               tempUsuarioId != null &&
               extUsuarioId != null &&
               tempUsuarioId == extUsuarioId) {
-            // Verificar si el serialNumber del sincronizado es null o vacío
-            // (indicando que fue creado sin serialNumber y luego sincronizado)
-            final extSerial = ext['serialNumber'] as String?;
+            final extSerial = ext['serialNumberNFC'] as String?;
             if (extSerial == null || extSerial.isEmpty) {
               return extintorId;
             }

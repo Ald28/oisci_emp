@@ -320,9 +320,9 @@ class ServiceRepositoryImpl implements ServiceRepository {
         final results = await _localDataSource
             .getServiceExtinguishersByServiceId(servicioId);
         // Convertir los Maps a ServiceExtinguisherModel
-        // El JOIN incluye campos del extintor (serialNumber, location, etc.)
+        // El JOIN incluye campos del extintor (codeExtintor, serialNumberNFC, location, etc.)
         return results.map((map) {
-          // El JOIN ya incluye serialNumber y otros campos del extintor
+          // El JOIN ya incluye codeExtintor, serialNumberNFC y demás campos del extintor
           return ServiceExtinguisherModel.fromMap(map);
         }).toList();
       }
@@ -332,9 +332,9 @@ class ServiceRepositoryImpl implements ServiceRepository {
         servicioId,
       );
       // Convertir los Maps a ServiceExtinguisherModel
-      // El JOIN incluye campos del extintor (serialNumber, location, etc.)
+      // El JOIN incluye campos del extintor (codeExtintor, serialNumberNFC, location, etc.)
       return results.map((map) {
-        // El JOIN ya incluye serialNumber y otros campos del extintor
+        // El JOIN ya incluye codeExtintor, serialNumberNFC y demás campos del extintor
         return ServiceExtinguisherModel.fromMap(map);
       }).toList();
     }
