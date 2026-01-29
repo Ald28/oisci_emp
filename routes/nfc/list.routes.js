@@ -23,10 +23,10 @@ const router = Router();
  *               items:
  *                 type: object
  *                 properties:
- *                   codigoNFC:
+ *                   codeExtintor:
  *                     type: string
  *                     example: "NFC123456"
- *                   numeroSerie:
+ *                   serialNumberNFC:
  *                     type: string
  *                     example: "SERIE98765"
  *                   tipo:
@@ -137,10 +137,10 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
  *               items:
  *                 type: object
  *                 properties:
- *                   codigoNFC:
+ *                   codeExtintor:
  *                     type: string
  *                     example: "NFC123456"
- *                   numeroSerie:
+ *                   serialNumberNFC:
  *                     type: string
  *                     example: "SERIE98765"
  *                   tipo:
@@ -174,10 +174,10 @@ router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 't
  *       Si no se envía ningún parámetro, retorna todos los extintores.
  *
  *       Filtros disponibles:
- *       - hasCodeNFC=true → solo extintores con codeNFC
- *       - hasCodeNFC=false → solo extintores sin codeNFC
- *       - hasSerialNumber=true → solo extintores con serialNumber
- *       - hasSerialNumber=false → solo extintores sin serialNumber
+ *       - hasCodeExtintor=true → solo extintores con codeExtintor
+ *       - hasCodeExtintor=false → solo extintores sin codeExtintor
+ *       - hasSerialNumberNFC=true → solo extintores con serialNumberNFC
+ *       - hasSerialNumberNFC=false → solo extintores sin serialNumberNFC
  *
  *       Los filtros pueden combinarse.
  *     tags:
@@ -186,19 +186,19 @@ router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 't
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: hasCodeNFC
+ *         name: hasCodeExtintor
  *         required: false
  *         schema:
  *           type: boolean
- *         description: Filtrar extintores que tengan o no codeNFC
+ *         description: Filtrar extintores que tengan o no codeExtintor
  *         example: true
  *
  *       - in: query
- *         name: hasSerialNumber
+ *         name: hasSerialNumberNFC
  *         required: false
  *         schema:
  *           type: boolean
- *         description: Filtrar extintores que tengan o no serialNumber
+ *         description: Filtrar extintores que tengan o no serialNumberNFC
  *         example: false
  *
  *     responses:
@@ -220,11 +220,11 @@ router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 't
  *                       id:
  *                         type: integer
  *                         example: 10
- *                       codeNFC:
+ *                       codeExtintor:
  *                         type: string
  *                         nullable: true
  *                         example: NFC123456
- *                       serialNumber:
+ *                       serialNumberNFC:
  *                         type: string
  *                         nullable: true
  *                         example: SN-987654
@@ -289,10 +289,10 @@ router.get('/extintores', authenticate, authorize(['admin', 'tecnico']), listExt
  *                       id:
  *                         type: integer
  *                         example: 15
- *                       codeNFC:
+ *                       codeExtintor:
  *                         type: string
  *                         example: NFC-987654
- *                       serialNumber:
+ *                       serialNumberNFC:
  *                         type: string
  *                         example: SN-789456
  *                       type:
@@ -406,7 +406,9 @@ router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecni
  *                   properties:
  *                     id:
  *                       type: integer
- *                     serialNumber:
+ *                     codeExtintor:
+ *                       type: string
+ *                     serialNumberNFC:
  *                       type: string
  *                     type:
  *                       type: string
@@ -450,7 +452,9 @@ router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisher
  *           schema:
  *             type: object
  *             properties:
- *               serialNumber:
+ *               codeExtintor:
+ *                 type: string
+ *               serialNumberNFC:
  *                 type: string
  *               type:
  *                 type: string

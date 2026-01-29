@@ -16,9 +16,9 @@ export const ListRepository = {
         });
     },
 
-    async findByNFC(codigoNFC) {
+    async findByCodeExtintor(codeExtintor) {
         return prisma.extintor.findUnique({
-            where: { codigoNFC },
+            where: { codeExtintor },
             include: {
                 usuarioCreador: {
                     select: {
@@ -32,12 +32,14 @@ export const ListRepository = {
         });
     },
 
-    async findBySerialNumber(searchTerm, sedeId = null) {
+    async findBySearchTerm(searchTerm, sedeId = null) {
         const where = {
-            serialNumber: searchTerm
+            OR: [
+                { serialNumberNFC: searchTerm },
+                { codeExtintor: searchTerm }
+            ]
         };
 
-        // Si se proporciona sedeId, filtrar también por sede
         if (sedeId !== null && sedeId !== undefined) {
             where.sedeId = Number(sedeId);
         }
@@ -140,8 +142,8 @@ export const ListRepository = {
     async listByExtintorNumber(sedeId = null) {
         const where = {
             OR: [
-                {serialNumber: null},
-                {serialNumber: ''}
+                { serialNumberNFC: null },
+                { serialNumberNFC: '' }
             ]
         };
         
@@ -189,33 +191,33 @@ export const ListRepository = {
     async listWithFilters(filters = {}) {
         const where = {};
 
-        if (filters.hasCodeNFC === true) {
+        if (filters.hasCodeExtintor === true) {
             where.AND = [
-                { codeNFC: { not: null } },
-                { codeNFC: { not: "" } }
+                { codeExtintor: { not: null } },
+                { codeExtintor: { not: "" } }
             ];
         }
 
-        if (filters.hasCodeNFC === false) {
+        if (filters.hasCodeExtintor === false) {
             where.OR = [
-                { codeNFC: null },
-                { codeNFC: "" }
+                { codeExtintor: null },
+                { codeExtintor: "" }
             ];
         }
 
-        if (filters.hasSerialNumber === true) {
+        if (filters.hasSerialNumberNFC === true) {
             where.AND = [
                 ...(where.AND || []),
-                { serialNumber: { not: null } },
-                { serialNumber: { not: "" } }
+                { serialNumberNFC: { not: null } },
+                { serialNumberNFC: { not: "" } }
             ];
         }
 
-        if (filters.hasSerialNumber === false) {
+        if (filters.hasSerialNumberNFC === false) {
             where.OR = [
                 ...(where.OR || []),
-                { serialNumber: null },
-                { serialNumber: "" }
+                { serialNumberNFC: null },
+                { serialNumberNFC: "" }
             ];
         }
 
