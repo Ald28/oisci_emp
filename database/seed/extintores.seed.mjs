@@ -16,8 +16,8 @@ export async function seedExtintores() {
 
     const extintores = [
         {
-            codeNFC: 'EXT-001',
-            serialNumber: 'SN123456',
+            codeExtintor: 'EXT-001',
+            serialNumberNFC: 'SN123456',
             type: 'Agua',
             capacity: '10L',
             agent: 'Agua',
@@ -28,8 +28,8 @@ export async function seedExtintores() {
             usuarioCreadorId: creador.id,
         },
         {
-            codeNFC: 'EXT-002',
-            serialNumber: 'SN123457',
+            codeExtintor: 'EXT-002',
+            serialNumberNFC: 'SN123457',
             type: 'CO2',
             capacity: '5L',
             agent: 'CO2',
