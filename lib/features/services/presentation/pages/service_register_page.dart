@@ -1424,8 +1424,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       if (extinguisher.cylinderNumber != null) {
         _numeroCilindroController.text = extinguisher.cylinderNumber!;
       }
-      if (extinguisher.type != null) {
+      // Tipo: solo asignar si está en la lista del dropdown (evita error si la BD tiene valor no listado, ej. insertado por SQL)
+      if (extinguisher.type != null &&
+          ExtinguisherTypes.types.contains(extinguisher.type)) {
         _tipo = extinguisher.type;
+      } else if (extinguisher.type != null) {
+        _tipo = null;
+        // Valor no está en el desplegable; el usuario puede elegir un tipo válido
       }
       if (extinguisher.agent != null) {
         _agente = extinguisher.agent;
@@ -1434,8 +1439,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       if (extinguisher.capacity != null) {
         _capacidadController.text = extinguisher.capacity!;
       }
-      if (extinguisher.status != null) {
+      // Estado: solo asignar si es un valor del dropdown (OPERATIVO / INOPERATIVO)
+      const validStatuses = ['OPERATIVO', 'INOPERATIVO'];
+      if (extinguisher.status != null &&
+          validStatuses.contains(extinguisher.status)) {
         _estado = extinguisher.status;
+      } else if (extinguisher.status != null) {
+        _estado = null;
       }
       if (extinguisher.pressure != null) {
         _pressureController.text = extinguisher.pressure!;
