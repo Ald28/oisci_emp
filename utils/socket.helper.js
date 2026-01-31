@@ -31,7 +31,8 @@ export function emitExtinguisherChange(type, extinguisher) {
     type, // 'created', 'updated', 'deleted'
     extinguisher: {
       id: extinguisher.id,
-      serialNumber: extinguisher.serialNumber,
+      codeExtintor: extinguisher.codeExtintor,
+      serialNumberNFC: extinguisher.serialNumberNFC,
       type: extinguisher.type,
       status: extinguisher.status,
       updatedAt: extinguisher.updatedAt,

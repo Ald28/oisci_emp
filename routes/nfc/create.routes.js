@@ -91,7 +91,7 @@ const router = Router();
  *                     id:
  *                       type: integer
  *                       example: 1
- *                     codigoNFC:
+ *                     codeExtintor:
  *                       type: string
  *                       example: "NFC123456"
  *                     usuarioCreador:

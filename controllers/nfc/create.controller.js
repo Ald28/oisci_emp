@@ -16,7 +16,7 @@ export async function createExtintorController(req, res) {
         if (error.code === 'P2002') {
             return res.status(409).json({
                 ok: false,
-                message: 'El codeNFC ya existe'
+                message: 'El código de extintor o número de serie NFC ya existe'
             });
         }
 

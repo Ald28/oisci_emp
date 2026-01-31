@@ -5,13 +5,13 @@ export async function listNFCService() {
     return nfcList;
 }
 
-export async function getNFCByIdService(codigoNFC) {
-    const nfc = await ListRepository.findByNFC(codigoNFC);
+export async function getNFCByIdService(codeExtintor) {
+    const nfc = await ListRepository.findByCodeExtintor(codeExtintor);
     return nfc;
 }
 
 export async function searchExtinguisherService(searchTerm, sedeId = null) {
-    const extinguisher = await ListRepository.findBySerialNumber(searchTerm, sedeId);
+    const extinguisher = await ListRepository.findBySearchTerm(searchTerm, sedeId);
     return extinguisher;
 }
 
@@ -72,12 +72,12 @@ export async function updateExtinguisherService(extintorId, data) {
 export async function listExtintoresWithFiltersService(query) {
     const filters = {};
 
-    if (query.hasCodeNFC !== undefined) {
-        filters.hasCodeNFC = query.hasCodeNFC === 'true';
+    if (query.hasCodeExtintor !== undefined) {
+        filters.hasCodeExtintor = query.hasCodeExtintor === 'true';
     }
 
-    if (query.hasSerialNumber !== undefined) {
-        filters.hasSerialNumber = query.hasSerialNumber === 'true';
+    if (query.hasSerialNumberNFC !== undefined) {
+        filters.hasSerialNumberNFC = query.hasSerialNumberNFC === 'true';
     }
 
     return await ListRepository.listWithFilters(filters);

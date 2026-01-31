@@ -10,8 +10,11 @@ export async function createExtintorService(data, usuarioId) {
         ...rest
     } = data;
 
-    if (rest.codeNFC === "") {
-        rest.codeNFC = null;
+    if (rest.codeExtintor === "") {
+        rest.codeExtintor = null;
+    }
+    if (rest.serialNumberNFC === "") {
+        rest.serialNumberNFC = null;
     }
 
     const historic = status === "OPERATIVO" ? 0 : 1;
