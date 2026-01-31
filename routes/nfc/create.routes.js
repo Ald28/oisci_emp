@@ -20,10 +20,10 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               codeNFC:
+ *               codeExtintor:
  *                 type: string
  *                 example: "NFC123456"
- *               serialNumber:
+ *               serialNumberNFC:
  *                 type: string
  *                 example: "SERIE98765"
  *               type:
