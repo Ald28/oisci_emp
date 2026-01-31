@@ -26,6 +26,9 @@ import editMantenimiento from '../routes/mantenimientoD/edit.routes.js';
 
 import inspeccionRoutes from '../routes/inspeccionD/inspeccionDetalle.routes.js';
 
+import certificadoRoutes from '../routes/certificado/create.routes.js';
+import reporteRoutes from '../routes/reporte/inspeccion.routes.js';
+
 dotenv.config();
 
 const app = express();
@@ -92,5 +95,9 @@ app.use('/mantenimiento', mantenimientoRoutes);
 app.use('/mantenimiento', editMantenimiento);
 
 app.use('/inspeccion', inspeccionRoutes);
+
+app.use('/certificado', certificadoRoutes);
+
+app.use('/reporte', reporteRoutes);
 
 export default app;
