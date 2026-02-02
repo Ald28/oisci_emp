@@ -81,7 +81,7 @@ router.get('/en-proceso', authenticate, authorize(['tecnico']), ListController.g
  *       403:
  *         description: No autorizado
  */
-router.get('/:servicioId/extintores', authenticate, authorize(['tecnico']), ListController.listServicioExtintores)
+router.get('/:servicioId/extintores', ListController.listServicioExtintores)
 
 /**
  * @swagger
