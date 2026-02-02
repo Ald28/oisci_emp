@@ -41,7 +41,7 @@ export const ApprovedRepository = {
             where: { id: serviceId },
             data: {
                 statusValid: 'APROBADO',
-                status: 'FINALIZADO',
+                status: 'PRE_FINALIZADO',
                 usuarioActualizadorId: userId,
                 historic: comentario
             }

@@ -343,6 +343,7 @@ enum TypeService {
 
 enum ServiceStatus {
   EN_PROCESO
+  PRE_FINALIZADO
   FINALIZADO
 }
 

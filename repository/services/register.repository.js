@@ -67,7 +67,7 @@ export const ServiceRepository = {
         return prisma.servicio.update({
             where: { id: Number(servicioId) },
             data: {
-                status: 'FINALIZADO',
+                status: 'PRE_FINALIZADO',
                 dateEnd: new Date(),
                 usuarioActualizador: {
                     connect: { id: usuarioId }

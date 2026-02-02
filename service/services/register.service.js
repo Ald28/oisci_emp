@@ -59,8 +59,8 @@ export const ServiceService = {
             throw new Error('Servicio no encontrado')
         }
 
-        if (servicio.status === 'FINALIZADO') {
-            throw new Error('El servicio ya está finalizado')
+        if (servicio.status === 'PRE_FINALIZADO') {
+            throw new Error('El servicio ya está PRE_FINALIZADO')
         }
 
         const servicioFinalizado = await ServiceRepository.finalizeService(

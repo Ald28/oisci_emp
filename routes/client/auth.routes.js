@@ -7,7 +7,7 @@ const router = Router()
  * @swagger
  * /users/login:
  *   post:
- *     summary: Login de usuario
+ *     summary: Inicio de seccion de usuario
  *     tags: [Auth]
  *     requestBody:
  *       required: true

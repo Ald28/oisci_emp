@@ -34,7 +34,7 @@ export async function seedServicios() {
             dateStart: new Date('2024-01-02'),
             dateEnd: new Date('2024-01-02'),
             sincronizado: true,
-            status: 'FINALIZADO',
+            status: 'EN_PROCESO',
             statusValid: ServiceValid.APROBADO,
             historic: 'Inspección anual de extintores',
 

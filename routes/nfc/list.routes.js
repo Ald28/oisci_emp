@@ -162,7 +162,7 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/list-extintor-number', authenticate, authorize(['admin', 'user', 'tecnico']), listExtintorNumberController);
+router.get('/list-extintor-number', listExtintorNumberController);
 
 /**
  * @swagger
@@ -325,7 +325,7 @@ router.get('/extintores', authenticate, authorize(['admin', 'tecnico']), listExt
  *         description: Error interno del servidor
  */
 
-router.get('/ext-sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresBySedeController);
+router.get('/ext-sede/:sedeId', getExtintoresBySedeController);
 
 router.get('/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user', 'tecnico']), getExtintoresStatsBySedeController);
 
@@ -371,7 +371,7 @@ router.get('/extintores/sede/:sedeId', authenticate, authorize(['admin', 'user',
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/sync/incremental', authenticate, authorize(['admin', 'user', 'tecnico']), getExtinguishersUpdatedSinceController);
+router.get('/sync/incremental', getExtinguishersUpdatedSinceController);
 
 /**
  * @swagger
