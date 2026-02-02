@@ -190,7 +190,7 @@ class LocalServiceDataSource {
     await db.update(
       'servicio',
       {
-        'status': 'FINALIZADO',
+        'status': 'PRE_FINALIZADO',
         'dateEnd': now.toIso8601String(),
         'updatedAt': now.toIso8601String(),
       },
