@@ -78,12 +78,12 @@ export const ServiceEditService = {
     async confirmarServicio(serviceId, userId) {
         return prisma.$transaction(async (tx) => {
 
-            const pendientes =
+            /*const pendientes =
                 await ServiceEditRepository.contarExtintoresPendientes(tx, serviceId)
 
             if (pendientes > 0) {
                 throw new Error('No todos los extintores están completados')
-            }
+            }*/
 
             const result =
                 await ServiceEditRepository.confirmarServicio(tx, serviceId, userId)
