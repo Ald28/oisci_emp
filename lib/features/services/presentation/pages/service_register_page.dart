@@ -565,9 +565,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                           ),
                           // Mostrar opción de vincular solo cuando el usuario llegó por escaneo NFC
                           // (tiene número de serie de la tarjeta). Búsqueda manual es por código extintor.
-                          if (_sedeId != null &&
-                              widget.initialSerial != null &&
-                              widget.initialSerial!.isNotEmpty) ...[
+                          if (_sedeId != null)...[
                             const SizedBox(width: 8),
                             IconButton(
                               icon: _isLoadingExtinguishers

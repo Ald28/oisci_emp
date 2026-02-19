@@ -43,22 +43,22 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
     with SingleTickerProviderStateMixin {
   // Estado de los items del checklist (true/false)
   Map<String, bool> _checklistItems = {
-    'ACCESIBILIDAD': false,
-    'UBICACIÓN': false,
-    'INSTALACIÓN': false,
-    'INSTRUCCIONES': false,
-    'CLASIFICACIÓN': false,
-    'RECARGA': false,
-    'CERTIFICACIÓN': false,
-    'PRESIÓN': false,
-    'SEGURIDAD': false,
-    'ESTADO': false,
-    'CARGA': false,
-    'SOPORTE': false,
-    'ACTIVACIÓN': false,
-    'MANGUERA': false,
-    'BOQUILLA': false,
-    'ABRAZADERA': false,
+    'ACCESIBILIDAD': true,
+    'UBICACIÓN': true,
+    'INSTALACIÓN': true,
+    'INSTRUCCIONES': true,
+    'CLASIFICACIÓN': true,
+    'RECARGA': true,
+    'CERTIFICACIÓN': true,
+    'PRESIÓN': true,
+    'SEGURIDAD': true,
+    'ESTADO': true,
+    'CARGA': true,
+    'SOPORTE': true,
+    'ACTIVACIÓN': true,
+    'MANGUERA': true,
+    'BOQUILLA': true,
+    'ABRAZADERA': true,
   };
 
   // Estado de las fotos
