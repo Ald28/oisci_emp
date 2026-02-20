@@ -16,6 +16,7 @@ import sedeDeleteRoutes from '../routes/sede/delete.routes.js';
 
 import nfcListRoutes from '../routes/nfc/list.routes.js';
 import nfcCreateRoutes from '../routes/nfc/create.routes.js';
+import nfcEditRoutes from '../routes/nfc/edit.routes.js';
 
 import servicioCreateRoutes from '../routes/services/register.routes.js';
 import listServicioRoutes from '../routes/services/list.routes.js';
@@ -84,6 +85,7 @@ app.use('/sede', sedeDeleteRoutes);
 
 app.use('/nfc', nfcListRoutes);
 app.use('/nfc', nfcCreateRoutes);
+app.use('/nfc', nfcEditRoutes);
 
 app.use('/statistics', nfcListRoutes);
 app.use('/statistics', listServicioRoutes)
