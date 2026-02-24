@@ -30,6 +30,7 @@ import inspeccionRoutes from '../routes/inspeccionD/inspeccionDetalle.routes.js'
 
 import certificadoRoutes from '../routes/certificado/create.routes.js';
 import reporteRoutes from '../routes/reporte/inspeccion.routes.js';
+import reporteMensualRoutes from '../routes/reporte/inspeccionMensual.routes.js';
 
 dotenv.config();
 
@@ -103,5 +104,6 @@ app.use('/inspeccion', inspeccionRoutes);
 app.use('/certificado', certificadoRoutes);
 
 app.use('/reporte', reporteRoutes);
+app.use('/reporte', reporteMensualRoutes);
 
 export default app;

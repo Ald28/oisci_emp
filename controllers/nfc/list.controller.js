@@ -134,10 +134,23 @@ export async function getExtinguishersUpdatedSinceController(req, res) {
 export async function listExtintorNumberController(req, res) {
     try {
         const sedeId = req.query.sedeId ? Number(req.query.sedeId) : null;
-        const extintores = await listExtintorNumber(sedeId);
-        res.status(200).json({ ok: true, data: extintores });
+        const page = req.query.page ? Number(req.query.page) : null;
+        const limit = req.query.limit ? Number(req.query.limit) : null;
+
+        const extintores = await listExtintorNumber({ sedeId, page, limit });
+
+        res.status(200).json({
+            ok: true,
+            data: extintores,
+            pagination: page && limit ? {
+                page,
+                limit
+            } : null
+        });
+
     } catch (error) {
         res.status(500).json({
+            ok: false,
             message: "Error retrieving extintor list",
             error: error.message
         });

@@ -122,39 +122,89 @@ router.get('/search/:searchTerm', authenticate, authorize(['tecnico']), searchEx
  * @swagger
  * /nfc/list-nfc:
  *   get:
- *     summary: Listar todos los Extintores sin número de serie
+ *     summary: Listar Extintores sin número de serie (con paginación opcional)
  *     tags:
  *       - NFC
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: sedeId
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: ID de la sede para filtrar los extintores
+ *         example: 3
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Número de página (si se usa paginación)
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: Cantidad de registros por página
+ *         example: 10
  *     responses:
  *       200:
  *         description: Lista de Extintores sin número de serie
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   codeExtintor:
- *                     type: string
- *                     example: "NFC123456"
- *                   serialNumberNFC:
- *                     type: string
- *                     example: "SERIE98765"
- *                   tipo:
- *                     type: string
- *                     example: "Polvo Químico"
- *                   capacidad:
- *                     type: string
- *                     example: "5kg"
- *                   agente:
- *                     type: string
- *                     example: "ABC"
- *                   estado:
- *                     type: string
- *                     example: "OPERATIVO"
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       codeExtintor:
+ *                         type: string
+ *                         example: "NFC123456"
+ *                       serialNumberNFC:
+ *                         type: string
+ *                         example: ""
+ *                       tipo:
+ *                         type: string
+ *                         example: "Polvo Químico"
+ *                       capacidad:
+ *                         type: string
+ *                         example: "5kg"
+ *                       agente:
+ *                         type: string
+ *                         example: "ABC"
+ *                       estado:
+ *                         type: string
+ *                         example: "OPERATIVO"
+ *                       sede:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 3
+ *                           name_sede:
+ *                             type: string
+ *                             example: "Sede Principal"
+ *                 pagination:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
  *       401:
  *         description: No autenticado
  *       403:

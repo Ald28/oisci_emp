@@ -139,20 +139,20 @@ export const ListRepository = {
         })
     },
 
-    async listByExtintorNumber(sedeId = null) {
+    async listByExtintorNumber({ sedeId = null, page = null, limit = null }) {
+
         const where = {
             OR: [
                 { serialNumberNFC: null },
                 { serialNumberNFC: '' }
             ]
         };
-        
-        // Si se proporciona sedeId, filtrar también por sede
+
         if (sedeId !== null && sedeId !== undefined) {
             where.sedeId = Number(sedeId);
         }
-        
-        return prisma.extintor.findMany({
+
+        const queryOptions = {
             where,
             include: {
                 sede: {
@@ -165,7 +165,15 @@ export const ListRepository = {
             orderBy: {
                 id: 'asc'
             }
-        })
+        };
+
+        if (page && limit) {
+            const skip = (page - 1) * limit;
+            queryOptions.skip = skip;
+            queryOptions.take = Number(limit);
+        }
+
+        return prisma.extintor.findMany(queryOptions);
     },
     
     async updateExtintor(extintorId, data) {

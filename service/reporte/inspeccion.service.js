@@ -44,6 +44,14 @@ export const ReporteInspeccionService = {
 
                 estadoFinal: i.estadoFinal,
 
+                fotos: i.inspeccionDetalle
+                    ? {
+                        foto1Url: i.inspeccionDetalle.foto1Url,
+                        foto2Url: i.inspeccionDetalle.foto2Url,
+                        foto3Url: i.inspeccionDetalle.foto3Url
+                    }
+                    : null,
+
                 checklist: i.inspeccionDetalle
                     ? {
                         ubicacion: i.inspeccionDetalle.ubicacion,
@@ -64,7 +72,6 @@ export const ReporteInspeccionService = {
                     : null,
 
                 observaciones: i.inspeccionDetalle?.observaciones ?? null,
-
                 fechaHora: i.inspeccionDetalle?.createdAt ?? null
             }))
         }

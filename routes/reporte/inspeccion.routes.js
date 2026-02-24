@@ -120,4 +120,47 @@ router.get(
     ReporteInspeccionController.obtenerReporte
 )
 
+/**
+ * @swagger
+ * /reporte/inspeccion/{servicioId}/download:
+ *   get:
+ *     summary: Descargar certificado PDF de inspección
+ *     description: >
+ *       Genera y descarga el certificado en formato PDF con toda la
+ *       información de la inspección y fotografías de los equipos.
+ *     tags:
+ *       - Reporte Inspección
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: servicioId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 26
+ *     responses:
+ *       200:
+ *         description: PDF generado correctamente
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Sin permisos
+ *       404:
+ *         description: Servicio no encontrado
+ *       500:
+ *         description: Error interno al generar PDF
+ */
+router.get(
+    '/inspeccion/:servicioId/download',
+    authenticate,
+    authorize(['admin', 'tecnico']),
+    ReporteInspeccionController.descargarCertificado
+)
+
 export default router
