@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oisci_emp/features/services/presentation/pages/edit_extinguisher_page.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/service_type.dart';
@@ -29,6 +30,14 @@ class ServiceDataPage extends StatefulWidget {
 class _ServiceDataPageState extends State<ServiceDataPage> {
   bool _isLoading = false;
 
+  late Extinguisher _extinguisher;
+
+  @override
+  void initState() {
+    super.initState();
+    _extinguisher = widget.extinguisher;
+  }
+
   late final AddExtinguisherToServiceUseCase _addExtinguisherUseCase =
       AddExtinguisherToServiceUseCase(ServiceRepositoryImpl());
 
@@ -43,8 +52,8 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
       // Crear ServicioExtintor (Etapa 2)
       final serviceExtinguisher = await _addExtinguisherUseCase.call(
         servicioId: widget.servicioId,
-        extintorId: widget.extinguisher.id,
-        estadoInicial: widget.extinguisher.status, // OPERATIVO o INOPERATIVO
+        extintorId: _extinguisher.id,
+        estadoInicial: _extinguisher.status, // OPERATIVO o INOPERATIVO
         observaciones:
             null, // Se agregará después en la página de observaciones
       );
@@ -61,7 +70,7 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
           context,
           MaterialPageRoute(
             builder: (_) => MaintenanceChecklistPage(
-              extinguisher: widget.extinguisher,
+              extinguisher: _extinguisher,
               serviceType: widget.serviceType,
               servicioId: widget.servicioId,
               servicioExtintorId: serviceExtinguisher.id,
@@ -73,7 +82,7 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
           context,
           MaterialPageRoute(
             builder: (_) => InspectionChecklistPage(
-              extinguisher: widget.extinguisher,
+              extinguisher: _extinguisher,
               serviceType: widget.serviceType,
               servicioId: widget.servicioId,
               servicioExtintorId: serviceExtinguisher.id,
@@ -143,108 +152,127 @@ class _ServiceDataPageState extends State<ServiceDataPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.edit, size: 20, color: Colors.grey[600]),
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit,
+                            size: 20,
+                            color: Colors.grey[600],
+                          ),
+                          onPressed: () async {
+                            final updatedExtinguisher =
+                                await Navigator.push<Extinguisher>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EditExtinguisherPage(
+                                      extinguisher: _extinguisher,
+                                    ),
+                                  ),
+                                );
+
+                            if (updatedExtinguisher != null) {
+                              setState(() {
+                                _extinguisher = updatedExtinguisher;
+                              });
+                            }
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
                     // Campos de datos del extintor
-                    if (widget.extinguisher.codeExtintor != null &&
-                        widget.extinguisher.codeExtintor!.isNotEmpty)
+                    if (_extinguisher.codeExtintor != null &&
+                        _extinguisher.codeExtintor!.isNotEmpty)
                       _buildField(
                         'Código extintor',
-                        widget.extinguisher.codeExtintor!,
+                        _extinguisher.codeExtintor!,
                       ),
-                    if (widget.extinguisher.codeExtintor != null &&
-                        widget.extinguisher.codeExtintor!.isNotEmpty)
+                    if (_extinguisher.codeExtintor != null &&
+                        _extinguisher.codeExtintor!.isNotEmpty)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.serialNumberNFC != null)
+                    if (_extinguisher.serialNumberNFC != null)
                       _buildField(
                         'Nro. Serie NFC',
-                        widget.extinguisher.serialNumberNFC!,
+                        _extinguisher.serialNumberNFC!,
                       ),
-                    if (widget.extinguisher.serialNumberNFC != null)
+                    if (_extinguisher.serialNumberNFC != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.location != null)
-                      _buildField('Ubicación', widget.extinguisher.location!),
-                    if (widget.extinguisher.location != null)
+                    if (_extinguisher.location != null)
+                      _buildField('Ubicación', _extinguisher.location!),
+                    if (_extinguisher.location != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.cylinderNumber != null)
+                    if (_extinguisher.cylinderNumber != null)
                       _buildField(
                         'Nro. Cilindro',
-                        widget.extinguisher.cylinderNumber!,
+                        _extinguisher.cylinderNumber!,
                       ),
-                    if (widget.extinguisher.cylinderNumber != null)
+                    if (_extinguisher.cylinderNumber != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.type != null)
-                      _buildField('Tipo', widget.extinguisher.type!),
-                    if (widget.extinguisher.type != null)
+                    if (_extinguisher.type != null)
+                      _buildField('Tipo', _extinguisher.type!),
+                    if (_extinguisher.type != null) const SizedBox(height: 12),
+                    if (_extinguisher.agent != null)
+                      _buildField('Agente', _extinguisher.agent!),
+                    if (_extinguisher.agent != null) const SizedBox(height: 12),
+                    if (_extinguisher.capacity != null)
+                      _buildField('Capacidad', _extinguisher.capacity!),
+                    if (_extinguisher.capacity != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.agent != null)
-                      _buildField('Agente', widget.extinguisher.agent!),
-                    if (widget.extinguisher.agent != null)
+                    if (_extinguisher.status != null)
+                      _buildField('Estado', _extinguisher.status!),
+                    if (_extinguisher.status != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.capacity != null)
-                      _buildField('Capacidad', widget.extinguisher.capacity!),
-                    if (widget.extinguisher.capacity != null)
+                    if (_extinguisher.pressure != null)
+                      _buildField('Presión', _extinguisher.pressure!),
+                    if (_extinguisher.pressure != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.status != null)
-                      _buildField('Estado', widget.extinguisher.status!),
-                    if (widget.extinguisher.status != null)
+                    if (_extinguisher.brand != null)
+                      _buildField('Marca', _extinguisher.brand!),
+                    if (_extinguisher.brand != null) const SizedBox(height: 12),
+                    if (_extinguisher.model != null)
+                      _buildField('Modelo', _extinguisher.model!),
+                    if (_extinguisher.model != null) const SizedBox(height: 12),
+                    if (_extinguisher.rating != null)
+                      _buildField('Clasificación', _extinguisher.rating!),
+                    if (_extinguisher.rating != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.pressure != null)
-                      _buildField('Presión', widget.extinguisher.pressure!),
-                    if (widget.extinguisher.pressure != null)
-                      const SizedBox(height: 12),
-                    if (widget.extinguisher.brand != null)
-                      _buildField('Marca', widget.extinguisher.brand!),
-                    if (widget.extinguisher.brand != null)
-                      const SizedBox(height: 12),
-                    if (widget.extinguisher.model != null)
-                      _buildField('Modelo', widget.extinguisher.model!),
-                    if (widget.extinguisher.model != null)
-                      const SizedBox(height: 12),
-                    if (widget.extinguisher.rating != null)
-                      _buildField('Clasificación', widget.extinguisher.rating!),
-                    if (widget.extinguisher.rating != null)
-                      const SizedBox(height: 12),
-                    if (widget.extinguisher.yearManufacture != null)
+                    if (_extinguisher.yearManufacture != null)
                       _buildField(
                         'Año de Fabricación',
-                        widget.extinguisher.yearManufacture!,
+                        _extinguisher.yearManufacture!,
                       ),
-                    if (widget.extinguisher.yearManufacture != null)
+                    if (_extinguisher.yearManufacture != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.dateHydrostatic != null)
+                    if (_extinguisher.dateHydrostatic != null)
                       _buildField(
                         'Fecha Hidrostática',
-                        _formatDate(widget.extinguisher.dateHydrostatic),
+                        _formatDate(_extinguisher.dateHydrostatic),
                       ),
-                    if (widget.extinguisher.dateHydrostatic != null)
+                    if (_extinguisher.dateHydrostatic != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.dateMaintenance != null)
+                    if (_extinguisher.dateMaintenance != null)
                       _buildField(
                         'Fecha de Mantenimiento',
-                        _formatDate(widget.extinguisher.dateMaintenance),
+                        _formatDate(_extinguisher.dateMaintenance),
                       ),
-                    if (widget.extinguisher.dateMaintenance != null)
+                    if (_extinguisher.dateMaintenance != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.rechargeDate != null)
+                    if (_extinguisher.rechargeDate != null)
                       _buildField(
                         'Fecha de Recarga',
-                        _formatDate(widget.extinguisher.rechargeDate),
+                        _formatDate(_extinguisher.rechargeDate),
                       ),
-                    if (widget.extinguisher.rechargeDate != null)
+                    if (_extinguisher.rechargeDate != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.sedeName != null)
-                      _buildField('Sede', widget.extinguisher.sedeName!),
-                    if (widget.extinguisher.sedeName != null)
+                    if (_extinguisher.sedeName != null)
+                      _buildField('Sede', _extinguisher.sedeName!),
+                    if (_extinguisher.sedeName != null)
                       const SizedBox(height: 12),
-                    if (widget.extinguisher.createdAt != null)
+                    if (_extinguisher.createdAt != null)
                       _buildField(
                         'Fecha de Creación',
                         DateFormat(
                           'dd/MM/yyyy',
-                        ).format(widget.extinguisher.createdAt!),
+                        ).format(_extinguisher.createdAt!),
                       ),
                     const SizedBox(height: 32),
                     // Botón Agregar extintor y continuar
