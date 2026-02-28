@@ -82,7 +82,11 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
 
   // Estado de las fotos
   int _selectedPhotoTab = 0;
-  final List<File?> _photos = [null, null, null]; // Para modo online (File)
+  final List<File?> _photos = [
+    null,
+    null,
+    null,
+  ]; // Para modo online (File)
   final List<String?> _photoPaths = [
     null,
     null,
@@ -159,11 +163,13 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
         String? foto1Path;
         String? foto2Path;
         String? foto3Path;
+        String? foto4Path;
 
         if (result.isNotEmpty) {
           foto1Path = result.first['foto1Path'] as String?;
           foto2Path = result.first['foto2Path'] as String?;
           foto3Path = result.first['foto3Path'] as String?;
+          foto4Path = result.first['foto4Path'] as String?;
         }
 
         // Verificar conexión a internet para decidir qué mostrar
@@ -244,7 +250,29 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
             _photoPaths[2] = null;
             _photos[2] = null;
           }
+
+          if (hasInternet &&
+              existingDetail.foto4Url != null &&
+              existingDetail.foto4Url!.isNotEmpty) {
+            _photoUrls[3] = existingDetail.foto4Url;
+            _photoPaths[3] = null;
+            _photos[3] = null;
+          } else if (foto4Path != null && File(foto4Path).existsSync()) {
+            _photoPaths[3] = foto4Path;
+            _photos[3] = File(foto4Path);
+            _photoUrls[3] = null;
+          } else {
+            _photoUrls[3] = existingDetail.foto4Url;
+            _photoPaths[3] = null;
+            _photos[3] = null;
+          }
         });
+        print('🔍 Fotos cargadas al iniciar:');
+        for (int i = 0; i < 4; i++) {
+          print(
+            'Foto $i -> File: ${_photos[i]?.path}, Path: ${_photoPaths[i]}, URL: ${_photoUrls[i]}',
+          );
+        }
       }
     } catch (e) {
       // Si hay error, continuar sin cargar datos (modo creación)
@@ -281,18 +309,18 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
       final hasInternet = await InternetConnectionChecker().hasConnection;
 
       if (hasInternet) {
-        // Modo online: guardar File en memoria
         setState(() {
           _photos[index] = File(image.path);
-          _photoPaths[index] = null; // Limpiar path si existe
+          _photoPaths[index] = null;
         });
+        print(
+          '📸 Foto $index seleccionada en memoria: ${_photos[index]?.path}',
+        );
       } else {
-        // Modo offline: guardar archivo localmente
         final appDir = await getApplicationDocumentsDirectory();
         final inspectionDir = Directory(path.join(appDir.path, 'inspecciones'));
-        if (!await inspectionDir.exists()) {
+        if (!await inspectionDir.exists())
           await inspectionDir.create(recursive: true);
-        }
 
         final fileName =
             '${widget.servicioExtintorId}_foto${index + 1}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -301,17 +329,12 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
 
         setState(() {
           _photoPaths[index] = savedFile.path;
-          _photos[index] = null; // Limpiar File si existe
+          _photos[index] = null;
         });
+        print('📸 Foto $index guardada localmente: ${_photoPaths[index]}');
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al seleccionar foto: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('❌ Error al seleccionar foto $index: $e');
     }
   }
 
@@ -323,8 +346,6 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
     });
 
     try {
-      // Mapear los datos del checklist al formato del backend
-      // Convertir booleanos a 'SI'/'NO': true -> 'SI', false -> 'NO'
       final inspectionData = <String, dynamic>{
         'accesibilidad': _checklistItems['ACCESIBILIDAD'] == true ? 'SI' : 'NO',
         'ubicacion': _checklistItems['UBICACION'] == true ? 'SI' : 'NO',
@@ -349,34 +370,47 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
       // Agregar fotos según el modo (online/offline)
       final hasInternet = await InternetConnectionChecker().hasConnection;
       if (hasInternet) {
-        // Modo online: incluir Files en inspectionData
         inspectionData['foto1'] = _photos[0];
         inspectionData['foto2'] = _photos[1];
         inspectionData['foto3'] = _photos[2];
+        print(
+          '🌐 Modo online, fotos enviadas: '
+          '${inspectionData['foto1']?.path}, '
+          '${inspectionData['foto2']?.path}, '
+          '${inspectionData['foto3']?.path}',
+        );
       } else {
-        // Modo offline: incluir paths locales
         inspectionData['foto1Path'] = _photoPaths[0];
         inspectionData['foto2Path'] = _photoPaths[1];
         inspectionData['foto3Path'] = _photoPaths[2];
-        // Mantener URLs existentes si no hay nuevas fotos
         inspectionData['foto1Url'] = _photoUrls[0];
         inspectionData['foto2Url'] = _photoUrls[1];
         inspectionData['foto3Url'] = _photoUrls[2];
+        print(
+          '📴 Modo offline, fotos enviadas: '
+          '${inspectionData['foto1Path']}, '
+          '${inspectionData['foto2Path']}, '
+          '${inspectionData['foto3Path']} '
+          'y URLs: '
+          '${inspectionData['foto1Url']}, '
+          '${inspectionData['foto2Url']}, '
+          '${inspectionData['foto3Url']}',
+        );
       }
 
-      // Crear o actualizar InspeccionDetalle según corresponda
+      // Llamada al usecase
       if (_hasExistingInspection) {
-        // Actualizar InspeccionDetalle existente
         await _updateInspectionDetailUseCase.call(
           servicioExtintorId: widget.servicioExtintorId,
           inspectionData: inspectionData,
         );
+        print('✅ Inspección actualizada');
       } else {
-        // Crear nuevo InspeccionDetalle
         await _createInspectionDetailUseCase.call(
           servicioExtintorId: widget.servicioExtintorId,
           inspectionData: inspectionData,
         );
+        print('✅ Inspección creada');
       }
 
       if (!mounted) return;
@@ -402,20 +436,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
         ),
       );
     } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error al ${_hasExistingInspection ? 'actualizar' : 'crear'} detalle de inspección: ${e.toString()}',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('❌ Error al enviar inspección: $e');
     }
   }
 
@@ -543,7 +564,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
                           ],
                         ),
                         // Preview de foto seleccionada
-                        if (_selectedPhotoTab >= 0 && _selectedPhotoTab < 3)
+                        if (_selectedPhotoTab >= 0 && _selectedPhotoTab < 4)
                           _buildPhotoPreview(_selectedPhotoTab),
                       ],
                     ),

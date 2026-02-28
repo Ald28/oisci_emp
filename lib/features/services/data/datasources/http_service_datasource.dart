@@ -332,79 +332,71 @@ class HttpServiceDataSource {
     required Map<String, dynamic> data,
   }) async {
     try {
-      // Separar fotos (File) del resto de datos
-      final File? foto1 = data.remove('foto1') as File?;
-      final File? foto2 = data.remove('foto2') as File?;
-      final File? foto3 = data.remove('foto3') as File?;
+      final Map<String, dynamic> requestData = Map.from(data);
 
-      // Crear FormData para multipart
       final formData = FormData();
 
-      // Agregar servicioExtintorId
-      formData.fields.add(
-        MapEntry('servicioExtintorId', servicioExtintorId.toString()),
-      );
+      // 🔥 Extraer fotos soportando File o Path
+      final List<File?> fotos = [];
 
-      // Agregar fotos si existen
-      if (foto1 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto1',
-            await MultipartFile.fromFile(foto1.path, filename: 'foto1.jpg'),
-          ),
-        );
-      }
-      if (foto2 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto2',
-            await MultipartFile.fromFile(foto2.path, filename: 'foto2.jpg'),
-          ),
-        );
-      }
-      if (foto3 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto3',
-            await MultipartFile.fromFile(foto3.path, filename: 'foto3.jpg'),
-          ),
-        );
+      for (int i = 1; i <= 4; i++) {
+        final fileKey = 'foto$i';
+        final pathKey = 'foto${i}Path';
+
+        File? file;
+
+        if (requestData[fileKey] is File) {
+          file = requestData.remove(fileKey) as File;
+        } else if (requestData[pathKey] != null) {
+          file = File(requestData.remove(pathKey));
+        }
+
+        fotos.add(file);
       }
 
-      // Agregar datos del checklist como JSON stringificado
-      formData.fields.add(MapEntry('data', jsonEncode(data)));
+      print('📸 Fotos reconstruidas: ${fotos.map((f) => f?.path)}');
 
-      // Usar timeout extendido para peticiones con imágenes
+      // Agregar checklist JSON
+      formData.fields.add(MapEntry('data', jsonEncode(requestData)));
+
+      // Agregar archivos
+      for (int i = 0; i < fotos.length; i++) {
+        if (fotos[i] != null && await fotos[i]!.exists()) {
+          formData.files.add(
+            MapEntry(
+              'foto${i + 1}',
+              await MultipartFile.fromFile(
+                fotos[i]!.path,
+                filename: 'foto${i + 1}.jpg',
+              ),
+            ),
+          );
+          print('✅ Agregada foto${i + 1}: ${fotos[i]!.path}');
+        }
+      }
+
       final response = await _dio.post(
         '/inspeccion/services/extintores/$servicioExtintorId/inspeccion',
         data: formData,
         options: Options(
-          receiveTimeout: const Duration(
-            seconds: 120,
-          ), // 2 minutos para subir imágenes
-          sendTimeout: const Duration(
-            seconds: 120,
-          ), // 2 minutos para enviar imágenes
+          receiveTimeout: Duration(seconds: 120),
+          sendTimeout: Duration(seconds: 120),
         ),
       );
+
       final responseData = response.data as Map<String, dynamic>;
 
-      // El backend retorna: { data: ... }
       if (responseData['data'] != null) {
         return InspectionDetailModel.fromJson(
           responseData['data'] as Map<String, dynamic>,
         );
       }
 
-      throw Exception(
-        'Error al crear detalle de inspección: ${responseData['message'] ?? 'Error desconocido'}',
-      );
+      throw Exception(responseData['message'] ?? 'Error al crear detalle');
     } on DioException catch (e) {
       if (e.response != null) {
         final errorData = e.response!.data as Map<String, dynamic>?;
-        throw Exception(
-          errorData?['message'] ?? 'Error al crear detalle de inspección',
-        );
+        throw Exception(errorData?['message'] ?? 'Error al crear detalle');
       }
       rethrow;
     }
@@ -449,74 +441,72 @@ class HttpServiceDataSource {
     required Map<String, dynamic> data,
   }) async {
     try {
-      // Separar fotos (File) del resto de datos
-      final File? foto1 = data.remove('foto1') as File?;
-      final File? foto2 = data.remove('foto2') as File?;
-      final File? foto3 = data.remove('foto3') as File?;
+      print('================= UPDATE INSPECTION DEBUG =================');
+      print('🆔 servicioExtintorId: $servicioExtintorId');
+      print('📦 DATA ORIGINAL: $data');
 
-      // Crear FormData para multipart
+      final Map<String, dynamic> requestData = Map.from(data);
       final formData = FormData();
 
-      // Agregar fotos si existen
-      if (foto1 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto1',
-            await MultipartFile.fromFile(foto1.path, filename: 'foto1.jpg'),
-          ),
-        );
-      }
-      if (foto2 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto2',
-            await MultipartFile.fromFile(foto2.path, filename: 'foto2.jpg'),
-          ),
-        );
-      }
-      if (foto3 != null) {
-        formData.files.add(
-          MapEntry(
-            'foto3',
-            await MultipartFile.fromFile(foto3.path, filename: 'foto3.jpg'),
-          ),
-        );
+      final List<File?> fotos = [];
+
+      for (int i = 1; i <= 4; i++) {
+        final fileKey = 'foto$i';
+        final pathKey = 'foto${i}Path';
+
+        File? file;
+
+        if (requestData[fileKey] is File) {
+          file = requestData.remove(fileKey) as File;
+        } else if (requestData[pathKey] != null) {
+          file = File(requestData.remove(pathKey));
+        }
+
+        fotos.add(file);
       }
 
-      // Agregar datos del checklist como JSON stringificado
-      formData.fields.add(MapEntry('data', jsonEncode(data)));
+      print('📸 Fotos reconstruidas UPDATE: ${fotos.map((f) => f?.path)}');
+      print('📦 DATA SIN FOTOS: $requestData');
 
-      // Usar timeout extendido para peticiones con imágenes
+      for (int i = 0; i < fotos.length; i++) {
+        if (fotos[i] != null && await fotos[i]!.exists()) {
+          formData.files.add(
+            MapEntry(
+              'foto${i + 1}',
+              await MultipartFile.fromFile(
+                fotos[i]!.path,
+                filename: 'foto${i + 1}.jpg',
+              ),
+            ),
+          );
+          print('✅ UPDATE agregada foto${i + 1}: ${fotos[i]!.path}');
+        }
+      }
+
+      formData.fields.add(MapEntry('data', jsonEncode(requestData)));
+
       final response = await _dio.put(
         '/inspeccion/extintores/$servicioExtintorId/inspeccion',
         data: formData,
         options: Options(
-          receiveTimeout: const Duration(
-            seconds: 120,
-          ), // 2 minutos para subir imágenes
-          sendTimeout: const Duration(
-            seconds: 120,
-          ), // 2 minutos para enviar imágenes
+          receiveTimeout: Duration(seconds: 120),
+          sendTimeout: Duration(seconds: 120),
         ),
       );
+
       final responseData = response.data as Map<String, dynamic>;
 
-      // El backend retorna: { data: ... }
       if (responseData['data'] != null) {
         return InspectionDetailModel.fromJson(
           responseData['data'] as Map<String, dynamic>,
         );
       }
 
-      throw Exception(
-        'Error al actualizar detalle de inspección: ${responseData['message'] ?? 'Error desconocido'}',
-      );
+      throw Exception(responseData['message'] ?? 'Error al actualizar detalle');
     } on DioException catch (e) {
       if (e.response != null) {
         final errorData = e.response!.data as Map<String, dynamic>?;
-        throw Exception(
-          errorData?['message'] ?? 'Error al actualizar detalle de inspección',
-        );
+        throw Exception(errorData?['message'] ?? 'Error al actualizar detalle');
       }
       rethrow;
     }
@@ -560,8 +550,11 @@ class HttpServiceDataSource {
       if (responseData['data'] != null) {
         final List<dynamic> dataList = responseData['data'] as List<dynamic>;
         return dataList
-            .map((json) => ServiceWithDetailsModel.fromJson(
-                json as Map<String, dynamic>))
+            .map(
+              (json) => ServiceWithDetailsModel.fromJson(
+                json as Map<String, dynamic>,
+              ),
+            )
             .toList();
       }
 
@@ -578,7 +571,8 @@ class HttpServiceDataSource {
   /// GET /services/sync/incremental?since=2026-01-22T10:00:00Z
   /// Retorna solo servicios modificados desde el timestamp proporcionado
   Future<List<ServiceWithDetailsModel>> getServicesUpdatedSince(
-      String since) async {
+    String since,
+  ) async {
     try {
       final response = await _dio.get(
         '/services/sync/incremental',
@@ -590,8 +584,11 @@ class HttpServiceDataSource {
       if (responseData['data'] != null) {
         final List<dynamic> dataList = responseData['data'] as List<dynamic>;
         return dataList
-            .map((json) => ServiceWithDetailsModel.fromJson(
-                json as Map<String, dynamic>))
+            .map(
+              (json) => ServiceWithDetailsModel.fromJson(
+                json as Map<String, dynamic>,
+              ),
+            )
             .toList();
       }
 
@@ -656,9 +653,13 @@ class ServiceWithDetailsModel {
       usuarioActualizadorId: json['usuarioActualizadorId'] as int?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      servicioExtintores: (json['servicioExtintores'] as List<dynamic>?)
-              ?.map((se) => ServiceExtinguisherWithDetailsModel.fromJson(
-                  se as Map<String, dynamic>))
+      servicioExtintores:
+          (json['servicioExtintores'] as List<dynamic>?)
+              ?.map(
+                (se) => ServiceExtinguisherWithDetailsModel.fromJson(
+                  se as Map<String, dynamic>,
+                ),
+              )
               .toList() ??
           [],
     );
@@ -698,7 +699,8 @@ class ServiceExtinguisherWithDetailsModel {
   });
 
   factory ServiceExtinguisherWithDetailsModel.fromJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     return ServiceExtinguisherWithDetailsModel(
       id: json['id'] as int,
       servicioId: json['servicioId'] as int,
@@ -713,11 +715,13 @@ class ServiceExtinguisherWithDetailsModel {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       mantenimientoDetalle: json['mantenimientoDetalle'] != null
           ? MaintenanceDetailModel.fromJson(
-              json['mantenimientoDetalle'] as Map<String, dynamic>)
+              json['mantenimientoDetalle'] as Map<String, dynamic>,
+            )
           : null,
       inspeccionDetalle: json['inspeccionDetalle'] != null
           ? InspectionDetailModel.fromJson(
-              json['inspeccionDetalle'] as Map<String, dynamic>)
+              json['inspeccionDetalle'] as Map<String, dynamic>,
+            )
           : null,
     );
   }

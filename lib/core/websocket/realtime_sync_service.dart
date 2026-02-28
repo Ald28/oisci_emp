@@ -10,11 +10,13 @@ import '../sync/incremental_sync_service.dart';
 class RealtimeSyncService {
   io.Socket? _socket;
   final IncrementalSyncService _incrementalSyncService;
+  final VoidCallback? onConnected;
   bool _isConnected = false;
   bool _isConnecting = false;
 
   RealtimeSyncService({
     IncrementalSyncService? incrementalSyncService,
+    this.onConnected,
   }) : _incrementalSyncService = incrementalSyncService ?? IncrementalSyncService();
 
   /// Conectar al servidor WebSocket
@@ -59,6 +61,7 @@ class RealtimeSyncService {
         _isConnected = true;
         _isConnecting = false;
         debugPrint('🔌 WebSocket conectado');
+        onConnected?.call();
       });
 
       _socket!.onDisconnect((_) {

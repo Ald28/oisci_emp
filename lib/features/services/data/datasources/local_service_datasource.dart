@@ -763,9 +763,11 @@ class LocalServiceDataSource {
       'foto1Url': inspectionData['foto1Url'] as String?,
       'foto2Url': inspectionData['foto2Url'] as String?,
       'foto3Url': inspectionData['foto3Url'] as String?,
+      'foto4Url': inspectionData['foto4Url'] as String?,
       'foto1Path': inspectionData['foto1Path'] as String?,
       'foto2Path': inspectionData['foto2Path'] as String?,
       'foto3Path': inspectionData['foto3Path'] as String?,
+      'foto4Path': inspectionData['foto4Path'] as String?,
       'accesibilidad': inspectionData['accesibilidad'] as String?,
       'observaciones': inspectionData['observaciones'] as String?,
       'ubicacion': inspectionData['ubicacion'] as String?,
@@ -822,6 +824,13 @@ class LocalServiceDataSource {
       foto1Url: inspectionData['foto1Url'] as String?,
       foto2Url: inspectionData['foto2Url'] as String?,
       foto3Url: inspectionData['foto3Url'] as String?,
+      foto4Url: inspectionData['foto4Url'] as String?,
+
+      foto1Path: inspectionData['foto1Path'] as String?,
+      foto2Path: inspectionData['foto2Path'] as String?,
+      foto3Path: inspectionData['foto3Path'] as String?,
+      foto4Path: inspectionData['foto4Path'] as String?,
+      
       accesibilidad: inspectionData['accesibilidad'] as String?,
       observaciones: inspectionData['observaciones'] as String?,
       ubicacion: inspectionData['ubicacion'] as String?,
@@ -892,9 +901,11 @@ class LocalServiceDataSource {
         'foto1Url': inspectionData['foto1Url'] as String?,
         'foto2Url': inspectionData['foto2Url'] as String?,
         'foto3Url': inspectionData['foto3Url'] as String?,
+        'foto4Url': inspectionData['foto4Url'] as String?,
         'foto1Path': inspectionData['foto1Path'] as String?,
         'foto2Path': inspectionData['foto2Path'] as String?,
         'foto3Path': inspectionData['foto3Path'] as String?,
+        'foto4Path': inspectionData['foto4Path'] as String?,
         'accesibilidad': inspectionData['accesibilidad'] as String?,
         'observaciones': inspectionData['observaciones'] as String?,
         'ubicacion': inspectionData['ubicacion'] as String?,
@@ -974,11 +985,13 @@ class LocalServiceDataSource {
     String? foto1Path;
     String? foto2Path;
     String? foto3Path;
+    String? foto4Path;
 
     if (existing.isNotEmpty) {
       foto1Path = existing.first['foto1Path'] as String?;
       foto2Path = existing.first['foto2Path'] as String?;
       foto3Path = existing.first['foto3Path'] as String?;
+      foto4Path = existing.first['foto4Path'] as String?;
     }
 
     final map = inspectionDetail.toMap();
@@ -993,11 +1006,15 @@ class LocalServiceDataSource {
     if (foto3Path != null && inspectionDetail.foto3Url == null) {
       map['foto3Path'] = foto3Path;
     }
+    if (foto4Path != null && inspectionDetail.foto4Url == null) {
+      map['foto4Path'] = foto4Path;
+    }
 
     // Asegurar que las URLs se guarden correctamente
     map['foto1Url'] = inspectionDetail.foto1Url;
     map['foto2Url'] = inspectionDetail.foto2Url;
     map['foto3Url'] = inspectionDetail.foto3Url;
+    map['foto4Url'] = inspectionDetail.foto4Url;
 
     await db.insert(
       'inspeccion_detalle',

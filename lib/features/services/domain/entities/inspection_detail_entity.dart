@@ -6,11 +6,13 @@ class InspectionDetailEntity {
   final String? foto1Url;
   final String? foto2Url;
   final String? foto3Url;
+  final String? foto4Url;
 
   /// Paths locales para modo offline (no vienen del backend)
   final String? foto1Path;
   final String? foto2Path;
   final String? foto3Path;
+  final String? foto4Path;
   final String? accesibilidad;
   final String? observaciones;
   final String? ubicacion;
@@ -39,9 +41,11 @@ class InspectionDetailEntity {
     this.foto1Url,
     this.foto2Url,
     this.foto3Url,
+    this.foto4Url,
     this.foto1Path,
     this.foto2Path,
     this.foto3Path,
+    this.foto4Path,
     this.accesibilidad,
     this.observaciones,
     this.ubicacion,

@@ -19,7 +19,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 11, // Versión 11: codeExtintor y serialNumberNFC
+      version: 13, // Versión 11: codeExtintor y serialNumberNFC, 12: foto4Url, 13: foto4Path
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -223,9 +223,11 @@ class AppDatabase {
         foto1Url TEXT,
         foto2Url TEXT,
         foto3Url TEXT,
+        foto4Url TEXT,
         foto1Path TEXT,
         foto2Path TEXT,
         foto3Path TEXT,
+        foto4Path TEXT,
         accesibilidad TEXT,
         observaciones TEXT,
         ubicacion TEXT,
@@ -408,6 +410,7 @@ class AppDatabase {
           foto1Url TEXT,
           foto2Url TEXT,
           foto3Url TEXT,
+          foto4Url TEXT,
           visibilidad TEXT,
           visualizacion TEXT,
           accesibilidad TEXT,
@@ -749,6 +752,22 @@ class AppDatabase {
         );
       } catch (e) {
         // Ignorar si la tabla no tenía la columna legacy (instalación nueva)
+      }
+    }
+
+    if (oldVersion < 12) {
+      await db.execute(
+        'ALTER TABLE inspeccion_detalle ADD COLUMN foto4Url TEXT',
+      );
+    }
+
+    if (oldVersion < 13) {
+      try {
+        await db.execute(
+          'ALTER TABLE inspeccion_detalle ADD COLUMN foto4Path TEXT',
+        );
+      } catch (e) {
+        // Ignorar si ya existe
       }
     }
   }

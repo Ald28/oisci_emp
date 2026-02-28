@@ -7,6 +7,8 @@ import 'sync_progress_controller.dart';
 import 'incremental_sync_service.dart';
 import '../websocket/realtime_sync_service.dart';
 import '../notifications/notification_service.dart';
+import 'package:flutter/material.dart';
+import '../../app.dart';
 
 /// Servicio para monitorear conectividad y sincronizar automáticamente
 class ConnectivitySyncService {
@@ -14,10 +16,16 @@ class ConnectivitySyncService {
   final SyncService _syncService = SyncService();
   final ServiceSyncService _serviceSyncService = ServiceSyncService();
   final IncrementalSyncService _incrementalSyncService = IncrementalSyncService();
-  final RealtimeSyncService _realtimeSyncService = RealtimeSyncService();
+  late final RealtimeSyncService _realtimeSyncService;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _periodicSyncTimer;
   bool _isSyncing = false;
+
+  ConnectivitySyncService() {
+    _realtimeSyncService = RealtimeSyncService(
+      onConnected: _syncWhenConnected,
+    );
+  }
   bool _isSyncingServices = false;
   DateTime? _lastSyncTime;
   static const Duration _syncCooldown = Duration(
@@ -134,8 +142,12 @@ class ConnectivitySyncService {
 
   /// Sincronizar extintores pendientes
   Future<void> _syncExtinguishers() async {
+    if (_isSyncing) return;
+
     _isSyncing = true;
     _lastSyncTime = DateTime.now();
+
+    await Future.delayed(const Duration(milliseconds: 600));
 
     // Obtener cantidad de pendientes para la notificación
     final pendingCount = await _syncService.getPendingCount();
@@ -159,6 +171,17 @@ class ConnectivitySyncService {
       'total': pendingCount,
       'synced': 0,
     });
+
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sincronizando extintores pendientes automáticamente...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
 
     try {
       // Sincronizar con progreso
@@ -197,6 +220,16 @@ class ConnectivitySyncService {
           'Sincronización completada',
           'Todos los extintores se han subido exitosamente',
         );
+
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Extintores sincronizados automáticamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         await NotificationService.show(
           'Sincronización parcial',
@@ -251,6 +284,17 @@ class ConnectivitySyncService {
       'synced': 0,
     });
 
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sincronizando información offline automáticamente...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
     try {
       // Sincronizar con progreso
       await for (final progress
@@ -288,6 +332,16 @@ class ConnectivitySyncService {
           'Sincronización completada',
           'Todos los servicios se han subido exitosamente',
         );
+
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sincronización automática completada exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         await NotificationService.show(
           'Sincronización parcial',

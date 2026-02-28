@@ -221,7 +221,7 @@ class SyncService {
         // Actualizar progreso
         yield {
           'step': 'Sincronizando registro ${i + 1} de $totalItems...',
-          'progress': (i / totalItems),
+          'progress': ((i + 1) / totalItems),
           'total': totalItems,
           'synced': syncedCount,
         };

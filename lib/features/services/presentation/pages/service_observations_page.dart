@@ -1,4 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:oisci_emp/features/services/domain/usecases/update_inspection_detail_usecase.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/secondary_button.dart';
@@ -44,11 +51,12 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
   final _observationsController = TextEditingController();
   bool _isSaving = false;
   bool _isLoading = true;
+  File? _photo4File;
+  String? _photo4Path;
+  String? _photo4Url;
 
-  late final UpdateServiceExtinguisherObservationsUseCase
-  _updateObservationsUseCase = UpdateServiceExtinguisherObservationsUseCase(
-    ServiceRepositoryImpl(),
-  );
+  late final UpdateInspectionDetailUseCase _updateObservationsUseCase =
+      UpdateInspectionDetailUseCase(ServiceRepositoryImpl());
   late final ServiceRepositoryImpl _repository = ServiceRepositoryImpl();
 
   @override
@@ -94,6 +102,28 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
           serviceExtinguisher.observaciones!.isNotEmpty) {
         _observationsController.text = serviceExtinguisher.observaciones!;
       }
+
+      // Cargar foto4 si existe en el detalle de inspección
+      final existingDetail = await _repository
+          .getInspectionDetailByServiceExtinguisherId(
+            serviceExtinguisher.id,
+          );
+
+      if (existingDetail != null) {
+        _photo4Path = existingDetail.foto4Path;
+        _photo4Url = existingDetail.foto4Url;
+        
+        if (_photo4Path != null && _photo4Path!.isNotEmpty) {
+           _photo4File = File(_photo4Path!);
+           if (!_photo4File!.existsSync()) {
+              _photo4File = null;
+           }
+        }
+      }
+      print('🔍 Observaciones cargadas: ${_observationsController.text}');
+      print(
+        '🔍 Foto4 cargada -> File: $_photo4File, Path: $_photo4Path, URL: $_photo4Url',
+      );
     } catch (e) {
       // Si hay error, continuar sin cargar observaciones
     } finally {
@@ -105,39 +135,145 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
     }
   }
 
-  Future<void> _saveObservations() async {
-    if (_isSaving) return;
+  Future<void> _selectPhoto4() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
 
-    // Solo guardar si hay texto en las observaciones
-    final observacionesText = _observationsController.text.trim();
-    if (observacionesText.isEmpty) {
-      // Si no hay texto, no hacer nada (no registrar observaciones vacías)
-      return;
+    if (image == null) return;
+
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    print('🌐 Tiene internet: $hasInternet');
+
+    if (hasInternet) {
+      setState(() {
+        _photo4File = File(image.path);
+        _photo4Path = null;
+      });
+      print('📸 Foto 4 seleccionada en memoria: ${_photo4File?.path}');
+    } else {
+      final appDir = await getApplicationDocumentsDirectory();
+      final inspectionDir = Directory(path.join(appDir.path, 'inspecciones'));
+      if (!await inspectionDir.exists()) {
+        await inspectionDir.create(recursive: true);
+      }
+
+      final fileName =
+          '${widget.servicioExtintorId}_foto4_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedFile = File(path.join(inspectionDir.path, fileName));
+      await File(image.path).copy(savedFile.path);
+
+      setState(() {
+        _photo4Path = savedFile.path;
+        _photo4File = null;
+      });
+
+      print('📸 Foto 4 guardada localmente: $_photo4Path');
     }
+  }
 
-    setState(() {
-      _isSaving = true;
-    });
+  Future<void> _saveObservations() async {
+    print('⛔ _isSaving actual: $_isSaving');
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
 
     try {
+      final hasInternet = await InternetConnectionChecker().hasConnection;
+
+      final existingDetail = await _repository
+          .getInspectionDetailByServiceExtinguisherId(
+            widget.servicioExtintorId,
+          );
+
+      print('🆔 servicioExtintorId enviado: ${widget.servicioExtintorId}');
+      print('📦 existingDetail: $existingDetail');
+
+      print('📸 Estado antes de enviar:');
+      print('   _photo4File: $_photo4File');
+      print('   _photo4Path: $_photo4Path');
+      print('   _photo4Url: $_photo4Url');
+
+      final inspectionData = <String, dynamic>{
+        'accesibilidad': existingDetail?.accesibilidad ?? 'NO',
+        'ubicacion': existingDetail?.ubicacion ?? 'NO',
+        'instalacion': existingDetail?.instalacion ?? 'NO',
+        'instrucciones': existingDetail?.instrucciones ?? 'NO',
+        'clasificacion': existingDetail?.clasificacion ?? 'NO',
+        'recarga': existingDetail?.recarga ?? 'NO',
+        'certificacion': existingDetail?.certificacion ?? 'NO',
+        'presion': existingDetail?.presion ?? 'NO',
+        'seguridad': existingDetail?.seguridad ?? 'NO',
+        'estado': existingDetail?.estado ?? 'NO',
+        'carga': existingDetail?.carga ?? 'NO',
+        'soporte': existingDetail?.soporte ?? 'NO',
+        'activacion': existingDetail?.activacion ?? 'NO',
+        'manguera': existingDetail?.manguera ?? 'NO',
+        'boquilla': existingDetail?.boquilla ?? 'NO',
+        'abrazadera': existingDetail?.abrazadera ?? 'NO',
+
+        // Mantener fotos anteriores si existen
+        'foto1Path': existingDetail?.foto1Path,
+        'foto2Path': existingDetail?.foto2Path,
+        'foto3Path': existingDetail?.foto3Path,
+        'foto1Url': existingDetail?.foto1Url,
+        'foto2Url': existingDetail?.foto2Url,
+        'foto3Url': existingDetail?.foto3Url,
+      };
+
+      // -----------------------------
+      // FOTO 4 (CONSTRUCCIÓN SEGURA)
+      // -----------------------------
+
+      if (_photo4File != null) {
+        inspectionData['foto4'] = _photo4File;
+      }
+
+      if (_photo4Path != null) {
+        inspectionData['foto4Path'] = _photo4Path;
+      }
+
+      if (_photo4Url != null) {
+        inspectionData['foto4Url'] = _photo4Url;
+      }
+
+      // -----------------------------
+      // OBSERVACIONES (NO ENVIAR NULL)
+      // -----------------------------
+
+      final obsText = _observationsController.text.trim();
+      if (obsText.isNotEmpty) {
+        inspectionData['observaciones'] = obsText;
+      }
+
+      // 🔥 ELIMINAR TODOS LOS NULL
+      inspectionData.removeWhere((key, value) => value == null);
+
+      print('🔥 Payload FINAL a enviar en _saveObservations:');
+      inspectionData.forEach((key, value) {
+        print('$key -> $value');
+      });
+
       await _updateObservationsUseCase.call(
         servicioExtintorId: widget.servicioExtintorId,
-        observaciones: observacionesText,
+        inspectionData: inspectionData,
       );
+
+      print('✅ Observaciones y foto4 guardadas correctamente.');
     } catch (e) {
+      print('❌ Error al guardar observaciones/foto4: $e');
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al guardar observaciones: ${e.toString()}'),
+          content: Text('Error al guardar observaciones: $e'),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -191,6 +327,34 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
     );
   }
 
+  Widget _buildPhotoOverlay() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.camera_alt,
+              color: Colors.white,
+              size: 40,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Cambiar fotografía',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _observationsController.dispose();
@@ -234,6 +398,127 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
                     label: 'Observaciones',
                     hintText: 'Ingrese sus observaciones aquí...',
                     maxLines: 10,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Sección de Foto 4 (Observaciones)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE84343).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_outlined,
+                                color: Color(0xFFE84343),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Evidencia Fotográfica',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Adjunte una fotografía de las observaciones encontradas en el equipo.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: _isSaving ? null : _selectPhoto4,
+                          child: Container(
+                            height: 220,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F5F5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _photo4File != null || _photo4Path != null
+                                    ? Colors.transparent
+                                    : Colors.grey[300]!,
+                                width: 2,
+                                style: _photo4File != null || _photo4Path != null
+                                    ? BorderStyle.none
+                                    : BorderStyle.solid,
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: _photo4File != null
+                                ? Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.file(
+                                        _photo4File!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      _buildPhotoOverlay(),
+                                    ],
+                                  )
+                                : _photo4Path != null
+                                    ? Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Image.file(
+                                            File(_photo4Path!),
+                                            fit: BoxFit.cover,
+                                          ),
+                                          _buildPhotoOverlay(),
+                                        ],
+                                      )
+                                    : Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_a_photo,
+                                            size: 48,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Tomar fotografía',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
                   // Botón: Agregar otro extintor

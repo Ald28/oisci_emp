@@ -29,344 +29,16 @@ class ServiceSyncService {
     }
 
     int syncedCount = 0;
-    final db = await AppDatabase.database;
-
-    // Paso 1: Sincronizar CREATE_SERVICE primero
-    final pendingServices = await _localDataSource.getPendingSyncItems(
-      'CREATE_SERVICE',
-    );
-    for (final item in pendingServices) {
+    final pendingItems = await getPendingServices();
+    
+    for (final item in pendingItems) {
       try {
-        final data =
-            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        final service = await _httpDataSource.createService(data);
-
-        // Buscar el servicio temporal por su ID negativo
-        // El ID negativo está en la tabla servicio, no en sync_queue
-        final tempServiceId = await _findTempServiceId(data, db);
-        if (tempServiceId != null) {
-          // Actualizar el servicio local: reemplazar ID negativo con positivo
-          await _updateServiceId(db, tempServiceId, service.id);
-        }
-
-        // Eliminar de la cola
-        await _localDataSource.deleteQueueItem(item['id'] as int);
-        syncedCount++;
-      } catch (e) {
-        await _localDataSource.updateSyncError(item['id'] as int, e.toString());
-      }
-    }
-
-    // Paso 2: Sincronizar CREATE_SERVICE_EXTINGUISHER
-    final pendingServiceExtinguishers = await _localDataSource
-        .getPendingSyncItems('CREATE_SERVICE_EXTINGUISHER');
-    for (final item in pendingServiceExtinguishers) {
-      try {
-        final data =
-            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        var servicioId = data['servicioId'] as int;
-
-        // Mapear servicioId negativo a positivo si es necesario
-        if (servicioId < 0) {
-          final realServicioId = await _findRealServiceId(servicioId, db);
-          if (realServicioId == null) {
-            // El servicio padre aún no está sincronizado, esperar
-            continue;
-          }
-          servicioId = realServicioId;
-        }
-
-        try {
-          final serviceExtinguisher = await _httpDataSource
-              .addExtinguisherToService(
-                servicioId: servicioId,
-                data: {
-                  'extintorId': data['extintorId'],
-                  'estadoInicial': data['estadoInicial'],
-                  'observaciones': data['observaciones'],
-                },
-              );
-
-          // Buscar el servicio_extintor temporal por su ID negativo
-          final tempServiceExtinguisherId =
-              await _findTempServiceExtinguisherId(
-                servicioId,
-                data['extintorId'] as int,
-                db,
-              );
-          if (tempServiceExtinguisherId != null) {
-            // Actualizar servicio_extintor: reemplazar ID negativo con positivo
-            await _updateServiceExtinguisherId(
-              db,
-              tempServiceExtinguisherId,
-              serviceExtinguisher.id,
-            );
-          }
-
-          // Eliminar de la cola
-          await _localDataSource.deleteQueueItem(item['id'] as int);
+        final success = await syncSingleService(item['id'] as int);
+        if (success) {
           syncedCount++;
-        } on DioException catch (e) {
-          // Si el error es que el extintor ya está agregado, buscar el registro existente
-          final errorMessage = e.response?.data is Map<String, dynamic>
-              ? (e.response!.data as Map<String, dynamic>)['message'] as String?
-              : e.message;
-
-          if (errorMessage != null &&
-              (errorMessage.toLowerCase().contains('ya está agregado') ||
-                  errorMessage.toLowerCase().contains('duplicate') ||
-                  errorMessage.toLowerCase().contains('unique'))) {
-            // El extintor ya está agregado en el servidor
-            // Buscar el servicio_extintor existente en la base de datos local
-            final existing = await db.query(
-              'servicio_extintor',
-              where: 'servicioId = ? AND extintorId = ? AND id > 0',
-              whereArgs: [servicioId, data['extintorId'] as int],
-              limit: 1,
-            );
-
-            if (existing.isNotEmpty) {
-              // Ya existe un registro sincronizado, actualizar el temporal si existe
-              final existingId = existing.first['id'] as int;
-              final tempServiceExtinguisherId =
-                  await _findTempServiceExtinguisherId(
-                    servicioId,
-                    data['extintorId'] as int,
-                    db,
-                  );
-
-              if (tempServiceExtinguisherId != null &&
-                  tempServiceExtinguisherId != existingId) {
-                // Eliminar el registro temporal duplicado
-                await db.delete(
-                  'servicio_extintor',
-                  where: 'id = ?',
-                  whereArgs: [tempServiceExtinguisherId],
-                );
-              }
-
-              // Eliminar de la cola porque ya existe en el servidor
-              await _localDataSource.deleteQueueItem(item['id'] as int);
-              syncedCount++;
-            } else {
-              // No encontrado localmente, guardar error pero no bloquear
-              await _localDataSource.updateSyncError(
-                item['id'] as int,
-                'Este extintor ya está agregado al servicio (existe en el servidor)',
-              );
-            }
-          } else {
-            // Otro tipo de error, guardar normalmente
-            await _localDataSource.updateSyncError(
-              item['id'] as int,
-              e.toString(),
-            );
-          }
-        } catch (e) {
-          await _localDataSource.updateSyncError(
-            item['id'] as int,
-            e.toString(),
-          );
         }
       } catch (e) {
-        await _localDataSource.updateSyncError(item['id'] as int, e.toString());
-      }
-    }
-
-    // Paso 3: Sincronizar CREATE_MAINTENANCE_DETAIL
-    final pendingMaintenanceDetails = await _localDataSource
-        .getPendingSyncItems('CREATE_MAINTENANCE_DETAIL');
-    for (final item in pendingMaintenanceDetails) {
-      try {
-        final data =
-            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        var servicioExtintorId = data['servicioExtintorId'] as int;
-
-        // Mapear servicioExtintorId negativo a positivo si es necesario
-        if (servicioExtintorId < 0) {
-          final realServicioExtintorId = await _findRealServiceExtinguisherId(
-            servicioExtintorId,
-            db,
-          );
-          if (realServicioExtintorId == null) {
-            // El servicio_extintor padre aún no está sincronizado, esperar
-            continue;
-          }
-          servicioExtintorId = realServicioExtintorId;
-        }
-
-        // Preparar datos del checklist
-        final checklistData = <String, dynamic>{
-          'mantenimiento': data['mantenimiento'] ?? false,
-          'recarga': data['recarga'] ?? false,
-          'agenteCarga': data['agenteCarga'],
-          'pruebaHidrostatica': data['pruebaHidrostatica'] ?? false,
-          'bajaExtintor': data['bajaExtintor'] ?? false,
-          'motivoBaja': data['motivoBaja'],
-          'pintura': data['pintura'] ?? false,
-          'recargaCartucho': data['recargaCartucho'] ?? false,
-          'cambioPartes': data['cambioPartes'] ?? false,
-          'detallesCambioPartes': data['detallesCambioPartes'],
-        };
-
-        final maintenanceDetail = await _httpDataSource.createMaintenanceDetail(
-          servicioExtintorId: servicioExtintorId,
-          data: checklistData,
-        );
-
-        // Buscar el mantenimiento_detalle temporal usando el servicioExtintorId original (negativo) del payload
-        final originalServicioExtintorId = data['servicioExtintorId'] as int;
-        int? tempMaintenanceDetailId = await _findTempMaintenanceDetailId(
-          originalServicioExtintorId, // Usar el ID original del payload
-          db,
-        );
-
-        // Si no se encuentra con servicioExtintorId negativo (porque ya fue actualizado por _updateServiceExtinguisherId),
-        // buscar con el servicioExtintorId positivo mapeado
-        if (tempMaintenanceDetailId == null &&
-            servicioExtintorId > 0 &&
-            originalServicioExtintorId < 0) {
-          final mdWithPositive = await db.query(
-            'mantenimiento_detalle',
-            where: 'servicioExtintorId = ? AND id < 0',
-            whereArgs: [servicioExtintorId],
-            limit: 1,
-          );
-          if (mdWithPositive.isNotEmpty) {
-            tempMaintenanceDetailId = mdWithPositive.first['id'] as int;
-          }
-        }
-        if (tempMaintenanceDetailId != null) {
-          // Actualizar mantenimiento_detalle: reemplazar ID negativo con positivo
-          await _updateMaintenanceDetailId(
-            db,
-            tempMaintenanceDetailId,
-            maintenanceDetail.id,
-            maintenanceDetailFromServer: maintenanceDetail,
-          );
-        }
-
-        // Eliminar de la cola
-        await _localDataSource.deleteQueueItem(item['id'] as int);
-        syncedCount++;
-      } catch (e) {
-        await _localDataSource.updateSyncError(item['id'] as int, e.toString());
-      }
-    }
-
-    // Paso 4: Sincronizar CREATE_INSPECTION_DETAIL
-    final pendingInspectionDetails = await _localDataSource.getPendingSyncItems(
-      'CREATE_INSPECTION_DETAIL',
-    );
-    for (final item in pendingInspectionDetails) {
-      try {
-        final data =
-            jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        var servicioExtintorId = data['servicioExtintorId'] as int;
-
-        // Mapear servicioExtintorId negativo a positivo si es necesario
-        if (servicioExtintorId < 0) {
-          final realServicioExtintorId = await _findRealServiceExtinguisherId(
-            servicioExtintorId,
-            db,
-          );
-          if (realServicioExtintorId == null) {
-            // El servicio_extintor padre aún no está sincronizado, esperar
-            continue;
-          }
-          servicioExtintorId = realServicioExtintorId;
-        }
-
-        // Convertir paths locales a Files si existen
-        File? foto1File;
-        File? foto2File;
-        File? foto3File;
-
-        final foto1Path = data['foto1Path'] as String?;
-        final foto2Path = data['foto2Path'] as String?;
-        final foto3Path = data['foto3Path'] as String?;
-
-        if (foto1Path != null && File(foto1Path).existsSync()) {
-          foto1File = File(foto1Path);
-        }
-        if (foto2Path != null && File(foto2Path).existsSync()) {
-          foto2File = File(foto2Path);
-        }
-        if (foto3Path != null && File(foto3Path).existsSync()) {
-          foto3File = File(foto3Path);
-        }
-
-        final inspectionData = <String, dynamic>{
-          'foto1Url': data['foto1Url'] as String?,
-          'foto2Url': data['foto2Url'] as String?,
-          'foto3Url': data['foto3Url'] as String?,
-          'accesibilidad': data['accesibilidad'],
-          'observaciones': data['observaciones'],
-          'ubicacion': data['ubicacion'],
-          'instalacion': data['instalacion'],
-          'instrucciones': data['instrucciones'],
-          'clasificacion': data['clasificacion'],
-          'recarga': data['recarga'],
-          'certificacion': data['certificacion'],
-          'presion': data['presion'],
-          'seguridad': data['seguridad'],
-          'estado': data['estado'],
-          'carga': data['carga'],
-          'soporte': data['soporte'],
-          'activacion': data['activacion'],
-          'manguera': data['manguera'],
-          'boquilla': data['boquilla'],
-          'abrazadera': data['abrazadera'],
-        };
-
-        // Agregar Files si existen (se subirán junto con el checklist)
-        if (foto1File != null) inspectionData['foto1'] = foto1File;
-        if (foto2File != null) inspectionData['foto2'] = foto2File;
-        if (foto3File != null) inspectionData['foto3'] = foto3File;
-
-        final inspectionDetail = await _httpDataSource.createInspectionDetail(
-          servicioExtintorId: servicioExtintorId,
-          data: inspectionData,
-        );
-
-        // Buscar el inspeccion_detalle temporal usando el servicioExtintorId original (negativo) del payload
-        final originalServicioExtintorId = data['servicioExtintorId'] as int;
-        int? tempInspectionDetailId = await _findTempInspectionDetailId(
-          originalServicioExtintorId, // Usar el ID original del payload
-          db,
-        );
-
-        // Si no se encuentra con servicioExtintorId negativo (porque ya fue actualizado por _updateServiceExtinguisherId),
-        // buscar con el servicioExtintorId positivo mapeado
-        if (tempInspectionDetailId == null &&
-            servicioExtintorId > 0 &&
-            originalServicioExtintorId < 0) {
-          final idWithPositive = await db.query(
-            'inspeccion_detalle',
-            where: 'servicioExtintorId = ? AND id < 0',
-            whereArgs: [servicioExtintorId],
-            limit: 1,
-          );
-          if (idWithPositive.isNotEmpty) {
-            tempInspectionDetailId = idWithPositive.first['id'] as int;
-          }
-        }
-
-        if (tempInspectionDetailId != null) {
-          // Actualizar inspeccion_detalle: reemplazar ID negativo con positivo
-          await _updateInspectionDetailId(
-            db,
-            tempInspectionDetailId,
-            inspectionDetail.id,
-            inspectionDetailFromServer: inspectionDetail,
-          );
-        }
-
-        // Eliminar de la cola
-        await _localDataSource.deleteQueueItem(item['id'] as int);
-        syncedCount++;
-      } catch (e) {
-        await _localDataSource.updateSyncError(item['id'] as int, e.toString());
+        // Error handling ya está en syncSingleService
       }
     }
 
@@ -733,54 +405,26 @@ class ServiceSyncService {
     int oldId,
     int newId,
   ) async {
-    final tempServiceExtinguisher = await db.query(
+    final temp = await db.query(
       'servicio_extintor',
       where: 'id = ?',
       whereArgs: [oldId],
       limit: 1,
     );
 
-    if (tempServiceExtinguisher.isEmpty) return;
+    if (temp.isEmpty) return;
 
-    final serviceExtinguisherData = tempServiceExtinguisher.first;
-    var servicioId = serviceExtinguisherData['servicioId'] as int;
-    var extintorId = serviceExtinguisherData['extintorId'] as int;
-
-    // Mapear servicioId si es negativo
-    if (servicioId < 0) {
-      final realServicioId = await _findRealServiceId(servicioId, db);
-      if (realServicioId == null) return;
-      servicioId = realServicioId;
-    }
-
-    // Mapear extintorId si es negativo (el extintor puede haberse sincronizado antes)
-    if (extintorId < 0) {
-      final realExtintorId = await _findRealExtinguisherId(extintorId, db);
-      if (realExtintorId != null) {
-        extintorId = realExtintorId;
-      }
-      // Si no se encuentra el extintor sincronizado, mantener el ID negativo
-      // (el extintor aún no se ha sincronizado)
-    }
+    final data = temp.first;
 
     await db.transaction((txn) async {
-      await txn.insert('servicio_extintor', {
+      // Insertar con nuevo ID
+      /*await txn.insert('servicio_extintor', {
+        ...data,
         'id': newId,
-        'servicioId': servicioId,
-        'extintorId': extintorId,
-        'estadoInicial': serviceExtinguisherData['estadoInicial'],
-        'estadoFinal': serviceExtinguisherData['estadoFinal'],
-        'completado': serviceExtinguisherData['completado'],
-        'observaciones': serviceExtinguisherData['observaciones'],
-        'usuarioCreadorId': serviceExtinguisherData['usuarioCreadorId'],
-        'usuarioActualizadorId':
-            serviceExtinguisherData['usuarioActualizadorId'],
-        'createdAt': serviceExtinguisherData['createdAt'],
-        'updatedAt': serviceExtinguisherData['updatedAt'],
-        'synced': 1,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+        'sincronizado': 1,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);*/
 
-      // Actualizar referencias en mantenimiento_detalle
+      // 🔥 ACTUALIZAR mantenimiento_detalle
       await txn.update(
         'mantenimiento_detalle',
         {'servicioExtintorId': newId},
@@ -788,7 +432,7 @@ class ServiceSyncService {
         whereArgs: [oldId],
       );
 
-      // Actualizar referencias en inspeccion_detalle
+      // 🔥 ACTUALIZAR inspeccion_detalle
       await txn.update(
         'inspeccion_detalle',
         {'servicioExtintorId': newId},
@@ -796,72 +440,32 @@ class ServiceSyncService {
         whereArgs: [oldId],
       );
 
-      // Actualizar referencias en sync_queue para UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS
-      // Necesitamos actualizar el payload JSON que contiene servicioExtintorId
-      final observationItems = await txn.query(
-        'sync_queue',
-        where: 'type = ?',
-        whereArgs: ['UPDATE_SERVICE_EXTINGUISHER_OBSERVATIONS'],
-      );
-
-      for (final item in observationItems) {
-        try {
-          final payloadStr = item['payload'] as String?;
-          if (payloadStr != null) {
-            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
-            final payloadServicioExtintorId =
-                payload['servicioExtintorId'] as int?;
-
-            // Si el servicioExtintorId en el payload coincide con el oldId, actualizarlo
-            if (payloadServicioExtintorId == oldId) {
-              payload['servicioExtintorId'] = newId;
-              await txn.update(
-                'sync_queue',
-                {'payload': jsonEncode(payload)},
-                where: 'id = ?',
-                whereArgs: [item['id']],
-              );
-            }
-          }
-        } catch (e) {
-          // Si hay error al parsear el JSON, continuar con el siguiente item
-          continue;
-        }
-      }
-
-      // Actualizar referencias en sync_queue para CREATE_INSPECTION_DETAIL y UPDATE_INSPECTION_DETAIL
-      // Necesitamos actualizar el payload JSON que contiene servicioExtintorId
-      final inspectionItems = await txn.query(
+      // 🔥 ACTUALIZAR sync_queue payloads
+      final queueItems = await txn.query(
         'sync_queue',
         where: 'type IN (?, ?)',
-        whereArgs: ['CREATE_INSPECTION_DETAIL', 'UPDATE_INSPECTION_DETAIL'],
+        whereArgs: ['CREATE_MAINTENANCE_DETAIL', 'CREATE_INSPECTION_DETAIL'],
       );
 
-      for (final item in inspectionItems) {
-        try {
-          final payloadStr = item['payload'] as String?;
-          if (payloadStr != null) {
-            final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
-            final payloadServicioExtintorId =
-                payload['servicioExtintorId'] as int?;
+      for (final item in queueItems) {
+        final payloadStr = item['payload'] as String?;
+        if (payloadStr == null) continue;
 
-            // Si el servicioExtintorId en el payload coincide con el oldId, actualizarlo
-            if (payloadServicioExtintorId == oldId) {
-              payload['servicioExtintorId'] = newId;
-              await txn.update(
-                'sync_queue',
-                {'payload': jsonEncode(payload)},
-                where: 'id = ?',
-                whereArgs: [item['id']],
-              );
-            }
-          }
-        } catch (e) {
-          // Si hay error al parsear el JSON, continuar con el siguiente item
-          continue;
+        final payload = jsonDecode(payloadStr);
+
+        if (payload['servicioExtintorId'] == oldId) {
+          payload['servicioExtintorId'] = newId;
+
+          await txn.update(
+            'sync_queue',
+            {'payload': jsonEncode(payload)},
+            where: 'id = ?',
+            whereArgs: [item['id']],
+          );
         }
       }
 
+      // Eliminar temporal
       await txn.delete(
         'servicio_extintor',
         where: 'id = ?',
@@ -1592,16 +1196,21 @@ class ServiceSyncService {
           }
           await _localDataSource.deleteQueueItem(queueId);
           return true;
-        } on DioException catch (e) {
+        } catch (e) {
           // Si el error es que el extintor ya está agregado, buscar el registro existente
-          final errorMessage = e.response?.data is Map<String, dynamic>
-              ? (e.response!.data as Map<String, dynamic>)['message'] as String?
-              : e.message;
+          String errorMessage = e.toString();
+          if (e is DioException) {
+            errorMessage = e.response?.data is Map<String, dynamic>
+                ? (e.response!.data as Map<String, dynamic>)['message']?.toString() ?? e.message ?? errorMessage
+                : e.message ?? errorMessage;
+          } else if (e is Exception) {
+             // Algunas excepciones de flutter/dart ocultan 'Exception: ' en e.toString(). 
+             errorMessage = e.toString();
+          }
 
-          if (errorMessage != null &&
-              (errorMessage.toLowerCase().contains('ya está agregado') ||
-                  errorMessage.toLowerCase().contains('duplicate') ||
-                  errorMessage.toLowerCase().contains('unique'))) {
+          if (errorMessage.toLowerCase().contains('ya está agregado') ||
+              errorMessage.toLowerCase().contains('duplicate') ||
+              errorMessage.toLowerCase().contains('unique')) {
             // El extintor ya está agregado en el servidor
             // Buscar el servicio_extintor existente en la base de datos local
             final existing = await db.query(
@@ -1645,12 +1254,9 @@ class ServiceSyncService {
             }
           } else {
             // Otro tipo de error, guardar normalmente
-            await _localDataSource.updateSyncError(queueId, e.toString());
+            await _localDataSource.updateSyncError(queueId, errorMessage);
             return false;
           }
-        } catch (e) {
-          await _localDataSource.updateSyncError(queueId, e.toString());
-          return false;
         }
       } else if (type == 'CREATE_MAINTENANCE_DETAIL') {
         final originalServicioExtintorId = data['servicioExtintorId'] as int;
@@ -1789,6 +1395,32 @@ class ServiceSyncService {
         final originalServicioExtintorId = data['servicioExtintorId'] as int;
         var servicioExtintorId = originalServicioExtintorId;
 
+        // --- ASEGURAR DATA FRESCA DESDE LOCAL ---
+        final latestDetails = await db.query(
+          'inspeccion_detalle',
+          where: 'servicioExtintorId = ?',
+          whereArgs: [originalServicioExtintorId],
+          limit: 1,
+        );
+
+        if (latestDetails.isNotEmpty) {
+          final localData = latestDetails.first;
+          final keysToUpdate = [
+            'foto1Url', 'foto2Url', 'foto3Url', 'foto4Url',
+            'foto1Path', 'foto2Path', 'foto3Path', 'foto4Path',
+            'accesibilidad', 'observaciones', 'ubicacion', 'instalacion',
+            'instrucciones', 'clasificacion', 'recarga', 'certificacion',
+            'presion', 'seguridad', 'estado', 'carga', 'soporte',
+            'activacion', 'manguera', 'boquilla', 'abrazadera'
+          ];
+          for (var key in keysToUpdate) {
+            if (localData[key] != null) {
+              data[key] = localData[key];
+            }
+          }
+        }
+        // ----------------------------------------
+
         if (servicioExtintorId < 0) {
           final realServicioExtinguisherId =
               await _findRealServiceExtinguisherId(servicioExtintorId, db);
@@ -1806,10 +1438,12 @@ class ServiceSyncService {
         File? foto1File;
         File? foto2File;
         File? foto3File;
+        File? foto4File;
 
         final foto1Path = data['foto1Path'] as String?;
         final foto2Path = data['foto2Path'] as String?;
         final foto3Path = data['foto3Path'] as String?;
+        final foto4Path = data['foto4Path'] as String?;
 
         if (foto1Path != null && File(foto1Path).existsSync()) {
           foto1File = File(foto1Path);
@@ -1820,11 +1454,15 @@ class ServiceSyncService {
         if (foto3Path != null && File(foto3Path).existsSync()) {
           foto3File = File(foto3Path);
         }
+        if (foto4Path != null && File(foto4Path).existsSync()) {
+          foto4File = File(foto4Path);
+        }
 
         final inspectionData = <String, dynamic>{
           'foto1Url': data['foto1Url'] as String?,
           'foto2Url': data['foto2Url'] as String?,
           'foto3Url': data['foto3Url'] as String?,
+          'foto4Url': data['foto4Url'] as String?,
           'accesibilidad': data['accesibilidad'],
           'observaciones': data['observaciones'],
           'ubicacion': data['ubicacion'],
@@ -1848,6 +1486,7 @@ class ServiceSyncService {
         if (foto1File != null) inspectionData['foto1'] = foto1File;
         if (foto2File != null) inspectionData['foto2'] = foto2File;
         if (foto3File != null) inspectionData['foto3'] = foto3File;
+        if (foto4File != null) inspectionData['foto4'] = foto4File;
 
         final inspectionDetail = await _httpDataSource.createInspectionDetail(
           servicioExtintorId: servicioExtintorId,
@@ -1887,7 +1526,34 @@ class ServiceSyncService {
         await _localDataSource.deleteQueueItem(queueId);
         return true;
       } else if (type == 'UPDATE_INSPECTION_DETAIL') {
-        var servicioExtintorId = data['servicioExtintorId'] as int;
+        final originalServicioExtintorId = data['servicioExtintorId'] as int;
+        var servicioExtintorId = originalServicioExtintorId;
+
+        // --- ASEGURAR DATA FRESCA DESDE LOCAL ---
+        final latestDetails = await db.query(
+          'inspeccion_detalle',
+          where: 'servicioExtintorId = ?',
+          whereArgs: [originalServicioExtintorId],
+          limit: 1,
+        );
+
+        if (latestDetails.isNotEmpty) {
+          final localData = latestDetails.first;
+          final keysToUpdate = [
+            'foto1Url', 'foto2Url', 'foto3Url', 'foto4Url',
+            'foto1Path', 'foto2Path', 'foto3Path', 'foto4Path',
+            'accesibilidad', 'observaciones', 'ubicacion', 'instalacion',
+            'instrucciones', 'clasificacion', 'recarga', 'certificacion',
+            'presion', 'seguridad', 'estado', 'carga', 'soporte',
+            'activacion', 'manguera', 'boquilla', 'abrazadera'
+          ];
+          for (var key in keysToUpdate) {
+            if (localData[key] != null) {
+              data[key] = localData[key];
+            }
+          }
+        }
+        // ----------------------------------------
 
         // Mapear servicioExtintorId negativo a positivo si es necesario
         if (servicioExtintorId < 0) {
@@ -1907,10 +1573,12 @@ class ServiceSyncService {
         File? foto1File;
         File? foto2File;
         File? foto3File;
+        File? foto4File;
 
         final foto1Path = data['foto1Path'] as String?;
         final foto2Path = data['foto2Path'] as String?;
         final foto3Path = data['foto3Path'] as String?;
+        final foto4Path = data['foto4Path'] as String?;
 
         if (foto1Path != null && File(foto1Path).existsSync()) {
           foto1File = File(foto1Path);
@@ -1921,11 +1589,15 @@ class ServiceSyncService {
         if (foto3Path != null && File(foto3Path).existsSync()) {
           foto3File = File(foto3Path);
         }
+        if (foto4Path != null && File(foto4Path).existsSync()) {
+          foto4File = File(foto4Path);
+        }
 
         final inspectionData = <String, dynamic>{
           'foto1Url': data['foto1Url'] as String?,
           'foto2Url': data['foto2Url'] as String?,
           'foto3Url': data['foto3Url'] as String?,
+          'foto4Url': data['foto4Url'] as String?,
           'accesibilidad': data['accesibilidad'],
           'observaciones': data['observaciones'],
           'ubicacion': data['ubicacion'],
@@ -1949,6 +1621,7 @@ class ServiceSyncService {
         if (foto1File != null) inspectionData['foto1'] = foto1File;
         if (foto2File != null) inspectionData['foto2'] = foto2File;
         if (foto3File != null) inspectionData['foto3'] = foto3File;
+        if (foto4File != null) inspectionData['foto4'] = foto4File;
 
         final updatedInspectionDetail = await _httpDataSource
             .updateInspectionDetail(
@@ -1964,10 +1637,12 @@ class ServiceSyncService {
             'foto1Url': updatedInspectionDetail.foto1Url,
             'foto2Url': updatedInspectionDetail.foto2Url,
             'foto3Url': updatedInspectionDetail.foto3Url,
+            'foto4Url': updatedInspectionDetail.foto4Url,
             // Limpiar paths locales después de sincronizar (ya no son necesarios)
             'foto1Path': null,
             'foto2Path': null,
             'foto3Path': null,
+            'foto4Path': null,
           },
           addToSyncQueue: false,
         );

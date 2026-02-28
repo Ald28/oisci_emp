@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:dio/dio.dart';
 import '../../domain/repositories/service_repository.dart';
@@ -453,6 +455,8 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }) async {
     final hasInternet = await _hasInternet();
 
+    print('ANTES DE HTTP - inspectionData: $inspectionData');
+
     if (hasInternet) {
       try {
         // Intentar crear en el servidor
@@ -465,17 +469,20 @@ class ServiceRepositoryImpl implements ServiceRepository {
         await _localDataSource.saveInspectionDetail(inspectionDetail);
         return inspectionDetail;
       } catch (e) {
-        // Si falla, guardar solo localmente (con sync_queue)
+        final cleanData = _sanitizeForLocal(inspectionData);
+
         return await _localDataSource.createInspectionDetail(
           servicioExtintorId: servicioExtintorId,
-          inspectionData: inspectionData,
+          inspectionData: cleanData,
         );
       }
+
     } else {
-      // Sin internet, guardar solo localmente (con sync_queue)
+      final cleanData = _sanitizeForLocal(inspectionData);
+
       return await _localDataSource.createInspectionDetail(
         servicioExtintorId: servicioExtintorId,
-        inspectionData: inspectionData,
+        inspectionData: cleanData,
       );
     }
   }
@@ -519,43 +526,90 @@ class ServiceRepositoryImpl implements ServiceRepository {
     required int servicioExtintorId,
     required Map<String, dynamic> inspectionData,
   }) async {
+    print('================= REPOSITORY UPDATE DEBUG =================');
+    print('🆔 servicioExtintorId: $servicioExtintorId');
+    print('📦 inspectionData ORIGINAL: $inspectionData');
+
+    print('ANTES DE HTTP - inspectionData: $inspectionData');
+
     final hasInternet = await _hasInternet();
+    print('🌐 ¿Tiene internet?: $hasInternet');
 
     if (hasInternet) {
       try {
-        // Intentar actualizar en el servidor
+        print('🚀 Llamando a _httpDataSource.updateInspectionDetail...');
+
         final result = await _httpDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
-          data: inspectionData,
+          data: Map<String, dynamic>.from(inspectionData),
         );
-        // También actualizar localmente con los datos del servidor (incluyendo URLs de imágenes)
-        // (sin agregar a sync_queue)
+
+        print('✅ RESPUESTA DEL BACKEND (result):');
+        print('   🔹 ID: ${result.id}');
+        print('   🔹 foto1Url: ${result.foto1Url}');
+        print('   🔹 foto2Url: ${result.foto2Url}');
+        print('   🔹 foto3Url: ${result.foto3Url}');
+        print('   🔹 foto4Url: ${result.foto4Url}');
+        print('   🔹 observaciones: ${result.observaciones}');
+
+        final localMap = {
+          ...inspectionData,
+          'foto1Url': result.foto1Url,
+          'foto2Url': result.foto2Url,
+          'foto3Url': result.foto3Url,
+          'foto4Url': result.foto4Url,
+          'observaciones': result.observaciones,
+        };
+
+        print('🗄 DATA QUE SE GUARDARÁ EN LOCAL: $localMap');
+
         await _localDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
-          inspectionData: {
-            ...inspectionData,
-            'foto1Url': result.foto1Url,
-            'foto2Url': result.foto2Url,
-            'foto3Url': result.foto3Url,
-          },
+          inspectionData: localMap,
           addToSyncQueue: false,
         );
+
+        print('✅ ACTUALIZACIÓN LOCAL COMPLETADA');
+        print('===========================================================');
+
+        print('DESPUES DE HTTP - inspectionData: $inspectionData');
+
         return result;
-      } catch (e) {
-        // Si falla HTTP, actualizar solo localmente (con sync_queue)
-        return await _localDataSource.updateInspectionDetail(
+      } catch (e, stack) {
+        print('💥 ERROR EN UPDATE CON INTERNET');
+        print('📛 Error: $e');
+        print('📛 StackTrace: $stack');
+
+        final cleanData = _sanitizeForLocal(inspectionData);
+        print('🧹 DATA SANITIZADA PARA LOCAL: $cleanData');
+
+        final localResult = await _localDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
-          inspectionData: inspectionData,
+          inspectionData: cleanData,
           addToSyncQueue: true,
         );
+
+        print('⚠️ GUARDADO SOLO EN LOCAL (sync pendiente)');
+        print('===========================================================');
+
+        return localResult;
       }
     } else {
-      // Sin conexión, actualizar solo localmente (con sync_queue)
-      return await _localDataSource.updateInspectionDetail(
+      print('📴 SIN INTERNET - GUARDANDO SOLO EN LOCAL');
+
+      final cleanData = _sanitizeForLocal(inspectionData);
+      print('🧹 DATA SANITIZADA PARA LOCAL: $cleanData');
+
+      final localResult = await _localDataSource.updateInspectionDetail(
         servicioExtintorId: servicioExtintorId,
-        inspectionData: inspectionData,
+        inspectionData: cleanData,
         addToSyncQueue: true,
       );
+
+      print('✅ GUARDADO LOCAL COMPLETADO (offline)');
+      print('===========================================================');
+
+      return localResult;
     }
   }
 
@@ -586,5 +640,31 @@ class ServiceRepositoryImpl implements ServiceRepository {
     // Sin internet o si falló el request, obtener desde SQLite
     final localServices = await _localDataSource.getServicesBySedeId(sedeId);
     return localServices;
+  }
+
+  Map<String, dynamic> _sanitizeForLocal(Map<String, dynamic> data) {
+    final clean = Map<String, dynamic>.from(data);
+
+    if (clean['foto1'] is File) {
+      clean['foto1Path'] = (clean['foto1'] as File).path;
+      clean.remove('foto1');
+    }
+
+    if (clean['foto2'] is File) {
+      clean['foto2Path'] = (clean['foto2'] as File).path;
+      clean.remove('foto2');
+    }
+
+    if (clean['foto3'] is File) {
+      clean['foto3Path'] = (clean['foto3'] as File).path;
+      clean.remove('foto3');
+    }
+
+    if (clean['foto4'] is File) {
+      clean['foto4Path'] = (clean['foto4'] as File).path;
+      clean.remove('foto4');
+    }
+
+    return clean;
   }
 }
