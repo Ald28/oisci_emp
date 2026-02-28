@@ -19,6 +19,9 @@ subir cambios al repositorio (git add . | git commit -m "" | git push -u origin 
 npx prisma migrate deploy (APUNTANDO A LA BD EN PRODUCCION)
 npx prisma db seed /*EJECUTAR APUNTANDO A LA BASE DE DATOS EN PRODUC*/
 
+/*---- DESPLEGAR CAMBIOS A UNA NUEVA BD------*/
+npx prisma migrate deploy
+
 Elimina o ignora prisma.config.ts
 prisma.config.ts
 
