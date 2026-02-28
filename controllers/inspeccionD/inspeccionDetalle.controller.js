@@ -55,6 +55,9 @@ export async function createOrUpdateInspeccionWithFotos(req, res) {
             if (req.files.foto3) {
                 files.push(req.files.foto3[0])
             }
+            if (req.files.foto4) {
+                files.push(req.files.foto4[0])
+            }
         }
 
         // Parsear datos del checklist desde el campo 'data' si existe

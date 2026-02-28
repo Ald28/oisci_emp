@@ -422,6 +422,7 @@ model InspeccionDetalle {
   foto1Url String? @db.VarChar(255)
   foto2Url String? @db.VarChar(255)
   foto3Url String? @db.VarChar(255)
+  foto4Url String? @db.VarChar(255)
 
   ubicacion     String? @db.VarChar(255)
   accesibilidad String? @db.VarChar(255)

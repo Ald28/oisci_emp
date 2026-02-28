@@ -36,15 +36,16 @@ async function saveInspeccionWithFotos({ servicioExtintorId, files, userId, ...d
     let foto1Url = null
 
     if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-            const result = await storage.upload(files[i].buffer, {
+        for (const file of files) {
+
+            const result = await storage.upload(file.buffer, {
                 folder: 'inspecciones',
             })
 
-            fotos[`foto${i + 1}Url`] = result.url
+            const fieldName = file.fieldname + 'Url'
+            fotos[fieldName] = result.url
 
-            // 👉 SOLO capturamos la primera
-            if (i === 0) {
+            if (file.fieldname === 'foto1') {
                 foto1Url = result.url
             }
         }
@@ -52,9 +53,9 @@ async function saveInspeccionWithFotos({ servicioExtintorId, files, userId, ...d
 
     return inspeccionRepo.upsertDetalle({
         servicioExtintorId,
-        data: { ...data, ...fotos }, // 👈 siguen yendo las 3 fotos
+        data: { ...data, ...fotos },
         userId,
-        foto1Url, // 👈 SOLO PARA extintor.photo
+        foto1Url,
     })
 }
 
