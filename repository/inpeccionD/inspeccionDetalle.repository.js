@@ -31,19 +31,25 @@ function upsertDetalle({ servicioExtintorId, data, userId, foto1Url }) {
             },
         })
 
-        if (foto1Url) {
-            await tx.extintor.update({
-                where: {
-                    id: (
-                        await tx.servicioExtintor.findUnique({
-                            where: { id: servicioExtintorId },
-                            select: { extintorId: true },
-                        })
-                    ).extintorId,
-                },
+        if (data.observaciones !== undefined) {
+            await tx.servicioExtintor.update({
+                where: { id: servicioExtintorId },
                 data: {
-                    photo: foto1Url,
-                },
+                    observaciones: data.observaciones,
+                    usuarioActualizadorId: userId
+                }
+            })
+        }
+
+        if (foto1Url) {
+            const servicioExtintor = await tx.servicioExtintor.findUnique({
+                where: { id: servicioExtintorId },
+                select: { extintorId: true },
+            })
+
+            await tx.extintor.update({
+                where: { id: servicioExtintor.extintorId },
+                data: { photo: foto1Url },
             })
         }
 

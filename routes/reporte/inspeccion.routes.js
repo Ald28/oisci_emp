@@ -6,7 +6,7 @@ const router = Router()
 
 /**
  * @swagger
- * /reporte/inspeccion/{servicioId}:
+ * /reporte/fotografico/{servicioId}:
  *   get:
  *     summary: Obtener reporte de inspección por servicio
  *     description: >
@@ -114,7 +114,7 @@ const router = Router()
  *         description: Error interno
  */
 router.get(
-    '/inspeccion/:servicioId',
+    '/fotografico/:servicioId',
     authenticate,
     authorize(['admin', 'tecnico']),
     ReporteInspeccionController.obtenerReporte
@@ -122,7 +122,7 @@ router.get(
 
 /**
  * @swagger
- * /reporte/inspeccion/{servicioId}/download:
+ * /reporte/fotografico/{servicioId}/download:
  *   get:
  *     summary: Descargar certificado PDF de inspección
  *     description: >
@@ -157,7 +157,7 @@ router.get(
  *         description: Error interno al generar PDF
  */
 router.get(
-    '/inspeccion/:servicioId/download',
+    '/fotografico/:servicioId/download',
     authenticate,
     authorize(['admin', 'tecnico']),
     ReporteInspeccionController.descargarCertificado
