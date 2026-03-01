@@ -267,7 +267,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
             _photos[3] = null;
           }
         });
-        print('🔍 Fotos cargadas al iniciar:');
+        
         for (int i = 0; i < 4; i++) {
           print(
             'Foto $i -> File: ${_photos[i]?.path}, Path: ${_photoPaths[i]}, URL: ${_photoUrls[i]}',
@@ -313,9 +313,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
           _photos[index] = File(image.path);
           _photoPaths[index] = null;
         });
-        print(
-          '📸 Foto $index seleccionada en memoria: ${_photos[index]?.path}',
-        );
+
       } else {
         final appDir = await getApplicationDocumentsDirectory();
         final inspectionDir = Directory(path.join(appDir.path, 'inspecciones'));
@@ -331,7 +329,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
           _photoPaths[index] = savedFile.path;
           _photos[index] = null;
         });
-        print('📸 Foto $index guardada localmente: ${_photoPaths[index]}');
+        
       }
     } catch (e) {
       print('❌ Error al seleccionar foto $index: $e');
@@ -373,12 +371,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
         inspectionData['foto1'] = _photos[0];
         inspectionData['foto2'] = _photos[1];
         inspectionData['foto3'] = _photos[2];
-        print(
-          '🌐 Modo online, fotos enviadas: '
-          '${inspectionData['foto1']?.path}, '
-          '${inspectionData['foto2']?.path}, '
-          '${inspectionData['foto3']?.path}',
-        );
+        
       } else {
         inspectionData['foto1Path'] = _photoPaths[0];
         inspectionData['foto2Path'] = _photoPaths[1];
@@ -404,13 +397,13 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
           servicioExtintorId: widget.servicioExtintorId,
           inspectionData: inspectionData,
         );
-        print('✅ Inspección actualizada');
+        
       } else {
         await _createInspectionDetailUseCase.call(
           servicioExtintorId: widget.servicioExtintorId,
           inspectionData: inspectionData,
         );
-        print('✅ Inspección creada');
+        
       }
 
       if (!mounted) return;

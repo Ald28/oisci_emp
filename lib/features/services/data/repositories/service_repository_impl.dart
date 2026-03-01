@@ -455,8 +455,6 @@ class ServiceRepositoryImpl implements ServiceRepository {
   }) async {
     final hasInternet = await _hasInternet();
 
-    print('ANTES DE HTTP - inspectionData: $inspectionData');
-
     if (hasInternet) {
       try {
         // Intentar crear en el servidor
@@ -526,31 +524,16 @@ class ServiceRepositoryImpl implements ServiceRepository {
     required int servicioExtintorId,
     required Map<String, dynamic> inspectionData,
   }) async {
-    print('================= REPOSITORY UPDATE DEBUG =================');
-    print('🆔 servicioExtintorId: $servicioExtintorId');
-    print('📦 inspectionData ORIGINAL: $inspectionData');
-
-    print('ANTES DE HTTP - inspectionData: $inspectionData');
 
     final hasInternet = await _hasInternet();
-    print('🌐 ¿Tiene internet?: $hasInternet');
 
     if (hasInternet) {
       try {
-        print('🚀 Llamando a _httpDataSource.updateInspectionDetail...');
 
         final result = await _httpDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
           data: Map<String, dynamic>.from(inspectionData),
         );
-
-        print('✅ RESPUESTA DEL BACKEND (result):');
-        print('   🔹 ID: ${result.id}');
-        print('   🔹 foto1Url: ${result.foto1Url}');
-        print('   🔹 foto2Url: ${result.foto2Url}');
-        print('   🔹 foto3Url: ${result.foto3Url}');
-        print('   🔹 foto4Url: ${result.foto4Url}');
-        print('   🔹 observaciones: ${result.observaciones}');
 
         final localMap = {
           ...inspectionData,
@@ -561,27 +544,16 @@ class ServiceRepositoryImpl implements ServiceRepository {
           'observaciones': result.observaciones,
         };
 
-        print('🗄 DATA QUE SE GUARDARÁ EN LOCAL: $localMap');
-
         await _localDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
           inspectionData: localMap,
           addToSyncQueue: false,
         );
 
-        print('✅ ACTUALIZACIÓN LOCAL COMPLETADA');
-        print('===========================================================');
-
-        print('DESPUES DE HTTP - inspectionData: $inspectionData');
-
         return result;
       } catch (e, stack) {
-        print('💥 ERROR EN UPDATE CON INTERNET');
-        print('📛 Error: $e');
-        print('📛 StackTrace: $stack');
 
         final cleanData = _sanitizeForLocal(inspectionData);
-        print('🧹 DATA SANITIZADA PARA LOCAL: $cleanData');
 
         final localResult = await _localDataSource.updateInspectionDetail(
           servicioExtintorId: servicioExtintorId,
@@ -589,25 +561,17 @@ class ServiceRepositoryImpl implements ServiceRepository {
           addToSyncQueue: true,
         );
 
-        print('⚠️ GUARDADO SOLO EN LOCAL (sync pendiente)');
-        print('===========================================================');
-
         return localResult;
       }
     } else {
-      print('📴 SIN INTERNET - GUARDANDO SOLO EN LOCAL');
 
       final cleanData = _sanitizeForLocal(inspectionData);
-      print('🧹 DATA SANITIZADA PARA LOCAL: $cleanData');
 
       final localResult = await _localDataSource.updateInspectionDetail(
         servicioExtintorId: servicioExtintorId,
         inspectionData: cleanData,
         addToSyncQueue: true,
       );
-
-      print('✅ GUARDADO LOCAL COMPLETADO (offline)');
-      print('===========================================================');
 
       return localResult;
     }

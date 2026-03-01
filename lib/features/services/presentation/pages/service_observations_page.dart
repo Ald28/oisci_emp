@@ -13,7 +13,6 @@ import '../../../../core/widgets/floating_label_text_field.dart';
 import '../../domain/entities/extinguisher_entity.dart';
 import '../../domain/entities/service_extinguisher_entity.dart';
 import '../../domain/entities/service_type.dart';
-import '../../domain/usecases/update_service_extinguisher_observations_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import 'services_scan_page.dart';
 import 'services_menu_page.dart';
@@ -120,10 +119,7 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
            }
         }
       }
-      print('🔍 Observaciones cargadas: ${_observationsController.text}');
-      print(
-        '🔍 Foto4 cargada -> File: $_photo4File, Path: $_photo4Path, URL: $_photo4Url',
-      );
+
     } catch (e) {
       // Si hay error, continuar sin cargar observaciones
     } finally {
@@ -146,14 +142,12 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
 
     final hasInternet = await InternetConnectionChecker().hasConnection;
 
-    print('🌐 Tiene internet: $hasInternet');
-
     if (hasInternet) {
       setState(() {
         _photo4File = File(image.path);
         _photo4Path = null;
       });
-      print('📸 Foto 4 seleccionada en memoria: ${_photo4File?.path}');
+      
     } else {
       final appDir = await getApplicationDocumentsDirectory();
       final inspectionDir = Directory(path.join(appDir.path, 'inspecciones'));
@@ -171,7 +165,6 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
         _photo4File = null;
       });
 
-      print('📸 Foto 4 guardada localmente: $_photo4Path');
     }
   }
 
@@ -187,14 +180,6 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
           .getInspectionDetailByServiceExtinguisherId(
             widget.servicioExtintorId,
           );
-
-      print('🆔 servicioExtintorId enviado: ${widget.servicioExtintorId}');
-      print('📦 existingDetail: $existingDetail');
-
-      print('📸 Estado antes de enviar:');
-      print('   _photo4File: $_photo4File');
-      print('   _photo4Path: $_photo4Path');
-      print('   _photo4Url: $_photo4Url');
 
       final inspectionData = <String, dynamic>{
         'accesibilidad': existingDetail?.accesibilidad ?? 'NO',
@@ -251,7 +236,6 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
       // 🔥 ELIMINAR TODOS LOS NULL
       inspectionData.removeWhere((key, value) => value == null);
 
-      print('🔥 Payload FINAL a enviar en _saveObservations:');
       inspectionData.forEach((key, value) {
         print('$key -> $value');
       });
@@ -261,9 +245,8 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
         inspectionData: inspectionData,
       );
 
-      print('✅ Observaciones y foto4 guardadas correctamente.');
     } catch (e) {
-      print('❌ Error al guardar observaciones/foto4: $e');
+      
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

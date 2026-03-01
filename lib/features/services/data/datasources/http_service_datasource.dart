@@ -354,8 +354,6 @@ class HttpServiceDataSource {
         fotos.add(file);
       }
 
-      print('📸 Fotos reconstruidas: ${fotos.map((f) => f?.path)}');
-
       // Agregar checklist JSON
       formData.fields.add(MapEntry('data', jsonEncode(requestData)));
 
@@ -371,7 +369,6 @@ class HttpServiceDataSource {
               ),
             ),
           );
-          print('✅ Agregada foto${i + 1}: ${fotos[i]!.path}');
         }
       }
 
@@ -441,9 +438,7 @@ class HttpServiceDataSource {
     required Map<String, dynamic> data,
   }) async {
     try {
-      print('================= UPDATE INSPECTION DEBUG =================');
-      print('🆔 servicioExtintorId: $servicioExtintorId');
-      print('📦 DATA ORIGINAL: $data');
+      
 
       final Map<String, dynamic> requestData = Map.from(data);
       final formData = FormData();
@@ -465,9 +460,6 @@ class HttpServiceDataSource {
         fotos.add(file);
       }
 
-      print('📸 Fotos reconstruidas UPDATE: ${fotos.map((f) => f?.path)}');
-      print('📦 DATA SIN FOTOS: $requestData');
-
       for (int i = 0; i < fotos.length; i++) {
         if (fotos[i] != null && await fotos[i]!.exists()) {
           formData.files.add(
@@ -479,7 +471,7 @@ class HttpServiceDataSource {
               ),
             ),
           );
-          print('✅ UPDATE agregada foto${i + 1}: ${fotos[i]!.path}');
+          
         }
       }
 
