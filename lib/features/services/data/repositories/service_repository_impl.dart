@@ -551,6 +551,7 @@ class ServiceRepositoryImpl implements ServiceRepository {
         );
 
         return result;
+      // ignore: unused_catch_stack
       } catch (e, stack) {
 
         final cleanData = _sanitizeForLocal(inspectionData);

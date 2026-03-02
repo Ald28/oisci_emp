@@ -19,7 +19,8 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 13, // Versión 11: codeExtintor y serialNumberNFC, 12: foto4Url, 13: foto4Path
+      version:
+          14, // Versión 11: codeExtintor y serialNumberNFC, 12: foto4Url, 13: foto4Path, 14: nueva tala documentos
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -301,6 +302,24 @@ class AppDatabase {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       )
+    ''');
+
+    // Tabla para almacenar PDFs descargados (certificados/reportes) para uso offline
+    await db.execute('''
+      CREATE TABLE cached_documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        servicioId INTEGER NOT NULL,
+        docType TEXT NOT NULL,
+        filePath TEXT,
+        remoteUpdatedAt TEXT,
+        downloadedAt TEXT,
+        fileSize INTEGER,
+        UNIQUE(servicioId, docType)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_cached_documents_servicioId ON cached_documents(servicioId)
     ''');
   }
 
@@ -769,6 +788,25 @@ class AppDatabase {
       } catch (e) {
         // Ignorar si ya existe
       }
+    }
+
+    if (oldVersion < 14) {
+      await db.execute('''
+          CREATE TABLE IF NOT EXISTS cached_documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            servicioId INTEGER NOT NULL,
+            docType TEXT NOT NULL,
+            filePath TEXT,
+            remoteUpdatedAt TEXT,
+            downloadedAt TEXT,
+            fileSize INTEGER,
+            UNIQUE(servicioId, docType)
+          )
+        ''');
+
+      await db.execute('''
+          CREATE INDEX IF NOT EXISTS idx_cached_documents_servicioId ON cached_documents(servicioId)
+        ''');
     }
   }
 
