@@ -1,12 +1,13 @@
+// controllers/reporte/inspeccionMensual.controller.js
 import PDFDocument from 'pdfkit'
 import { ReporteInspeccionMensualService } from '../../service/reporte/inspeccionMensual.service.js'
 import path from 'path'
+import { toPeruDateTime } from '../../utils/datetime.js'
 
 function drawRow(doc, y, row) {
-
     const margin = 15
     const pageWidth = doc.page.width
-    const usableWidth = pageWidth - (margin * 2)
+    const usableWidth = pageWidth - margin * 2
 
     const totalColumns = row.length
     const columnWidth = usableWidth / totalColumns
@@ -14,43 +15,36 @@ function drawRow(doc, y, row) {
     let x = margin
 
     row.forEach((text) => {
-
         doc.text(String(text ?? ''), x, y, {
             width: columnWidth,
-            align: 'center'
+            align: 'center',
         })
-
         x += columnWidth
     })
 }
 
 export const ReporteInspeccionMensualController = {
-
     async obtener(req, res) {
-
         const { servicioId } = req.params
 
         const reporte = await ReporteInspeccionMensualService.generar(Number(servicioId))
 
-        if (!reporte)
-            return res.status(404).json({ message: 'Servicio no encontrado' })
+        if (!reporte) return res.status(404).json({ message: 'Servicio no encontrado' })
 
         res.json({ ok: true, reporte })
     },
 
     async descargar(req, res) {
-
         const { servicioId } = req.params
 
         const reporte = await ReporteInspeccionMensualService.generar(Number(servicioId))
 
-        if (!reporte)
-            return res.status(404).json({ message: 'Servicio no encontrado' })
+        if (!reporte) return res.status(404).json({ message: 'Servicio no encontrado' })
 
         const doc = new PDFDocument({
             size: 'A4',
             layout: 'landscape',
-            margin: 15
+            margin: 15,
         })
 
         doc.fontSize(6)
@@ -63,7 +57,7 @@ export const ReporteInspeccionMensualController = {
 
         doc.pipe(res)
 
-        // 🔵 LOGO (TÚ COLOCAS LA IMAGEN AQUÍ)
+        // 🔵 LOGO
         const logoPath = path.resolve('uploads/logo.png')
         doc.image(logoPath, 40, 30, { width: 100 })
 
@@ -78,7 +72,9 @@ export const ReporteInspeccionMensualController = {
         doc.text(`INSTALACIÓN: ${reporte.instalacion}`)
         doc.text(`DIRECCIÓN: ${reporte.direccion}`)
         doc.text(`CIUDAD: ${reporte.ciudad}`)
-        doc.text(`MES: ${new Date(reporte.mes).toLocaleDateString()}`)
+
+        // ✅ MES bonito en PDF (Perú)
+        doc.text(`MES: ${reporte.mes ?? '-'}`)
 
         doc.moveDown(2)
 
@@ -94,14 +90,14 @@ export const ReporteInspeccionMensualController = {
             'Manómetro', 'Precinto', 'Cilindro',
             'Agente', 'Colgador', 'Manija',
             'Manguera', 'Tobera', 'Sujetador',
-            'Observaciones'
+            'Observaciones',
         ])
 
         y += 20
 
-        // 🔥 TABLA
-        reporte.equipos.forEach((item) => {
+        const equipos = Array.isArray(reporte.equipos) ? reporte.equipos : []
 
+        equipos.forEach((item) => {
             if (y > 750) {
                 doc.addPage()
                 y = 50
@@ -119,10 +115,14 @@ export const ReporteInspeccionMensualController = {
                 item.numeroSerie,
                 item.numeroCilindro,
                 item.anioFabricacion,
-                item.ph,
+
+                // ✅ Fechas bonitas en PDF
+                toPeruDateTime(item.ph),
+
                 item.ubicacionEquipo,
-                item.fechaVencMantto,
-                item.fechaPruebaHidro,
+                toPeruDateTime(item.fechaVencMantto),
+                toPeruDateTime(item.fechaPruebaHidro),
+
                 1,
                 item.ubicadoNumeracion,
                 item.accesoLibre,
@@ -138,12 +138,12 @@ export const ReporteInspeccionMensualController = {
                 item.manguera,
                 item.tobera,
                 item.sujetador,
-                item.observaciones
+                item.observaciones,
             ])
 
             y += 18
         })
 
         doc.end()
-    }
+    },
 }

@@ -1,4 +1,5 @@
 import { prisma } from '../../database/client.mjs'
+import { toPeruDateTime } from '../../utils/datetime.js'
 
 export const ReporteInspeccionMensualService = {
 
@@ -11,10 +12,10 @@ export const ReporteInspeccionMensualService = {
                 servicioExtintores: {
                     include: {
                         extintor: true,
-                        inspeccionDetalle: true
-                    }
-                }
-            }
+                        inspeccionDetalle: true,
+                    },
+                },
+            },
         })
 
         if (!servicio) return null
@@ -25,10 +26,11 @@ export const ReporteInspeccionMensualService = {
             instalacion: servicio.sede.name_sede,
             direccion: servicio.sede.address,
             ciudad: servicio.sede.city,
-            mes: servicio.dateStart,
+
+            // ✅ ISO en hora Perú para Flutter
+            mes: toPeruDateTime(servicio.dateStart),
 
             equipos: servicio.servicioExtintores.map((se, index) => {
-
                 const e = se.extintor
                 const i = se.inspeccionDetalle
 
@@ -45,30 +47,32 @@ export const ReporteInspeccionMensualService = {
                     numeroSerie: e.serialNumberNFC,
                     numeroCilindro: e.cylinderNumber,
                     anioFabricacion: e.yearManufacture,
-                    ph: e.dateHydrostatic,
+
+                    // ✅ Fechas ISO -05:00 (parseable)
+                    ph: toPeruDateTime(e.dateHydrostatic),
                     ubicacionEquipo: e.location,
-                    fechaVencMantto: e.dateMaintenance,
-                    fechaPruebaHidro: e.dateHydrostatic,
+                    fechaVencMantto: toPeruDateTime(e.dateMaintenance),
+                    fechaPruebaHidro: toPeruDateTime(e.dateHydrostatic),
 
                     // Checklist
-                    ubicadoNumeracion: i?.ubicacion,
-                    accesoLibre: i?.accesibilidad,
-                    alturaAdecuada: i?.instalacion,
-                    pictogramaUso: i?.instrucciones,
-                    pictogramaClase: i?.clasificacion,
-                    manometro: i?.presion,
-                    precinto: i?.seguridad,
-                    cilindroEstado: i?.estado,
-                    indicaAgente: i?.carga,
-                    colgador: i?.soporte,
-                    manija: i?.activacion,
-                    manguera: i?.manguera,
-                    tobera: i?.boquilla,
-                    sujetador: i?.abrazadera,
+                    ubicadoNumeracion: i?.ubicacion ?? null,
+                    accesoLibre: i?.accesibilidad ?? null,
+                    alturaAdecuada: i?.instalacion ?? null,
+                    pictogramaUso: i?.instrucciones ?? null,
+                    pictogramaClase: i?.clasificacion ?? null,
+                    manometro: i?.presion ?? null,
+                    precinto: i?.seguridad ?? null,
+                    cilindroEstado: i?.estado ?? null,
+                    indicaAgente: i?.carga ?? null,
+                    colgador: i?.soporte ?? null,
+                    manija: i?.activacion ?? null,
+                    manguera: i?.manguera ?? null,
+                    tobera: i?.boquilla ?? null,
+                    sujetador: i?.abrazadera ?? null,
 
-                    observaciones: i?.observaciones
+                    observaciones: i?.observaciones ?? null,
                 }
-            })
+            }),
         }
-    }
+    },
 }
