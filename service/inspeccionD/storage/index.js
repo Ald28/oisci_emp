@@ -1,12 +1,12 @@
 import CloudinaryStorage from './cloudinary.storage.js'
-// import S3Storage from './s3.storage.js'
+import S3Storage from './s3.storage.js'
 
 let storage
 
 switch (process.env.STORAGE_PROVIDER) {
     case 's3':
-        // storage = new S3Storage()
-        throw new Error('S3 storage no implementado')
+        storage = new S3Storage()
+        break
     default:
         storage = new CloudinaryStorage()
 }
