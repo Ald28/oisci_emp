@@ -931,13 +931,23 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       itemCount: _extinguishers.length,
       itemBuilder: (context, index) {
         final extinguisher = _extinguishers[index];
+        final numero = index + 1;
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color(0xFFE84343),
+              child: Text(
+                '$numero',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             title: Text(
-              extinguisher.codeExtintor ??
-                  extinguisher.serialNumberNFC ??
-                  'Sin serie',
+              '$numero. ${extinguisher.codeExtintor ?? extinguisher.serialNumberNFC ?? 'Sin serie'}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
