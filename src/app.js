@@ -96,7 +96,7 @@ app.use('/services', servicioCreateRoutes);
 app.use('/services', listServicioRoutes);
 app.use('/services', approvedRoutes);
 app.use('/services', editService);
-app.use('/certificado', serviceDetailRoutes);
+app.use('/services', serviceDetailRoutes);
 
 app.use('/mantenimiento', mantenimientoRoutes);
 app.use('/mantenimiento', editMantenimiento);
