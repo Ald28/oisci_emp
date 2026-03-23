@@ -195,6 +195,11 @@ router.put(
  *         description: Error interno
  */
 router.get(
+    '/preview',
+    CertificadoController.previewImagen
+)
+
+router.get(
     '/:servicioId',
     authenticate,
     authorize(['admin', 'tecnico']),

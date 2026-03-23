@@ -2,6 +2,20 @@ import PDFDocument from 'pdfkit'
 import axios from 'axios'
 import { ReporteInspeccionService } from '../../service/reporte/inspeccion.service.js'
 import { toPeruDateTime } from '../../utils/datetime.js'
+import { obtenerKeyDesdeS3Url } from '../../service/inspeccionD/storage/keyS3.js'
+import { presignPreview } from '../../utils/presignPreview.js'
+
+async function descargarImagenPrivada(urlOrKey) {
+    const key = obtenerKeyDesdeS3Url(urlOrKey)
+    const signedUrl = await presignPreview(key, 'imagen.jpg')
+
+    const response = await axios.get(signedUrl, {
+        responseType: 'arraybuffer',
+        timeout: 15000,
+    })
+
+    return Buffer.from(response.data)
+}
 
 export const ReporteInspeccionController = {
 
@@ -92,27 +106,39 @@ export const ReporteInspeccionController = {
 
                 // Fotos
                 if (eq.fotos?.foto1Url) {
-                    const img = await axios.get(eq.fotos.foto1Url, {
-                        responseType: 'arraybuffer',
-                    })
-                    doc.image(img.data, { fit: [150, 150] })
-                    doc.moveDown()
+                    try {
+                        const img = await descargarImagenPrivada(eq.fotos.foto1Url)
+                        doc.image(img, { fit: [150, 150] })
+                        doc.moveDown()
+                    } catch (error) {
+                        console.error('Error cargando foto1:', error.message)
+                        doc.text('No se pudo cargar la foto 1')
+                        doc.moveDown()
+                    }
                 }
 
                 if (eq.fotos?.foto2Url) {
-                    const img = await axios.get(eq.fotos.foto2Url, {
-                        responseType: 'arraybuffer',
-                    })
-                    doc.image(img.data, { fit: [150, 150] })
-                    doc.moveDown()
+                    try {
+                        const img = await descargarImagenPrivada(eq.fotos.foto2Url)
+                        doc.image(img, { fit: [150, 150] })
+                        doc.moveDown()
+                    } catch (error) {
+                        console.error('Error cargando foto2:', error.message)
+                        doc.text('No se pudo cargar la foto 2')
+                        doc.moveDown()
+                    }
                 }
 
                 if (eq.fotos?.foto3Url) {
-                    const img = await axios.get(eq.fotos.foto3Url, {
-                        responseType: 'arraybuffer',
-                    })
-                    doc.image(img.data, { fit: [150, 150] })
-                    doc.moveDown()
+                    try {
+                        const img = await descargarImagenPrivada(eq.fotos.foto3Url)
+                        doc.image(img, { fit: [150, 150] })
+                        doc.moveDown()
+                    } catch (error) {
+                        console.error('Error cargando foto3:', error.message)
+                        doc.text('No se pudo cargar la foto 3')
+                        doc.moveDown()
+                    }
                 }
 
                 if (index < equipos.length - 1) {

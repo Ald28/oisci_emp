@@ -1,5 +1,7 @@
 import { CreateCertificado } from '../../repository/certificado/crear.repository.js'
 import { generarNumeroCertificado } from '../../utils/generarNumeroCertificado.js'
+import { presignPreview } from '../../utils/presignPreview.js'
+import {obtenerKeyDesdeS3Url} from '../inspeccionD/storage/keyS3.js'
 
 export const CertificadoService = {
 
@@ -21,6 +23,11 @@ export const CertificadoService = {
         })
     },
 
+    async generarPreviewUrl(urlOrKey) {
+        const key = obtenerKeyDesdeS3Url(urlOrKey)
+        return await presignPreview(key, 'imagen.jpg')
+    },
+
     async generarReporte(servicioId) {
         const registros = await CreateCertificado.obtenerFotosPorServicio(servicioId)
 
@@ -28,24 +35,42 @@ export const CertificadoService = {
             if (a.extintorId !== b.extintorId) {
                 return a.extintorId - b.extintorId
             }
-            const fechaA = a.inspeccionDetalle?.createdAt ? new Date(a.inspeccionDetalle.createdAt).getTime() : 0
-            const fechaB = b.inspeccionDetalle?.createdAt ? new Date(b.inspeccionDetalle.createdAt).getTime() : 0
+
+            const fechaA = a.inspeccionDetalle?.createdAt
+                ? new Date(a.inspeccionDetalle.createdAt).getTime()
+                : 0
+
+            const fechaB = b.inspeccionDetalle?.createdAt
+                ? new Date(b.inspeccionDetalle.createdAt).getTime()
+                : 0
+
             return fechaA - fechaB
         })
 
-        return registros.map(r => ({
-            extintorId: r.extintorId,
-            codeExtintor: r.extintor?.codeExtintor ?? null,
-            serialNumberNFC: r.extintor?.serialNumberNFC ?? null,
-            type: r.extintor?.type ?? null,
-            location: r.extintor?.location ?? null,
-            fotos: [
+        return registros.map((r) => {
+            const fotosOriginales = [
                 r.inspeccionDetalle?.foto1Url,
                 r.inspeccionDetalle?.foto2Url,
                 r.inspeccionDetalle?.foto3Url
-            ].filter(Boolean),
-            comentarios: r.inspeccionDetalle?.observaciones ?? null,
-            fechaHora: r.inspeccionDetalle?.createdAt ?? null
-        }))
+            ].filter(Boolean)
+
+            const fotosBackend = fotosOriginales.map((urlOrKey) => {
+                const key = obtenerKeyDesdeS3Url(urlOrKey)
+                const url = `${process.env.API_URL}/certificado/preview?key=${encodeURIComponent(key)}`
+                console.log('URL final enviada al frontend:', url)
+                return url
+            })
+
+            return {
+                extintorId: r.extintorId,
+                codeExtintor: r.extintor?.codeExtintor ?? null,
+                serialNumberNFC: r.extintor?.serialNumberNFC ?? null,
+                type: r.extintor?.type ?? null,
+                location: r.extintor?.location ?? null,
+                fotos: fotosBackend,
+                comentarios: r.inspeccionDetalle?.observaciones ?? null,
+                fechaHora: r.inspeccionDetalle?.createdAt ?? null
+            }
+        })
     }
 }

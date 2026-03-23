@@ -35,8 +35,18 @@ export const ListRepository = {
     async findBySearchTerm(searchTerm, sedeId = null) {
         const where = {
             OR: [
-                { serialNumberNFC: searchTerm },
-                { codeExtintor: searchTerm }
+                {
+                    serialNumberNFC: {
+                        equals: searchTerm,
+                        mode: 'insensitive'
+                    }
+                },
+                {
+                    codeExtintor: {
+                        equals: searchTerm,
+                        mode: 'insensitive'
+                    }
+                }
             ]
         };
 
@@ -175,7 +185,7 @@ export const ListRepository = {
 
         return prisma.extintor.findMany(queryOptions);
     },
-    
+
     async updateExtintor(extintorId, data) {
         return prisma.extintor.update({
             where: { id: Number(extintorId) },
