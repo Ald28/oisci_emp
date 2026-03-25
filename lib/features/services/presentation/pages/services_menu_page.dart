@@ -13,7 +13,9 @@ import '../../domain/usecases/get_services_in_progress_usecase.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../../../core/auth/auth_service.dart';
-import '../../../../core/network/dio_client.dart';
+import '../../../client_statistics/domain/entities/client_entity.dart';
+import '../../../client_statistics/data/repositories/client_repository_impl.dart';
+import '../../../client_statistics/domain/usecases/search_clients_usecase.dart';
 import 'services_scan_page.dart';
 
 /// Página del menú de servicios (Mantenimiento e Inspección)
@@ -26,7 +28,7 @@ class ServicesMenuPage extends StatefulWidget {
 
 class _ServicesMenuPageState extends State<ServicesMenuPage> {
   int? _selectedClientId;
-  List<dynamic> _clients = [];
+  List<ClientEntity> _clients = [];
   bool _isLoadingClients = false;
 
   int? _selectedSedeId;
@@ -42,6 +44,9 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
   );
   late final GetServicesInProgressUseCase _getServicesInProgressUseCase =
       GetServicesInProgressUseCase(ServiceRepositoryImpl());
+  late final SearchClientsUseCase _searchClientsUseCase = SearchClientsUseCase(
+    ClientRepositoryImpl(),
+  );
 
   @override
   void initState() {
@@ -125,26 +130,13 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
     });
 
     try {
-      final dio = DioClient().dio;
-      final response = await dio.get('/users/clients', queryParameters: {'page': 1, 'pageSize': 100});
-      final responseData = response.data as Map<String, dynamic>;
+      final responseData = await _searchClientsUseCase.call(page: 1, pageSize: 100);
 
       if (responseData['data'] != null && mounted) {
         setState(() {
-          _clients = responseData['data'] as List;
+          _clients = (responseData['data'] as List).cast<ClientEntity>();
           _isLoadingClients = false;
         });
-      }
-    } on DioException catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingClients = false;
-        });
-        ErrorHandler.handleDioError(
-          context,
-          e,
-          customMessage: 'Error al cargar clientes: ${ErrorHandler.getErrorMessage(e)}',
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -465,9 +457,9 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
                   ),
                   items: _clients.map((client) {
                     return DropdownMenuItem<int>(
-                      value: client['id'] as int,
+                      value: client.id,
                       child: Text(
-                        client['razonSocial'] as String,
+                        client.razonSocial,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,

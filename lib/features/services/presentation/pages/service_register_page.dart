@@ -18,9 +18,7 @@ import '../../data/repositories/service_repository_impl.dart';
 import '../../domain/repositories/service_repository.dart';
 import '../../domain/repositories/extinguisher_repository.dart';
 import '../../domain/entities/extinguisher_entity.dart';
-import '../../data/models/extinguisher_model.dart';
 import '../../data/datasources/local_extinguisher_datasource.dart';
-import '../../../../core/network/dio_client.dart';
 import '../../../../core/database/app_database.dart';
 import '../../domain/constants/extinguisher_types.dart';
 import 'service_data_page.dart';
@@ -1266,22 +1264,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     });
 
     try {
-      final dio = DioClient().dio;
-      final response = await dio.get(
-        '/nfc/list-nfc',
-        queryParameters: {'sedeId': _sedeId},
+      final extinguishers = await _extinguisherRepository.getExtinguishersWithoutSerialNumber(
+        sedeId: _sedeId,
       );
-
-      List<dynamic> listData = [];
-      if (response.data is List) {
-        listData = response.data;
-      } else if (response.data is Map && response.data['data'] is List) {
-        listData = response.data['data'];
-      }
-
-      final extinguishers = listData
-          .map((json) => ExtinguisherModel.fromJson(json as Map<String, dynamic>))
-          .toList();
 
       if (!mounted) return;
 
