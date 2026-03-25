@@ -2,12 +2,13 @@ import { listClientsService } from '../../service/client/list.service.js'
 
 export async function listClients(req, res) {
     try {
-        const { search, page = 1 } = req.query
+        const { search, page = 1, pageSize = 10, all = 'false' } = req.query
 
         const result = await listClientsService(
             search,
             Number(page),
-            10
+            Number(pageSize),
+            all === 'true'
         )
 
         res.status(200).json(result)
