@@ -229,20 +229,37 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
       // -----------------------------
 
       final obsText = _observationsController.text.trim();
+      
+      // SIEMPRE actualizamos las observaciones genéricas en el servicio_extintor
       if (obsText.isNotEmpty) {
-        inspectionData['observaciones'] = obsText;
+        await _repository.updateServiceExtinguisherObservations(
+          servicioExtintorId: widget.servicioExtintorId,
+          observaciones: obsText,
+        );
       }
 
-      // 🔥 ELIMINAR TODOS LOS NULL
-      inspectionData.removeWhere((key, value) => value == null);
+      // Solo si es inspección actualizamos la tabla inspeccion_detalle
+      if (widget.serviceType == ServiceType.inspection) {
+        if (obsText.isNotEmpty) {
+          inspectionData['observaciones'] = obsText;
+        }
 
-      inspectionData.forEach((key, value) {
-        print('$key -> $value');
-      });
+        // 🔥 ELIMINAR TODOS LOS NULL
+        inspectionData.removeWhere((key, value) => value == null);
 
-      await _updateObservationsUseCase.call(
-        servicioExtintorId: widget.servicioExtintorId,
-        inspectionData: inspectionData,
+        inspectionData.forEach((key, value) {
+          print('$key -> $value');
+        });
+
+        await _updateObservationsUseCase.call(
+          servicioExtintorId: widget.servicioExtintorId,
+          inspectionData: inspectionData,
+        );
+      }
+
+      // Al terminar las observaciones, marcar el extintor como completado
+      await _repository.markServiceExtinguisherCompleted(
+        widget.servicioExtintorId,
       );
 
     } catch (e) {

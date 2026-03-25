@@ -308,6 +308,10 @@ class _ServiceExtinguisherListPageState
             size: 20,
           );
 
+    final completadoIcon = item.completado
+        ? const Icon(Icons.check_box, color: Colors.blue, size: 24)
+        : const Icon(Icons.check_box_outline_blank, color: Colors.grey, size: 24);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -344,7 +348,26 @@ class _ServiceExtinguisherListPageState
               ),
           ],
         ),
-        trailing: estadoIcon,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Op.', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                estadoIcon,
+              ],
+            ),
+            const SizedBox(width: 16),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Rev.', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                completadoIcon,
+              ],
+            ),
+          ],
+        ),
         onTap: () => _handleItemTap(item),
       ),
     );

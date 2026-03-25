@@ -403,6 +403,22 @@ class LocalServiceDataSource {
     final now = DateTime.now();
     final tempId = -now.millisecondsSinceEpoch;
 
+    // Verificar si ya existe (para evitar UNIQUE constraint failed)
+    final existing = await db.query(
+      'mantenimiento_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (existing.isNotEmpty) {
+      return await updateMaintenanceDetail(
+        servicioExtintorId: servicioExtintorId,
+        checklistData: checklistData,
+        addToSyncQueue: true,
+      );
+    }
+
     await db.insert('mantenimiento_detalle', {
       'id': tempId,
       'servicioExtintorId': servicioExtintorId,
@@ -756,6 +772,22 @@ class LocalServiceDataSource {
     final usuarioCreadorId = int.parse(userIdStr);
     final now = DateTime.now();
     final tempId = -now.millisecondsSinceEpoch;
+
+    // Verificar si ya existe (para evitar UNIQUE constraint failed)
+    final existing = await db.query(
+      'inspeccion_detalle',
+      where: 'servicioExtintorId = ?',
+      whereArgs: [servicioExtintorId],
+      limit: 1,
+    );
+
+    if (existing.isNotEmpty) {
+      return await updateInspectionDetail(
+        servicioExtintorId: servicioExtintorId,
+        inspectionData: inspectionData,
+        addToSyncQueue: true,
+      );
+    }
 
     await db.insert('inspeccion_detalle', {
       'id': tempId,
