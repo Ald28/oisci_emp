@@ -13,6 +13,7 @@ import '../../domain/usecases/get_services_in_progress_usecase.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/network/dio_client.dart';
 import 'services_scan_page.dart';
 
 /// Página del menú de servicios (Mantenimiento e Inspección)
@@ -24,6 +25,10 @@ class ServicesMenuPage extends StatefulWidget {
 }
 
 class _ServicesMenuPageState extends State<ServicesMenuPage> {
+  int? _selectedClientId;
+  List<dynamic> _clients = [];
+  bool _isLoadingClients = false;
+
   int? _selectedSedeId;
   List<Sede> _sedes = [];
   bool _isLoadingSedes = false;
@@ -41,6 +46,7 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
   @override
   void initState() {
     super.initState();
+    _loadClients();
     _loadSedes();
     _checkServiceInProgress();
   }
@@ -110,7 +116,49 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
   }
 
   Future<void> _handleRefresh() async {
-    await Future.wait([_loadSedes(), _checkServiceInProgress()]);
+    await Future.wait([_loadClients(), _loadSedes(), _checkServiceInProgress()]);
+  }
+
+  Future<void> _loadClients() async {
+    setState(() {
+      _isLoadingClients = true;
+    });
+
+    try {
+      final dio = DioClient().dio;
+      final response = await dio.get('/users/clients', queryParameters: {'page': 1, 'pageSize': 100});
+      final responseData = response.data as Map<String, dynamic>;
+
+      if (responseData['data'] != null && mounted) {
+        setState(() {
+          _clients = responseData['data'] as List;
+          _isLoadingClients = false;
+        });
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingClients = false;
+        });
+        ErrorHandler.handleDioError(
+          context,
+          e,
+          customMessage: 'Error al cargar clientes: ${ErrorHandler.getErrorMessage(e)}',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingClients = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar clientes: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadSedes() async {
@@ -315,6 +363,18 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
                     ],
                   ),
                 ),
+              // Selector de Cliente
+              const Text(
+                'Seleccionar cliente:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildClientDropdown(),
+              const SizedBox(height: 16),
               // Selector de Sede
               const Text(
                 'Seleccionar sede:',
@@ -354,6 +414,102 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildClientDropdown() {
+    final hasValue = _selectedClientId != null;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: _isLoadingClients
+              ? const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 18, 12, 14),
+                  child: Center(
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              : DropdownButtonFormField<int>(
+                  initialValue: _selectedClientId,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.fromLTRB(12, 18, 12, 14),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                  hint: const Text(
+                    'Seleccionar cliente',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  items: _clients.map((client) {
+                    return DropdownMenuItem<int>(
+                      value: client['id'] as int,
+                      child: Text(
+                        client['razonSocial'] as String,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedClientId = value;
+                      _selectedSedeId = null; // Reset sede when client changes
+                    });
+                  },
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+        ),
+        if (hasValue)
+          Positioned(
+            top: -8,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAEAEA),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Cliente',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -403,7 +559,9 @@ class _ServicesMenuPageState extends State<ServicesMenuPage> {
                       color: Colors.grey,
                     ),
                   ),
-                  items: _sedes.map((sede) {
+                  items: _sedes
+                      .where((sede) => sede.clientId == _selectedClientId)
+                      .map((sede) {
                     return DropdownMenuItem<int>(
                       value: sede.id,
                       child: Text(

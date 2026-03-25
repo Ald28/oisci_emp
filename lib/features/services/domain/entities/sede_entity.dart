@@ -8,6 +8,7 @@ class Sede {
   final String? managerName;
   final String? managerPhone;
   final String? managerEmail;
+  final int? clientId;
 
   const Sede({
     required this.id,
@@ -18,5 +19,6 @@ class Sede {
     this.managerName,
     this.managerPhone,
     this.managerEmail,
+    this.clientId,
   });
 }
