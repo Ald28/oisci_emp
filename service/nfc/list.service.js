@@ -1,8 +1,8 @@
 import { ListRepository } from "../../repository/nfc/list.repository.js";
 import { mapExtintorPhoto } from "../inspeccionD/storage/keyS3.js";
 
-export async function listNFCService() {
-    const nfcList = await ListRepository.listAll();
+export async function listNFCService(sedeId = null) {
+    const nfcList = await ListRepository.listAll(sedeId);
     return nfcList.map(mapExtintorPhoto);
 }
 

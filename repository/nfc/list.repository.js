@@ -1,8 +1,15 @@
 import { prisma } from '../../database/client.mjs';
 
 export const ListRepository = {
-    async listAll() {
+    async listAll(sedeId = null) {
+        const where = {};
+
+        if (sedeId !== null && sedeId !== undefined && sedeId !== '') {
+            where.sedeId = Number(sedeId);
+        }
+
         return prisma.extintor.findMany({
+            where,
             include: {
                 usuarioCreador: {
                     select: {
@@ -88,7 +95,7 @@ export const ListRepository = {
     async findBySedeId(sedeId) {
         return prisma.extintor.findMany({
             where: {
-                sedeId: sedeId,
+                sedeId: Number(sedeId),
             },
             orderBy: {
                 id: 'asc',
@@ -117,19 +124,15 @@ export const ListRepository = {
         });
     },
 
-    /**
-     * Obtener extintores modificados después de un timestamp
-     * Para sincronización incremental
-     */
     async findUpdatedSince(since) {
-        const sinceDate = since ? new Date(since) : null
+        const sinceDate = since ? new Date(since) : null;
 
         const where = sinceDate ? {
             OR: [
                 { updatedAt: { gte: sinceDate } },
                 { createdAt: { gte: sinceDate } }
             ]
-        } : {}
+        } : {};
 
         return prisma.extintor.findMany({
             where,
@@ -146,7 +149,7 @@ export const ListRepository = {
             orderBy: {
                 id: 'asc'
             }
-        })
+        });
     },
 
     async listByExtintorNumber({ sedeId = null, page = null, limit = null }) {

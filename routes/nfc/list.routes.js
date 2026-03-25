@@ -1,5 +1,16 @@
 import { Router } from 'express';
-import { listNFCController, getNFCByIdController, searchExtinguisherController, getExtinguisherByIdController, getExtintoresBySedeController, getExtintoresStatsBySedeController, getExtinguishersUpdatedSinceController, listExtintorNumberController, updateExtinguisherController, listExtintoresWithFiltersController } from '../../controllers/nfc/list.controller.js';
+import {
+    listNFCController,
+    getNFCByIdController,
+    searchExtinguisherController,
+    getExtinguisherByIdController,
+    getExtintoresBySedeController,
+    getExtintoresStatsBySedeController,
+    getExtinguishersUpdatedSinceController,
+    listExtintorNumberController,
+    updateExtinguisherController,
+    listExtintoresWithFiltersController
+} from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -8,11 +19,18 @@ const router = Router();
  * @swagger
  * /nfc/list-nfc:
  *   get:
- *     summary: Listar todos los NFC
+ *     summary: Listar todos los NFC o filtrar por sede
  *     tags:
  *       - NFC
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: sedeId
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: ID de la sede para filtrar los extintores/NFC
  *     responses:
  *       200:
  *         description: Lista de NFC

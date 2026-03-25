@@ -1,8 +1,21 @@
-import { listNFCService, getNFCByIdService, searchExtinguisherService, getExtinguisherByIdService, getExtintoresBySedeService, getExtintoresStatsBySedeService, getExtinguishersUpdatedSinceService, listExtintorNumber, updateExtinguisherService, listExtintoresWithFiltersService } from "../../service/nfc/list.service.js";
+import {
+    listNFCService,
+    getNFCByIdService,
+    searchExtinguisherService,
+    getExtinguisherByIdService,
+    getExtintoresBySedeService,
+    getExtintoresStatsBySedeService,
+    getExtinguishersUpdatedSinceService,
+    listExtintorNumber,
+    updateExtinguisherService,
+    listExtintoresWithFiltersService
+} from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
     try {
-        const nfcList = await listNFCService();
+        const { sedeId } = req.query;
+
+        const nfcList = await listNFCService(sedeId);
         res.status(200).json(nfcList);
     } catch (error) {
         res.status(500).json({ message: "Error retrieving NFC list", error: error.message });
