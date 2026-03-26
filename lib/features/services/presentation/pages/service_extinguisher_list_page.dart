@@ -9,6 +9,8 @@ import '../../domain/usecases/get_extinguisher_by_id_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
+import '../../domain/usecases/get_maintenance_detail_by_service_extinguisher_id_usecase.dart';
+import '../../domain/usecases/get_inspection_detail_by_service_extinguisher_id_usecase.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../../client_statistics/domain/entities/client_entity.dart';
 import '../../../client_statistics/data/repositories/client_repository_impl.dart';
@@ -41,6 +43,8 @@ class _ServiceExtinguisherListPageState
   String _clientName = 'Cargando...';
   String _sedeName = 'Cargando...';
 
+  Map<int, bool> _revStatus = {};
+
   late final GetServiceExtinguishersByServiceIdUseCase
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
     ServiceRepositoryImpl(),
@@ -53,6 +57,14 @@ class _ServiceExtinguisherListPageState
       GetSedesUseCase(SedeRepositoryImpl());
   late final SearchClientsUseCase _searchClientsUseCase =
       SearchClientsUseCase(ClientRepositoryImpl());
+  late final GetMaintenanceDetailByServiceExtinguisherIdUseCase
+      _getMaintenanceDetailUseCase =
+      GetMaintenanceDetailByServiceExtinguisherIdUseCase(
+          ServiceRepositoryImpl());
+  late final GetInspectionDetailByServiceExtinguisherIdUseCase
+      _getInspectionDetailUseCase =
+      GetInspectionDetailByServiceExtinguisherIdUseCase(
+          ServiceRepositoryImpl());
 
   @override
   void initState() {
@@ -69,6 +81,51 @@ class _ServiceExtinguisherListPageState
       final serviceExtinguishers = await _getServiceExtinguishersUseCase.call(
         widget.servicioId,
       );
+
+      final Map<int, bool> tempRevStatus = {};
+
+      for (final se in serviceExtinguishers) {
+        bool hasChanges = false;
+        if (se.completado) {
+          if (widget.serviceType == ServiceType.maintenance) {
+            final detail = await _getMaintenanceDetailUseCase.call(se.id);
+            if (detail != null) {
+              if (detail.mantenimiento == true ||
+                  detail.recarga == true ||
+                  detail.pruebaHidrostatica == true ||
+                  detail.bajaExtintor == true ||
+                  detail.pintura == true ||
+                  detail.recargaCartucho == true ||
+                  detail.cambioPartes == true) {
+                hasChanges = true;
+              }
+            }
+          } else if (widget.serviceType == ServiceType.inspection) {
+            final detail = await _getInspectionDetailUseCase.call(se.id);
+            if (detail != null) {
+              if (detail.accesibilidad == 'NO' ||
+                  detail.ubicacion == 'NO' ||
+                  detail.instalacion == 'NO' ||
+                  detail.instrucciones == 'NO' ||
+                  detail.clasificacion == 'NO' ||
+                  detail.recarga == 'NO' ||
+                  detail.certificacion == 'NO' ||
+                  detail.presion == 'NO' ||
+                  detail.seguridad == 'NO' ||
+                  detail.estado == 'NO' ||
+                  detail.carga == 'NO' ||
+                  detail.soporte == 'NO' ||
+                  detail.activacion == 'NO' ||
+                  detail.manguera == 'NO' ||
+                  detail.boquilla == 'NO' ||
+                  detail.abrazadera == 'NO') {
+                hasChanges = true;
+              }
+            }
+          }
+        }
+        tempRevStatus[se.id] = hasChanges;
+      }
 
       final service = await ServiceRepositoryImpl().getServiceById(widget.servicioId);
 
@@ -99,6 +156,7 @@ class _ServiceExtinguisherListPageState
           _clientName = tempClientName;
           _sedeName = tempSedeName;
           _serviceExtinguishers = serviceExtinguishers;
+          _revStatus = tempRevStatus;
           _isLoading = false;
         });
       }
@@ -390,7 +448,8 @@ class _ServiceExtinguisherListPageState
             size: 20,
           );
 
-    final completadoIcon = item.completado
+    final bool hasRevChanges = _revStatus[item.id] ?? false;
+    final completadoIcon = hasRevChanges
         ? const Icon(Icons.check_box, color: Colors.blue, size: 24)
         : const Icon(Icons.check_box_outline_blank, color: Colors.grey, size: 24);
 
