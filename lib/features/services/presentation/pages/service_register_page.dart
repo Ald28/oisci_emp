@@ -42,7 +42,10 @@ class ServiceRegisterPage extends StatefulWidget {
     this.initialCodeExtintor,
     required this.servicioId,
     this.initialSedeId,
+    this.initialExtinguisher,
   });
+
+  final Extinguisher? initialExtinguisher;
 
   @override
   State<ServiceRegisterPage> createState() => _ServiceRegisterPageState();
@@ -115,6 +118,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     // Listener para sincronizar _agente con _agenteController
     _agenteController.addListener(_onAgenteChanged);
     _loadSedes();
+
+    // Si viene un extintor inicial (desde vincular en la pantalla anterior)
+    if (widget.initialExtinguisher != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fillFormWithExtinguisher(widget.initialExtinguisher!);
+      });
+    }
   }
 
   Future<void> _loadServiceSede() async {
@@ -559,13 +569,12 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                               controller: _numeroSerieController,
                               label: 'Número de serie NFC',
                               hintText: 'Número de serie NFC',
-                              readOnly:
-                                  true, // Solo lectura: se autocompleta al escanear o queda vacío en búsqueda manual
+                              readOnly: true,
                             ),
                           ),
                           // Mostrar opción de vincular solo cuando el usuario llegó por escaneo NFC
                           // (tiene número de serie de la tarjeta). Búsqueda manual es por código extintor.
-                          if (_sedeId != null)...[
+                          if (_sedeId != null) ...[
                             const SizedBox(width: 8),
                             IconButton(
                               icon: _isLoadingExtinguishers
@@ -574,15 +583,13 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Color(0xFFE84343),
-                                            ),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFE84343),
+                                        ),
                                       ),
                                     )
                                   : const Icon(Icons.link),
-                              tooltip:
-                                  'Vincular con extintor existente sin número de serie',
+                              tooltip: 'Vincular con extintor existente sin número de serie',
                               onPressed: _isLoadingExtinguishers
                                   ? null
                                   : _showLinkExtinguisherModal,
@@ -643,15 +650,6 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                               const SizedBox(width: 8),
                               TextButton(
                                 onPressed: _clearFormData,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
                                 child: const Text(
                                   'Cancelar',
                                   style: TextStyle(fontSize: 13),
@@ -1248,6 +1246,7 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
     );
   }
 
+
   Future<void> _showLinkExtinguisherModal() async {
     if (_sedeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1301,9 +1300,9 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
                 // Header
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE84343),
-                    borderRadius: const BorderRadius.only(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE84343),
+                    borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
                     ),
