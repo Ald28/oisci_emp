@@ -390,7 +390,7 @@ router.put(
 router.get(
     '/services/extintores/:servicioExtintorId/inspeccion',
     authenticate,
-    authorize(['tecnico']),
+    authorize(['tecnico, admin']),
     controller.getInspeccionByServicioExtintorId
 )
 
