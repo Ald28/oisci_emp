@@ -100,7 +100,10 @@ export async function getInspeccionByServicioExtintorId(req, res) {
         const { servicioExtintorId } = req.params
 
         if (!servicioExtintorId) {
-            return res.status(400).json({ message: 'servicioExtintorId es requerido' })
+            return res.status(400).json({
+                ok: false,
+                message: 'servicioExtintorId es requerido'
+            })
         }
 
         const inspeccion = await inspeccionService.getByServicioExtintorId(
@@ -108,13 +111,39 @@ export async function getInspeccionByServicioExtintorId(req, res) {
         )
 
         if (!inspeccion) {
-            return res.status(404).json({ message: 'Inspección no encontrada' })
+            return res.status(404).json({
+                ok: false,
+                message: 'Inspección no encontrada'
+            })
         }
 
-        res.json({ data: inspeccion })
+        const response = {
+            extintorId: inspeccion.servicioExtintorId,
+            codeExtintor: null,
+            serialNumberNFC: null,
+            type: null,
+            location: null,
+            fotos: [
+                inspeccion.foto1Url,
+                inspeccion.foto2Url,
+                inspeccion.foto3Url,
+                inspeccion.foto4Url,
+            ].filter(Boolean), // elimina nulls
+            comentarios: inspeccion.observaciones,
+            fechaHora: inspeccion.updatedAt
+        }
+
+        return res.json({
+            ok: true,
+            reporte: [response] // 👈 siempre array
+        })
+
     } catch (error) {
         console.error(error)
-        res.status(500).json({ message: error.message })
+        res.status(500).json({
+            ok: false,
+            message: error.message
+        })
     }
 }
 
