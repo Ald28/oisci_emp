@@ -182,22 +182,54 @@ class _ServiceObservationsPageState extends State<ServiceObservationsPage> {
           );
 
       final inspectionData = <String, dynamic>{
-        'accesibilidad': existingDetail?.accesibilidad ?? 'NO',
-        'ubicacion': existingDetail?.ubicacion ?? 'NO',
-        'instalacion': existingDetail?.instalacion ?? 'NO',
-        'instrucciones': existingDetail?.instrucciones ?? 'NO',
-        'clasificacion': existingDetail?.clasificacion ?? 'NO',
-        'recarga': existingDetail?.recarga ?? 'NO',
-        'certificacion': existingDetail?.certificacion ?? 'NO',
-        'presion': existingDetail?.presion ?? 'NO',
-        'seguridad': existingDetail?.seguridad ?? 'NO',
-        'estado': existingDetail?.estado ?? 'NO',
-        'carga': existingDetail?.carga ?? 'NO',
-        'soporte': existingDetail?.soporte ?? 'NO',
-        'activacion': existingDetail?.activacion ?? 'NO',
-        'manguera': existingDetail?.manguera ?? 'NO',
-        'boquilla': existingDetail?.boquilla ?? 'NO',
-        'abrazadera': existingDetail?.abrazadera ?? 'NO',
+        'accesibilidad': widget.checklistItems.containsKey('ACCESIBILIDAD')
+            ? (widget.checklistItems['ACCESIBILIDAD'] == true ? 'SI' : 'NO')
+            : (existingDetail?.accesibilidad ?? 'SI'),
+        'ubicacion': widget.checklistItems.containsKey('UBICACION')
+            ? (widget.checklistItems['UBICACION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.ubicacion ?? 'SI'),
+        'instalacion': widget.checklistItems.containsKey('INSTALACION')
+            ? (widget.checklistItems['INSTALACION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.instalacion ?? 'SI'),
+        'instrucciones': widget.checklistItems.containsKey('INSTRUCCIONES')
+            ? (widget.checklistItems['INSTRUCCIONES'] == true ? 'SI' : 'NO')
+            : (existingDetail?.instrucciones ?? 'SI'),
+        'clasificacion': widget.checklistItems.containsKey('CLASIFICACION')
+            ? (widget.checklistItems['CLASIFICACION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.clasificacion ?? 'SI'),
+        'recarga': widget.checklistItems.containsKey('RECARGA')
+            ? (widget.checklistItems['RECARGA'] == true ? 'SI' : 'NO')
+            : (existingDetail?.recarga ?? 'SI'),
+        'certificacion': widget.checklistItems.containsKey('CERTIFICACION')
+            ? (widget.checklistItems['CERTIFICACION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.certificacion ?? 'SI'),
+        'presion': widget.checklistItems.containsKey('PRESION')
+            ? (widget.checklistItems['PRESION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.presion ?? 'SI'),
+        'seguridad': widget.checklistItems.containsKey('SEGURIDAD')
+            ? (widget.checklistItems['SEGURIDAD'] == true ? 'SI' : 'NO')
+            : (existingDetail?.seguridad ?? 'SI'),
+        'estado': widget.checklistItems.containsKey('ESTADO')
+            ? (widget.checklistItems['ESTADO'] == true ? 'SI' : 'NO')
+            : (existingDetail?.estado ?? 'SI'),
+        'carga': widget.checklistItems.containsKey('CARGA')
+            ? (widget.checklistItems['CARGA'] == true ? 'SI' : 'NO')
+            : (existingDetail?.carga ?? 'SI'),
+        'soporte': widget.checklistItems.containsKey('SOPORTE')
+            ? (widget.checklistItems['SOPORTE'] == true ? 'SI' : 'NO')
+            : (existingDetail?.soporte ?? 'SI'),
+        'activacion': widget.checklistItems.containsKey('ACTIVACION')
+            ? (widget.checklistItems['ACTIVACION'] == true ? 'SI' : 'NO')
+            : (existingDetail?.activacion ?? 'SI'),
+        'manguera': widget.checklistItems.containsKey('MANGUERA')
+            ? (widget.checklistItems['MANGUERA'] == true ? 'SI' : 'NO')
+            : (existingDetail?.manguera ?? 'SI'),
+        'boquilla': widget.checklistItems.containsKey('BOQUILLA')
+            ? (widget.checklistItems['BOQUILLA'] == true ? 'SI' : 'NO')
+            : (existingDetail?.boquilla ?? 'SI'),
+        'abrazadera': widget.checklistItems.containsKey('ABRAZADERA')
+            ? (widget.checklistItems['ABRAZADERA'] == true ? 'SI' : 'NO')
+            : (existingDetail?.abrazadera ?? 'SI'),
 
         // Mantener fotos anteriores si existen
         'foto1Path': existingDetail?.foto1Path,

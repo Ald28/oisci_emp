@@ -421,7 +421,7 @@ class _InspectionChecklistPageState extends State<InspectionChecklistPage>
             serviceType: widget.serviceType,
             servicioId: widget.servicioId,
             servicioExtintorId: widget.servicioExtintorId,
-            checklistItems: {}, // No se usa para inspección
+            checklistItems: _checklistItems,
             rechargeAgent: null,
             decommissionReason: null,
             partsChangeDetails: null,

@@ -86,10 +86,18 @@ class _ServiceExtinguisherListPageState
 
       for (final se in serviceExtinguishers) {
         bool hasChanges = false;
-        if (se.completado) {
+        
+        // 1. Verificar si hubo cambio de estado (Inoperativo <-> Operativo)
+        if (se.estadoFinal != null && se.estadoFinal != se.estadoInicial) {
+          hasChanges = true;
+        }
+
+        // 2. Verificar detalles específicos si está completado
+        if (se.completado && !hasChanges) {
           if (widget.serviceType == ServiceType.maintenance) {
             final detail = await _getMaintenanceDetailUseCase.call(se.id);
             if (detail != null) {
+              // Si se marcó cualquier acción de mantenimiento, es un cambio
               if (detail.mantenimiento == true ||
                   detail.recarga == true ||
                   detail.pruebaHidrostatica == true ||
@@ -103,6 +111,8 @@ class _ServiceExtinguisherListPageState
           } else if (widget.serviceType == ServiceType.inspection) {
             final detail = await _getInspectionDetailUseCase.call(se.id);
             if (detail != null) {
+              // Si cualquier ítem del checklist se marcó como 'NO', es un cambio
+              // (Las observaciones NO cuentan como cambio para el check de Rev.)
               if (detail.accesibilidad == 'NO' ||
                   detail.ubicacion == 'NO' ||
                   detail.instalacion == 'NO' ||
