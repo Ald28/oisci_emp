@@ -389,8 +389,6 @@ router.put(
  */
 router.get(
     '/services/extintores/:servicioExtintorId/inspeccion',
-    authenticate,
-    authorize(['tecnico, admin']),
     controller.getInspeccionByServicioExtintorId
 )
 
