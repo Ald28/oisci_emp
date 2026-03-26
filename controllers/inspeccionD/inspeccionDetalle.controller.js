@@ -102,7 +102,7 @@ export async function getInspeccionByServicioExtintorId(req, res) {
         if (!servicioExtintorId) {
             return res.status(400).json({
                 ok: false,
-                message: 'servicioExtintorId es requerido'
+                message: 'servicioExtintorId es requerido',
             })
         }
 
@@ -113,36 +113,19 @@ export async function getInspeccionByServicioExtintorId(req, res) {
         if (!inspeccion) {
             return res.status(404).json({
                 ok: false,
-                message: 'Inspección no encontrada'
+                message: 'Inspección no encontrada',
             })
         }
 
-        const response = {
-            extintorId: inspeccion.servicioExtintorId,
-            codeExtintor: null,
-            serialNumberNFC: null,
-            type: null,
-            location: null,
-            fotos: [
-                inspeccion.foto1Url,
-                inspeccion.foto2Url,
-                inspeccion.foto3Url,
-                inspeccion.foto4Url,
-            ].filter(Boolean), // elimina nulls
-            comentarios: inspeccion.observaciones,
-            fechaHora: inspeccion.updatedAt
-        }
-
-        return res.json({
+        return res.status(200).json({
             ok: true,
-            reporte: [response] // 👈 siempre array
+            reporte: [inspeccion],
         })
-
     } catch (error) {
         console.error(error)
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
-            message: error.message
+            message: error.message,
         })
     }
 }

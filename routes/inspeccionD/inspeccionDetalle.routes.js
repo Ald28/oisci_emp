@@ -325,39 +325,59 @@ router.put(
  *             schema:
  *               type: object
  *               properties:
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     servicioExtintorId:
- *                       type: integer
- *                     foto1Url:
- *                       type: string
- *                     foto2Url:
- *                       type: string
- *                     foto3Url:
- *                       type: string
- *                     visibilidad:
- *                       type: string
- *                     visualizacion:
- *                       type: string
- *                     accesibilidad:
- *                       type: string
- *                     altura:
- *                       type: string
- *                     situacion:
- *                       type: string
- *                     conservacion:
- *                       type: string
- *                     inscripciones:
- *                       type: string
- *                     recorrido:
- *                       type: string
- *                     peso:
- *                       type: string
- *                     observaciones:
- *                       type: string
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 reporte:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       servicioExtintorId:
+ *                         type: integer
+ *                       foto1Url:
+ *                         type: string
+ *                         nullable: true
+ *                       foto2Url:
+ *                         type: string
+ *                         nullable: true
+ *                       foto3Url:
+ *                         type: string
+ *                         nullable: true
+ *                       visibilidad:
+ *                         type: string
+ *                         nullable: true
+ *                       visualizacion:
+ *                         type: string
+ *                         nullable: true
+ *                       accesibilidad:
+ *                         type: string
+ *                         nullable: true
+ *                       altura:
+ *                         type: string
+ *                         nullable: true
+ *                       situacion:
+ *                         type: string
+ *                         nullable: true
+ *                       conservacion:
+ *                         type: string
+ *                         nullable: true
+ *                       inscripciones:
+ *                         type: string
+ *                         nullable: true
+ *                       recorrido:
+ *                         type: string
+ *                         nullable: true
+ *                       peso:
+ *                         type: string
+ *                         nullable: true
+ *                       observaciones:
+ *                         type: string
+ *                         nullable: true
+ *       400:
+ *         description: Parámetro inválido
  *       404:
  *         description: Inspección no encontrada
  *       401:
