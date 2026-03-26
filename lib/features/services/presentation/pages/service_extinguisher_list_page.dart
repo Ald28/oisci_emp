@@ -8,6 +8,11 @@ import '../../domain/usecases/finalize_service_usecase.dart';
 import '../../domain/usecases/get_extinguisher_by_id_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
+import '../../domain/usecases/get_sedes_usecase.dart';
+import '../../data/repositories/sede_repository_impl.dart';
+import '../../../client_statistics/domain/entities/client_entity.dart';
+import '../../../client_statistics/data/repositories/client_repository_impl.dart';
+import '../../../client_statistics/domain/usecases/search_clients_usecase.dart';
 import 'maintenance/maintenance_checklist_page.dart';
 import 'inspection/inspection_checklist_page.dart';
 
@@ -33,6 +38,9 @@ class _ServiceExtinguisherListPageState
   bool _isLoading = true;
   bool _isFinalizing = false;
 
+  String _clientName = 'Cargando...';
+  String _sedeName = 'Cargando...';
+
   late final GetServiceExtinguishersByServiceIdUseCase
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
     ServiceRepositoryImpl(),
@@ -41,6 +49,10 @@ class _ServiceExtinguisherListPageState
       FinalizeServiceUseCase(ServiceRepositoryImpl());
   late final GetExtinguisherByIdUseCase _getExtinguisherUseCase =
       GetExtinguisherByIdUseCase(ExtinguisherRepositoryImpl());
+  late final GetSedesUseCase _getSedesUseCase =
+      GetSedesUseCase(SedeRepositoryImpl());
+  late final SearchClientsUseCase _searchClientsUseCase =
+      SearchClientsUseCase(ClientRepositoryImpl());
 
   @override
   void initState() {
@@ -58,8 +70,34 @@ class _ServiceExtinguisherListPageState
         widget.servicioId,
       );
 
+      final service = await ServiceRepositoryImpl().getServiceById(widget.servicioId);
+
+      String tempClientName = 'Desconocido';
+      String tempSedeName = 'Desconocido';
+
+      if (service != null && mounted) {
+        final sedes = await _getSedesUseCase.call();
+        final sede = sedes.where((s) => s.id == service.sedeId).firstOrNull;
+        if (sede != null) {
+          tempSedeName = sede.nameSede;
+
+          if (sede.clientId != null) {
+            final responseData =
+                await _searchClientsUseCase.call(page: 1, pageSize: 100);
+            final clients = (responseData['data'] as List).cast<ClientEntity>();
+            final client =
+                clients.where((c) => c.id == sede.clientId).firstOrNull;
+            if (client != null) {
+              tempClientName = client.razonSocial;
+            }
+          }
+        }
+      }
+
       if (mounted) {
         setState(() {
+          _clientName = tempClientName;
+          _sedeName = tempSedeName;
           _serviceExtinguishers = serviceExtinguishers;
           _isLoading = false;
         });
@@ -164,6 +202,50 @@ class _ServiceExtinguisherListPageState
             )
           : Column(
               children: [
+                // Detalle del cliente y sede
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[300]!),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Detalle del Servicio',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Cliente: $_clientName',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Sede: $_sedeName',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Lista de extintores
                 Expanded(
                   child: _serviceExtinguishers.isEmpty
