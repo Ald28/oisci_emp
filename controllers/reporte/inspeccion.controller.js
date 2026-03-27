@@ -23,15 +23,29 @@ export const ReporteInspeccionController = {
         try {
             const { servicioId } = req.params
 
+            if (!servicioId) {
+                return res.status(400).json({
+                    ok: false,
+                    message: 'servicioId es requerido',
+                })
+            }
+
             const reporte = await ReporteInspeccionService.generar(Number(servicioId))
 
-            res.json({
+            if (!reporte) {
+                return res.status(404).json({
+                    ok: false,
+                    message: 'Reporte de inspección no encontrado',
+                })
+            }
+            
+            return res.status(200).json({
                 ok: true,
-                reporte,
+                reporte: [reporte],
             })
         } catch (error) {
             console.error(error)
-            res.status(500).json({
+            return res.status(500).json({
                 ok: false,
                 message: 'Error al generar reporte de inspección',
             })
