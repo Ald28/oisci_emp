@@ -25,13 +25,36 @@ function drawRow(doc, y, row) {
 
 export const ReporteInspeccionMensualController = {
     async obtener(req, res) {
-        const { servicioId } = req.params
+        try {
+            const { servicioId } = req.params
 
-        const reporte = await ReporteInspeccionMensualService.generar(Number(servicioId))
+            if (!servicioId) {
+                return res.status(400).json({
+                    ok: false,
+                    message: 'servicioId es requerido',
+                })
+            }
 
-        if (!reporte) return res.status(404).json({ message: 'Servicio no encontrado' })
+            const reporte = await ReporteInspeccionMensualService.generar(Number(servicioId))
 
-        res.json({ ok: true, reporte })
+            if (!reporte) {
+                return res.status(404).json({
+                    ok: false,
+                    message: 'Servicio no encontrado',
+                })
+            }
+
+            return res.status(200).json({
+                ok: true,
+                reporte: [reporte],
+            })
+        } catch (error) {
+            console.error(error)
+            return res.status(500).json({
+                ok: false,
+                message: 'Error al obtener reporte de inspección mensual',
+            })
+        }
     },
 
     async descargar(req, res) {

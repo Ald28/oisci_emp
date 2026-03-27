@@ -27,7 +27,6 @@ export const ReporteInspeccionMensualService = {
             direccion: servicio.sede.address,
             ciudad: servicio.sede.city,
 
-            // ✅ ISO en hora Perú para Flutter
             mes: toPeruDateTime(servicio.dateStart),
 
             equipos: servicio.servicioExtintores.map((se, index) => {
