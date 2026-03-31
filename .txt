@@ -21,6 +21,7 @@ npx prisma db seed /*EJECUTAR APUNTANDO A LA BASE DE DATOS EN PRODUC*/
 
 /*---- DESPLEGAR CAMBIOS A UNA NUEVA BD------*/
 npx prisma migrate deploy
+npx prisma db seed
 
 Elimina o ignora prisma.config.ts
 prisma.config.ts

@@ -1,5 +1,4 @@
 import { prisma } from '../client.mjs'
-import { ServiceValid } from '@prisma/client'
 
 export async function seedServicios() {
     const sede = await prisma.sede.findFirst()
@@ -21,7 +20,7 @@ export async function seedServicios() {
             dateEnd: null,
             sincronizado: false,
             status: 'EN_PROCESO',
-            statusValid: ServiceValid.APROBADO,
+            statusValid: 'APROBADO',
             historic: 'Servicio de mantenimiento preventivo',
 
             sedeId: sede.id,
@@ -35,7 +34,7 @@ export async function seedServicios() {
             dateEnd: new Date('2024-01-02'),
             sincronizado: true,
             status: 'EN_PROCESO',
-            statusValid: ServiceValid.APROBADO,
+            statusValid: 'APROBADO',
             historic: 'Inspección anual de extintores',
 
             sedeId: sede.id,
