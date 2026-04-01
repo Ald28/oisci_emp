@@ -1043,4 +1043,16 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
 
     return results.map((map) => ExtinguisherModel.fromMap(map)).toList();
   }
+
+  @override
+  Future<List<Extinguisher>> getAllExtinguishers() async {
+    final db = await AppDatabase.database;
+
+    final results = await db.query(
+      'extintor',
+      orderBy: 'id ASC',
+    );
+
+    return results.map((map) => ExtinguisherModel.fromMap(map)).toList();
+  }
 }

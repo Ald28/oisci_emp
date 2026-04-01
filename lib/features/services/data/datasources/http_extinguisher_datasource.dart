@@ -163,6 +163,30 @@ class HttpExtinguisherDataSource implements ExtinguisherDataSource {
   }
 
   @override
+  Future<List<ExtinguisherModel>> getAllExtinguishers() async {
+    try {
+      final response = await _dio.get('/nfc/list-nfc');
+      
+      // La API /nfc/list-nfc devuelve directamente un array JSON, no un objeto con 'ok' y 'data'.
+      if (response.data is List) {
+        final List<dynamic> dataList = response.data as List<dynamic>;
+        return dataList
+            .map(
+              (json) => ExtinguisherModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+      
+      return [];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return [];
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId) async {
     try {
       final response = await _dio.get('/nfc/ext-sede/$sedeId');

@@ -12,6 +12,7 @@ class FloatingLabelTextField extends StatefulWidget {
   final int? maxLength;
   final String? Function(String?)? validator;
   final Widget? prefixIcon;
+  final FocusNode? focusNode;
 
   const FloatingLabelTextField({
     super.key,
@@ -25,6 +26,7 @@ class FloatingLabelTextField extends StatefulWidget {
     this.maxLength,
     this.validator,
     this.prefixIcon,
+    this.focusNode,
   });
 
   @override
@@ -70,6 +72,7 @@ class _FloatingLabelTextFieldState extends State<FloatingLabelTextField> {
       children: [
         TextFormField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           keyboardType: widget.keyboardType,
           obscureText: widget.obscureText,
           readOnly: widget.readOnly,

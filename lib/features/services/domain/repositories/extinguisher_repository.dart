@@ -8,4 +8,5 @@ abstract class ExtinguisherRepository {
   Future<Extinguisher?> getExtinguisherById(int extintorId);
   Future<List<Extinguisher>> getExtinguishersBySedeId(int sedeId);
   Future<List<Extinguisher>> getExtinguishersWithoutSerialNumber({int? sedeId});
+  Future<List<Extinguisher>> getAllExtinguishers();
 }

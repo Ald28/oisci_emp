@@ -11,6 +11,7 @@ import '../../domain/entities/service_type.dart';
 import '../../domain/entities/service_extinguisher_entity.dart';
 import '../../domain/usecases/search_extinguisher_usecase.dart';
 import '../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
+import '../../domain/usecases/get_all_extinguishers_usecase.dart';
 import '../../domain/repositories/extinguisher_repository.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
@@ -38,8 +39,8 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isScanning = false;
   bool _isSearching = false;
-  bool _isLoadingExtinguishers = false;
   List<ServiceExtinguisherEntity> _serviceExtinguishers = [];
+  List<Extinguisher> _allExtinguishers = [];
 
   // Inicializar use cases
   late final SearchExtinguisherUseCase _searchUseCase =
@@ -48,6 +49,8 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
     ServiceRepositoryImpl(),
   );
+  late final GetAllExtinguishersUseCase _getAllExtinguishersUseCase =
+      GetAllExtinguishersUseCase(ExtinguisherRepositoryImpl());
   late final ServiceRepository _serviceRepository = ServiceRepositoryImpl();
   late final ExtinguisherRepository _extinguisherRepository =
       ExtinguisherRepositoryImpl();
@@ -70,10 +73,26 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         setState(() {
           _sedeId = service.sedeId;
         });
+        _loadAllAndUnlinkedExtinguishers();
       }
     } catch (e) {
       // Si hay error, continuar sin filtrar por sede
       debugPrint('Error al obtener sede del servicio: $e');
+    }
+  }
+
+  Future<void> _loadAllAndUnlinkedExtinguishers() async {
+    try {
+      // 1. Descarga todos los extintores para cachearlos offline y mostrarlos en el listado
+      final allList = await _getAllExtinguishersUseCase.call();
+      
+      if (mounted) {
+        setState(() {
+          _allExtinguishers = allList;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar extintores para autocompletar: $e');
     }
   }
 
@@ -437,181 +456,18 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
                       ),
                     ),
                   )
-                : CodeSearchField(
-                    controller: _codeController,
-                    onSearch: _handleManualSearch,
-                    onLinkExisting: _showLinkExtinguisherModal,
-                    isLoadingExisting: _isLoadingExtinguishers,
-                  ),
+                  : CodeSearchField(
+                      controller: _codeController,
+                      onSearch: _handleManualSearch,
+                      extinguishersList: _allExtinguishers,
+                    ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _showLinkExtinguisherModal() async {
-    if (_sedeId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor espera a que se cargue la información de la sede'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
 
-    setState(() {
-      _isLoadingExtinguishers = true;
-    });
-
-    try {
-      final extinguishers = await _extinguisherRepository.getExtinguishersWithoutSerialNumber(
-        sedeId: _sedeId,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingExtinguishers = false;
-      });
-
-      if (extinguishers.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay extintores pendientes por vincular en esta sede'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      // Mostrar modal con lista de extintores
-      final selected = await showDialog<Extinguisher>(
-        context: context,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE84343),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.list_alt, color: Colors.white),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Seleccionar Extintor',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                // Lista de extintores
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: extinguishers.length,
-                    itemBuilder: (context, index) {
-                      final extinguisher = extinguishers[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFFE84343).withValues(alpha: 0.1),
-                            child: Text(
-                              '${extinguisher.id}',
-                              style: const TextStyle(
-                                color: Color(0xFFE84343),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            extinguisher.codeExtintor ?? 'Sin código',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (extinguisher.type != null)
-                                Text('Tipo: ${extinguisher.type}'),
-                              if (extinguisher.location != null)
-                                Text('Ubicación: ${extinguisher.location}'),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.chevron_right, color: Color(0xFFE84343)),
-                          onTap: () {
-                            Navigator.pop(context, extinguisher);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      if (selected != null && mounted) {
-        // Al seleccionar, navegar a ServiceRegisterPage para que el usuario pueda "Actualizar y continuar"
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ServiceRegisterPage(
-              serviceType: widget.serviceType,
-              servicioId: widget.servicioId,
-              initialExtinguisher: selected,
-              initialSedeId: _sedeId,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingExtinguishers = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar extintores: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   void _showExtinguisherInOtherSedeDialog(
     String sedeName,
