@@ -304,16 +304,16 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     });
 
     try {
-      // Paso 1: Buscar extintor filtrando por sede si está disponible
+      // Paso 1: Buscar extintor globalmente (sin filtrar por sede)
       final extinguisher = await _searchUseCase.call(
         searchTerm,
-        sedeId: _sedeId,
+        sedeId: null, // Buscar en cualquier sede y cliente
       );
 
       if (!mounted) return;
 
       if (extinguisher != null) {
-        // Extintor encontrado en la sede actual
+        // Extintor encontrado (no importa de qué sede sea)
         setState(() {
           _isSearching = false;
         });
@@ -330,30 +330,7 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
         return;
       }
 
-      // Paso 2: Si no se encontró en la sede actual, buscar sin filtro de sede
-      // para verificar si existe en otra sede
-      if (_sedeId != null) {
-        final extinguisherInOtherSede = await _searchUseCase.call(
-          searchTerm,
-          sedeId: null,
-        );
-
-        if (!mounted) return;
-
-        if (extinguisherInOtherSede != null) {
-          // El extintor existe pero en otra sede
-          setState(() {
-            _isSearching = false;
-          });
-
-          // Mostrar mensaje informativo con el nombre de la sede
-          final sedeName = extinguisherInOtherSede.sedeName ?? 'otra sede';
-          _showExtinguisherInOtherSedeDialog(sedeName, searchTerm);
-          return;
-        }
-      }
-
-      // Paso 3: No se encontró en ninguna sede, abrir formulario de registro
+      // Paso 2: No se encontró, abrir formulario de registro
       setState(() {
         _isSearching = false;
       });
@@ -469,79 +446,4 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
 
 
 
-  void _showExtinguisherInOtherSedeDialog(
-    String sedeName,
-    String codigoOSerie,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning, color: Colors.orange, size: 28),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Extintor ya registrado',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'El extintor con código/serie "$codigoOSerie" ya está registrado en la sede:',
-              style: const TextStyle(fontSize: 15, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.business, color: Colors.orange[700], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      sedeName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange[900],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Por favor, use un código o número de serie diferente para registrar este extintor en la sede actual.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE84343),
-            ),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-  }
 }
