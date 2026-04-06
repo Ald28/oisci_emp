@@ -5,12 +5,12 @@ const router = Router();
 
 /**
  * @swagger
- * /services/{servicioId}/inspection/data:
+ * /inspeccion/{servicioId}/inspection/data:
  *   get:
  *     summary: Obtener datos del reporte de inspección
  *     description: Retorna los datos del cliente, sede, servicio y extintores relacionados para un servicio de tipo INSPECCION y estado FINALIZADO.
  *     tags:
- *       - Services
+ *       - Inspección
  *     parameters:
  *       - in: path
  *         name: servicioId
@@ -32,12 +32,12 @@ router.get("/:servicioId/inspection/data", CertificadoDataController.getData);
 
 /**
  * @swagger
- * /services/{servicioId}/inspection/pdf:
+ * /inspeccion/{servicioId}/inspection/pdf:
  *   get:
  *     summary: Generar PDF del reporte de inspección
  *     description: Genera y devuelve un PDF del reporte para servicios de tipo INSPECCION y estado FINALIZADO.
  *     tags:
- *       - Services
+ *       - Inspección
  *     parameters:
  *       - in: path
  *         name: servicioId
