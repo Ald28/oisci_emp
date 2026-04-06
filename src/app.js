@@ -29,6 +29,7 @@ import editMantenimiento from '../routes/mantenimientoD/edit.routes.js';
 
 import inspeccionRoutes from '../routes/inspeccionD/inspeccionDetalle.routes.js';
 import pdfInspeccion from '../routes/inspeccionD/detail.routes.js';
+import extintorRoutes from '../routes/inspeccionD/extintor.routes.js';
 
 import certificadoRoutes from '../routes/certificado/create.routes.js';
 import reporteRoutes from '../routes/reporte/inspeccion.routes.js';
@@ -104,6 +105,7 @@ app.use('/mantenimiento', editMantenimiento);
 
 app.use('/inspeccion', inspeccionRoutes);
 app.use('/inspeccion', pdfInspeccion);
+app.use('/extintores', extintorRoutes);
 
 app.use('/certificado', certificadoRoutes);
 
