@@ -148,8 +148,6 @@ const router = Router()
  */
 router.get(
     '/fotografico/:servicioId',
-    authenticate,
-    authorize(['admin', 'tecnico']),
     ReporteInspeccionController.obtenerReporte
 )
 
@@ -191,8 +189,6 @@ router.get(
  */
 router.get(
     '/fotografico/:servicioId/download',
-    authenticate,
-    authorize(['admin', 'tecnico']),
     ReporteInspeccionController.descargarCertificado
 )
 
