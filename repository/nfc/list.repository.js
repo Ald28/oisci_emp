@@ -255,6 +255,31 @@ export const ListRepository = {
                 sede: true
             }
         });
+    },
+
+    async getExtintoresDetalleByServicio(servicioId) {
+        return await prisma.servicioExtintor.findMany({
+            where: {
+                servicioId
+            },
+            include: {
+                extintor: true,
+                mantenimientoDetalle: true,
+                inspeccionDetalle: true,
+                servicio: {
+                    include: {
+                        sede: {
+                            include: {
+                                client: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                id: 'asc'
+            }
+        })
     }
 
 };

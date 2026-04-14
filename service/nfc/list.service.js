@@ -82,3 +82,24 @@ export async function listExtintoresWithFiltersService(query) {
     const extintores = await ListRepository.listWithFilters(filters);
     return extintores.map(mapExtintorPhoto);
 }
+
+export const servicioExtintorService = {
+    async getExtintoresDetalleByServicio(servicioId) {
+        const id = Number(servicioId)
+
+        if (Number.isNaN(id) || id <= 0) {
+            throw new Error('El id del servicio no es válido')
+        }
+
+        const registros = await ListRepository.getExtintoresDetalleByServicio(id)
+
+        return registros.map((item) => ({
+            cliente: item.servicio?.sede?.client || null,
+            sede: item.servicio?.sede || null,
+            extintor: item.extintor,
+            observaciones: item.observaciones || '',
+            inspeccion: item.inspeccionDetalle || null,
+            mantenimiento: item.mantenimientoDetalle || null
+        }))
+    }
+}

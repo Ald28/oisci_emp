@@ -9,7 +9,8 @@ import {
     getExtinguishersUpdatedSinceController,
     listExtintorNumberController,
     updateExtinguisherController,
-    listExtintoresWithFiltersController
+    listExtintoresWithFiltersController,
+    servicioExtintorController
 } from '../../controllers/nfc/list.controller.js';
 import { authenticate, authorize } from '../../middleware/auth.middleware.js';
 
@@ -563,5 +564,182 @@ router.get('/:extintorId', authenticate, authorize(['tecnico']), getExtinguisher
  *         description: Error interno del servidor
  */
 router.patch('/:extintorId', authenticate, authorize(['tecnico']), updateExtinguisherController);
+
+/**
+ * @swagger
+ * /nfc/servicios/{id}/extintores-detalle:
+ *   get:
+ *     summary: Obtener detalle de extintores por servicio
+ *     description: Retorna la lista de extintores asociados a un servicio, incluyendo observaciones, inspección y mantenimiento.
+ *     tags:
+ *       - NFC
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del servicio
+ *         example: 12
+ *     responses:
+ *       200:
+ *         description: Detalle de extintores obtenido correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 extintores:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       extintor:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 1
+ *                           codeExtintor:
+ *                             type: string
+ *                             nullable: true
+ *                             example: EXT-001
+ *                           serialNumberNFC:
+ *                             type: string
+ *                             nullable: true
+ *                             example: NFC-ABC-123
+ *                           type:
+ *                             type: string
+ *                             nullable: true
+ *                             example: PQS
+ *                           capacity:
+ *                             type: string
+ *                             nullable: true
+ *                             example: 6 KG
+ *                           agent:
+ *                             type: string
+ *                             nullable: true
+ *                             example: ABC
+ *                           location:
+ *                             type: string
+ *                             nullable: true
+ *                             example: Almacén principal
+ *                           status:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OPERATIVO
+ *                       observaciones:
+ *                         type: string
+ *                         example: Sin observaciones
+ *                       inspeccion:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 20
+ *                           servicioExtintorId:
+ *                             type: integer
+ *                             example: 30
+ *                           ubicacion:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           accesibilidad:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           instalacion:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           presion:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           manguera:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           boquilla:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           observaciones:
+ *                             type: string
+ *                             nullable: true
+ *                             example: Equipo operativo
+ *                           foto1Url:
+ *                             type: string
+ *                             nullable: true
+ *                           foto2Url:
+ *                             type: string
+ *                             nullable: true
+ *                           foto3Url:
+ *                             type: string
+ *                             nullable: true
+ *                           foto4Url:
+ *                             type: string
+ *                             nullable: true
+ *                       mantenimiento:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 10
+ *                           servicioExtintorId:
+ *                             type: integer
+ *                             example: 30
+ *                           mantenimiento:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           recarga:
+ *                             type: string
+ *                             nullable: true
+ *                             example: OK
+ *                           agenteCarga:
+ *                             type: string
+ *                             nullable: true
+ *                             example: PQS
+ *                           pruebaHidrostatica:
+ *                             type: string
+ *                             nullable: true
+ *                             example: NO
+ *                           pintura:
+ *                             type: string
+ *                             nullable: true
+ *                             example: BUENO
+ *                           cambioPartes:
+ *                             type: string
+ *                             nullable: true
+ *                             example: NO
+ *       400:
+ *         description: ID de servicio inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: El id del servicio no es válido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get('/servicios/:id/extintores-detalle', servicioExtintorController.getExtintoresDetalleByServicio)
 
 export default router;

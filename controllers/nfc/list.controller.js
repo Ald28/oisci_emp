@@ -8,7 +8,8 @@ import {
     getExtinguishersUpdatedSinceService,
     listExtintorNumber,
     updateExtinguisherService,
-    listExtintoresWithFiltersService
+    listExtintoresWithFiltersService,
+    servicioExtintorService
 } from "../../service/nfc/list.service.js";
 
 export async function listNFCController(req, res) {
@@ -223,5 +224,26 @@ export async function listExtintoresWithFiltersController(req, res) {
             ok: false,
             message: error.message
         });
+    }
+}
+
+
+export const servicioExtintorController = {
+    async getExtintoresDetalleByServicio(req, res) {
+        try {
+            const { id } = req.params
+
+            const extintores = await servicioExtintorService.getExtintoresDetalleByServicio(id)
+
+            return res.status(200).json({
+                ok: true,
+                extintores
+            })
+        } catch (error) {
+            return res.status(400).json({
+                ok: false,
+                message: error.message
+            })
+        }
     }
 }
