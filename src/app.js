@@ -32,6 +32,7 @@ import pdfInspeccion from '../routes/inspeccionD/detail.routes.js';
 import extintorRoutes from '../routes/inspeccionD/extintor.routes.js';
 
 import certificadoRoutes from '../routes/certificado/create.routes.js';
+import listCertificadoRoutes from '../routes/certificado/certificados.routes.js';
 import reporteRoutes from '../routes/reporte/inspeccion.routes.js';
 import reporteMensualRoutes from '../routes/reporte/inspeccionMensual.routes.js';
 import reporteCreate from '../routes/reporte/reportes.routes.js';
@@ -109,6 +110,7 @@ app.use('/inspeccion', pdfInspeccion);
 app.use('/extintores', extintorRoutes);
 
 app.use('/certificado', certificadoRoutes);
+app.use('/certificados', listCertificadoRoutes);    
 
 app.use('/reporte', reporteRoutes);
 app.use('/reporte', reporteMensualRoutes);

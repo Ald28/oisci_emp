@@ -1,4 +1,7 @@
-import { getExtintoresFull, getData } from "../../repository/inpeccionD/extintor.repository.js";
+import {
+  getExtintoresFull,
+  getData,
+} from "../../repository/inpeccionD/extintor.repository.js";
 
 export const getExtintores = async () => {
   const data = await getExtintoresFull();
@@ -71,9 +74,19 @@ export const getExtintoresPDF = async () => {
           ubicacion: s.inspeccionDetalle.ubicacion,
           accesibilidad: s.inspeccionDetalle.accesibilidad,
           instalacion: s.inspeccionDetalle.instalacion,
+          instrucciones: s.inspeccionDetalle.instrucciones,
+          clasificacion: s.inspeccionDetalle.clasificacion,
+          recarga: s.inspeccionDetalle.recarga,
+          certificacion: s.inspeccionDetalle.certificacion,
           presion: s.inspeccionDetalle.presion,
+          seguridad: s.inspeccionDetalle.seguridad,
+          estado: s.inspeccionDetalle.estado,
+          carga: s.inspeccionDetalle.carga,
+          soporte: s.inspeccionDetalle.soporte,
+          activacion: s.inspeccionDetalle.activacion,
           manguera: s.inspeccionDetalle.manguera,
           boquilla: s.inspeccionDetalle.boquilla,
+          abrazadera: s.inspeccionDetalle.abrazadera,
         },
 
         fotos: [
