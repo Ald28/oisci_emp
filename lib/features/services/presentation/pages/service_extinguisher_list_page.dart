@@ -9,14 +9,24 @@ import '../../domain/usecases/get_extinguisher_by_id_usecase.dart';
 import '../../data/repositories/service_repository_impl.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../domain/usecases/get_sedes_usecase.dart';
-import '../../domain/usecases/get_maintenance_detail_by_service_extinguisher_id_usecase.dart';
-import '../../domain/usecases/get_inspection_detail_by_service_extinguisher_id_usecase.dart';
 import '../../data/repositories/sede_repository_impl.dart';
 import '../../../client_statistics/domain/entities/client_entity.dart';
 import '../../../client_statistics/data/repositories/client_repository_impl.dart';
 import '../../../client_statistics/domain/usecases/search_clients_usecase.dart';
+import '../../domain/usecases/add_extinguisher_to_service_usecase.dart';
+import '../../domain/entities/extinguisher_entity.dart';
 import 'maintenance/maintenance_checklist_page.dart';
 import 'inspection/inspection_checklist_page.dart';
+
+class ExtinguisherItem {
+  final Extinguisher extinguisher;
+  final ServiceExtinguisherEntity? serviceExtinguisher;
+
+  ExtinguisherItem({
+    required this.extinguisher,
+    this.serviceExtinguisher,
+  });
+}
 
 /// Página: Lista de ServicioExtintor (Carrito)
 class ServiceExtinguisherListPage extends StatefulWidget {
@@ -36,14 +46,12 @@ class ServiceExtinguisherListPage extends StatefulWidget {
 
 class _ServiceExtinguisherListPageState
     extends State<ServiceExtinguisherListPage> {
-  List<ServiceExtinguisherEntity> _serviceExtinguishers = [];
+  List<ExtinguisherItem> _items = [];
   bool _isLoading = true;
   bool _isFinalizing = false;
 
   String _clientName = 'Cargando...';
   String _sedeName = 'Cargando...';
-
-  Map<int, bool> _revStatus = {};
 
   late final GetServiceExtinguishersByServiceIdUseCase
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
@@ -51,20 +59,10 @@ class _ServiceExtinguisherListPageState
   );
   late final FinalizeServiceUseCase _finalizeServiceUseCase =
       FinalizeServiceUseCase(ServiceRepositoryImpl());
-  late final GetExtinguisherByIdUseCase _getExtinguisherUseCase =
-      GetExtinguisherByIdUseCase(ExtinguisherRepositoryImpl());
   late final GetSedesUseCase _getSedesUseCase =
       GetSedesUseCase(SedeRepositoryImpl());
   late final SearchClientsUseCase _searchClientsUseCase =
       SearchClientsUseCase(ClientRepositoryImpl());
-  late final GetMaintenanceDetailByServiceExtinguisherIdUseCase
-      _getMaintenanceDetailUseCase =
-      GetMaintenanceDetailByServiceExtinguisherIdUseCase(
-          ServiceRepositoryImpl());
-  late final GetInspectionDetailByServiceExtinguisherIdUseCase
-      _getInspectionDetailUseCase =
-      GetInspectionDetailByServiceExtinguisherIdUseCase(
-          ServiceRepositoryImpl());
 
   @override
   void initState() {
@@ -78,69 +76,11 @@ class _ServiceExtinguisherListPageState
     });
 
     try {
-      final serviceExtinguishers = await _getServiceExtinguishersUseCase.call(
-        widget.servicioId,
-      );
-
-      final Map<int, bool> tempRevStatus = {};
-
-      for (final se in serviceExtinguishers) {
-        bool hasChanges = false;
-        
-        // 1. Verificar si hubo cambio de estado (Inoperativo <-> Operativo)
-        if (se.estadoFinal != null && se.estadoFinal != se.estadoInicial) {
-          hasChanges = true;
-        }
-
-        // 2. Verificar detalles específicos si está completado
-        if (se.completado && !hasChanges) {
-          if (widget.serviceType == ServiceType.maintenance) {
-            final detail = await _getMaintenanceDetailUseCase.call(se.id);
-            if (detail != null) {
-              // Si se marcó cualquier acción de mantenimiento, es un cambio
-              if (detail.mantenimiento == true ||
-                  detail.recarga == true ||
-                  detail.pruebaHidrostatica == true ||
-                  detail.bajaExtintor == true ||
-                  detail.pintura == true ||
-                  detail.recargaCartucho == true ||
-                  detail.cambioPartes == true) {
-                hasChanges = true;
-              }
-            }
-          } else if (widget.serviceType == ServiceType.inspection) {
-            final detail = await _getInspectionDetailUseCase.call(se.id);
-            if (detail != null) {
-              // Si cualquier ítem del checklist se marcó como 'NO', es un cambio
-              // (Las observaciones NO cuentan como cambio para el check de Rev.)
-              if (detail.accesibilidad == 'NO' ||
-                  detail.ubicacion == 'NO' ||
-                  detail.instalacion == 'NO' ||
-                  detail.instrucciones == 'NO' ||
-                  detail.clasificacion == 'NO' ||
-                  detail.recarga == 'NO' ||
-                  detail.certificacion == 'NO' ||
-                  detail.presion == 'NO' ||
-                  detail.seguridad == 'NO' ||
-                  detail.estado == 'NO' ||
-                  detail.carga == 'NO' ||
-                  detail.soporte == 'NO' ||
-                  detail.activacion == 'NO' ||
-                  detail.manguera == 'NO' ||
-                  detail.boquilla == 'NO' ||
-                  detail.abrazadera == 'NO') {
-                hasChanges = true;
-              }
-            }
-          }
-        }
-        tempRevStatus[se.id] = hasChanges;
-      }
-
       final service = await ServiceRepositoryImpl().getServiceById(widget.servicioId);
 
       String tempClientName = 'Desconocido';
       String tempSedeName = 'Desconocido';
+      List<ExtinguisherItem> tempItems = [];
 
       if (service != null && mounted) {
         final sedes = await _getSedesUseCase.call();
@@ -159,14 +99,41 @@ class _ServiceExtinguisherListPageState
             }
           }
         }
+
+        // 1. Obtener todos los extintores de la sede
+        final allExtinguishers = await ExtinguisherRepositoryImpl()
+            .getExtinguishersBySedeId(service.sedeId ?? 0);
+
+        // 2. Obtener los status de servicio registrados
+        final serviceExtinguishers = await _getServiceExtinguishersUseCase.call(
+          widget.servicioId,
+        );
+        final serviceExtByExtId = {
+          for (var se in serviceExtinguishers) se.extintorId: se
+        };
+
+        // 3. Emparejar extintores con su servicio si lo tienen
+        for (final ext in allExtinguishers) {
+          final se = serviceExtByExtId[ext.id];
+          tempItems.add(ExtinguisherItem(
+            extinguisher: ext,
+            serviceExtinguisher: se,
+          ));
+        }
+
+        // Ordenamiento opcional (por código alfabéticamente)
+        tempItems.sort((a, b) {
+          final codeA = a.extinguisher.codeExtintor ?? a.extinguisher.serialNumberNFC ?? '';
+          final codeB = b.extinguisher.codeExtintor ?? b.extinguisher.serialNumberNFC ?? '';
+          return codeA.compareTo(codeB);
+        });
       }
 
       if (mounted) {
         setState(() {
           _clientName = tempClientName;
           _sedeName = tempSedeName;
-          _serviceExtinguishers = serviceExtinguishers;
-          _revStatus = tempRevStatus;
+          _items = tempItems;
           _isLoading = false;
         });
       }
@@ -316,7 +283,7 @@ class _ServiceExtinguisherListPageState
                 ),
                 // Lista de extintores
                 Expanded(
-                  child: _serviceExtinguishers.isEmpty
+                  child: _items.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -328,7 +295,7 @@ class _ServiceExtinguisherListPageState
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No hay extintores agregados',
+                                'No hay extintores en esta sede',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey[600],
@@ -337,17 +304,44 @@ class _ServiceExtinguisherListPageState
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _serviceExtinguishers.length,
-                          itemBuilder: (context, index) {
-                            final item = _serviceExtinguishers[index];
-                            return _buildServiceExtinguisherCard(item, index);
-                          },
+                      : Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 32.0, vertical: 8.0),
+                              child: Row(
+                                children: const [
+                                  SizedBox(
+                                      width: 40,
+                                      child: Text('ITEM',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                  Expanded(
+                                      child: Text('COD',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                  Text('ESTADO',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 8),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: _items.length,
+                                itemBuilder: (context, index) {
+                                  final item = _items[index];
+                                  return _buildServiceExtinguisherCard(item, index);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                 ),
                 // Botón Finalizar Servicio
-                if (_serviceExtinguishers.isNotEmpty)
+                if (_items.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: PrimaryButton(
@@ -361,7 +355,7 @@ class _ServiceExtinguisherListPageState
     );
   }
 
-  Future<void> _handleItemTap(ServiceExtinguisherEntity item) async {
+  Future<void> _handleItemTap(ExtinguisherItem item) async {
     // Mostrar loading
     showDialog(
       context: context,
@@ -372,30 +366,23 @@ class _ServiceExtinguisherListPageState
     );
 
     try {
-      // Obtener el extinguisher por extintorId
-      final extinguisher = await _getExtinguisherUseCase.call(item.extintorId);
+      final extinguisher = item.extinguisher;
+      ServiceExtinguisherEntity? serviceExtinguisher = item.serviceExtinguisher;
+
+      // Si no existe, crearlo para este servicio
+      if (serviceExtinguisher == null) {
+        final addExtRec = AddExtinguisherToServiceUseCase(ServiceRepositoryImpl());
+        serviceExtinguisher = await addExtRec.call(
+           servicioId: widget.servicioId,
+           extintorId: extinguisher.id,
+           estadoInicial: extinguisher.status ?? 'OPERATIVO',
+        );
+      }
 
       if (!mounted) return;
       Navigator.pop(context); // Cerrar loading
 
-      if (extinguisher == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error: No se pudo encontrar el extintor (ID: ${item.extintorId}). '
-              'Puede que el extintor aún no esté sincronizado.',
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-        return;
-      }
-
       // Navegar a la página correspondiente según el tipo de servicio
-      if (!mounted) return;
-
       if (widget.serviceType == ServiceType.maintenance) {
         Navigator.push(
           context,
@@ -404,7 +391,7 @@ class _ServiceExtinguisherListPageState
               extinguisher: extinguisher,
               serviceType: widget.serviceType,
               servicioId: widget.servicioId,
-              servicioExtintorId: item.id,
+              servicioExtintorId: serviceExtinguisher!.id,
             ),
           ),
         ).then((_) {
@@ -419,7 +406,7 @@ class _ServiceExtinguisherListPageState
               extinguisher: extinguisher,
               serviceType: widget.serviceType,
               servicioId: widget.servicioId,
-              servicioExtintorId: item.id,
+              servicioExtintorId: serviceExtinguisher!.id,
             ),
           ),
         ).then((_) {
@@ -435,7 +422,7 @@ class _ServiceExtinguisherListPageState
         SnackBar(
           content: Text(
             'Error al cargar extintor: ${e.toString()}\n'
-            'Extintor ID: ${item.extintorId}',
+            'Extintor ID: ${item.extinguisher.id}',
           ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
@@ -445,23 +432,14 @@ class _ServiceExtinguisherListPageState
   }
 
   Widget _buildServiceExtinguisherCard(
-    ServiceExtinguisherEntity item,
+    ExtinguisherItem item,
     int index,
   ) {
-    // El estado se muestra con un checkmark o cuadro vacío según la imagen de referencia
-    final estado = item.estadoInicial ?? 'N/A';
-    final estadoIcon = estado == 'OPERATIVO'
-        ? const Icon(Icons.check, color: Colors.green, size: 20)
-        : const Icon(
-            Icons.check_box_outline_blank,
-            color: Colors.grey,
-            size: 20,
-          );
+    final extinguisher = item.extinguisher;
+    final se = item.serviceExtinguisher;
 
-    final bool hasRevChanges = _revStatus[item.id] ?? false;
-    final completadoIcon = hasRevChanges
-        ? const Icon(Icons.check_box, color: Colors.blue, size: 24)
-        : const Icon(Icons.check_box_outline_blank, color: Colors.grey, size: 24);
+    // Verificar si se completó el servicio
+    final bool isCompleted = se != null && se.completado;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -477,48 +455,27 @@ class _ServiceExtinguisherListPageState
           ),
         ),
         title: Text(
-          (item.codeExtintor != null && item.codeExtintor!.isNotEmpty) ||
-                  (item.serialNumberNFC != null &&
-                      item.serialNumberNFC!.isNotEmpty)
-              ? 'Código: ${item.codeExtintor ?? item.serialNumberNFC}'
-              : 'Extintor ID: ${item.extintorId}',
+          (extinguisher.codeExtintor != null && extinguisher.codeExtintor!.isNotEmpty) ||
+                  (extinguisher.serialNumberNFC != null &&
+                      extinguisher.serialNumberNFC!.isNotEmpty)
+              ? '${extinguisher.codeExtintor ?? extinguisher.serialNumberNFC}'
+              : 'ID: ${extinguisher.id}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.observaciones != null && item.observaciones!.isNotEmpty)
-              Padding(
+        subtitle: se?.observaciones != null && se!.observaciones!.isNotEmpty
+            ? Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Obs: ${item.observaciones}',
+                  'Obs: ${se.observaciones}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Op.', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                estadoIcon,
-              ],
-            ),
-            const SizedBox(width: 16),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Rev.', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                completadoIcon,
-              ],
-            ),
-          ],
-        ),
+              )
+            : null,
+        trailing: isCompleted
+            ? const Icon(Icons.check_box, color: Colors.green, size: 32)
+            : const Icon(Icons.check_box_outline_blank, color: Colors.red, size: 32),
         onTap: () => _handleItemTap(item),
       ),
     );
