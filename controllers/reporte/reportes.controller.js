@@ -3,13 +3,14 @@ import { reportesService } from '../../service/reporte/reportes.service.js'
 export const reportesController = {
     async createReporte(req, res) {
         try {
-            const { servicioId, tipo, pdfUrl } = req.body
+            const { servicioId, tipo, frecuencia, pdfUrl } = req.body
 
             const usuarioCreadorId = req.user?.id || 1
 
             const reporte = await reportesService.createReporte({
                 servicioId,
                 tipo,
+                frecuencia,
                 pdfUrl,
                 usuarioCreadorId
             })

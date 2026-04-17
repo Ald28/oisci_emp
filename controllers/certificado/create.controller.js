@@ -5,8 +5,6 @@ export const CertificadoController = {
     async create(req, res) {
         try {
             const usuarioId = req.user.sub
-            console.log('Usuario ID:', usuarioId);
-            console.log('USER:', req.user)
 
             const certificado = await CertificadoService.createCertificado({
                 body: req.body,
@@ -19,7 +17,11 @@ export const CertificadoController = {
             })
         } catch (error) {
             console.error(error)
-            res.status(500).json({ ok: false, message: 'Error al crear certificado' })
+
+            res.status(400).json({
+                ok: false,
+                message: error.message
+            })
         }
     },
 

@@ -13,7 +13,7 @@ npx prisma migrate dev --name init
 npx prisma migrate reset
 npx prisma db seed
 
-/***************** Desplegar cambios a RENDER *****************/
+/***************** Desplegar cambios de BD a RENDER *****************/
 npx prisma migrate dev --name create_extintor_table (LOCAL)
 subir cambios al repositorio (git add . | git commit -m "" | git push -u origin backend)
 npx prisma migrate deploy (APUNTANDO A LA BD EN PRODUCCION)

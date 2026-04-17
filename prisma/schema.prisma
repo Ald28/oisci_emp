@@ -158,6 +158,7 @@ model ServicioReporte {
 enum ReporteTipo {
   FOTO
   INSPECCION
+  REPORTE_FOTOGRAFICO
 }
 
 enum ReporteEmitido {
@@ -213,6 +214,7 @@ enum CertificadoTipo {
   OPER
   HIDRO
   BAJA
+  REPORTE_TECNICO
 }
 
 enum CertificadoEmitido {

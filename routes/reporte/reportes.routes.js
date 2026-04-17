@@ -1,7 +1,7 @@
-import { Router } from 'express'
-import { reportesController } from '../../controllers/reporte/reportes.controller.js'
+import { Router } from "express";
+import { reportesController } from "../../controllers/reporte/reportes.controller.js";
 
-const router = Router()
+const router = Router();
 
 /**
  * @swagger
@@ -11,14 +11,15 @@ const router = Router()
  *     tags: [Reporte Inspección]
  *     description: |
  *       Crea un reporte asociado a un servicio a partir de un archivo PDF previamente generado y almacenado en S3.
- *       
+ *
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           example:
  *             servicioId: 12
- *             tipo: "MENSUAL"
+ *             tipo: "INSPECCION"
+ *             frecuencia: "MENSUAL"
  *             pdfUrl: "https://mi-bucket.s3.amazonaws.com/reporte123.pdf"
  *           schema:
  *             type: object
@@ -34,6 +35,12 @@ const router = Router()
  *               tipo:
  *                 type: string
  *                 description: Tipo de reporte
+ *                 enum: [INSPECCION, REPORTE_FOTOGRAFICO]
+ *                 example: INSPECCION
+ *               frecuencia:
+ *                 type: string
+ *                 description: Frecuencia del reporte
+ *                 enum: [MENSUAL]
  *                 example: MENSUAL
  *               pdfUrl:
  *                 type: string
@@ -50,7 +57,8 @@ const router = Router()
  *               data:
  *                 id: 10
  *                 servicioId: 12
- *                 tipo: MENSUAL
+ *                 tipo: INSPECCION
+ *                 frecuencia: MENSUAL
  *                 fechaEmision: "2026-04-06T18:00:00.000Z"
  *                 emitido: SI
  *                 archivoPdfUrl: https://mi-bucket.s3.amazonaws.com/reporte123.pdf
@@ -72,8 +80,18 @@ const router = Router()
  *                 value:
  *                   success: false
  *                   message: El archivo debe estar alojado en S3
+ *               tipoInvalido:
+ *                 summary: Tipo inválido
+ *                 value:
+ *                   success: false
+ *                   message: tipo no válido. Debe ser uno de: INSPECCION, REPORTE_FOTOGRAFICO
+ *               frecuenciaInvalida:
+ *                 summary: Frecuencia inválida
+ *                 value:
+ *                   success: false
+ *                   message: frecuencia no válida. Debe ser una de: MENSUAL
  */
 
-router.post('/reportes', reportesController.createReporte)
+router.post("/reportes", reportesController.createReporte);
 
-export default router
+export default router;

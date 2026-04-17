@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "CertificadoTipo" ADD VALUE 'REPORTE_TECNICO';
+
+-- AlterEnum
+ALTER TYPE "ReporteTipo" ADD VALUE 'REPORTE_FOTOGRAFICO';

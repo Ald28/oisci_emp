@@ -32,7 +32,7 @@ const router = Router()
  *             properties:
  *               tipo:
  *                 type: string
- *                 enum: [OPER, HIDRO, BAJA]
+ *                 enum: [OPER, BAJA, HIDROSTATICA, REPORTE_TECNICO]
  *                 example: OPER
  *               clientId:
  *                 type: integer
@@ -72,6 +72,8 @@ const router = Router()
  *     responses:
  *       201:
  *         description: Certificado creado correctamente
+ *       400:
+ *         description: Error en la solicitud
  *       401:
  *         description: No autorizado
  *       403:
