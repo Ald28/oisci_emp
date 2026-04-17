@@ -15,16 +15,19 @@ import '../../../client_statistics/data/repositories/client_repository_impl.dart
 import '../../../client_statistics/domain/usecases/search_clients_usecase.dart';
 import '../../domain/usecases/add_extinguisher_to_service_usecase.dart';
 import '../../domain/entities/extinguisher_entity.dart';
+import '../../domain/usecases/get_inspection_detail_by_service_extinguisher_id_usecase.dart';
 import 'maintenance/maintenance_checklist_page.dart';
 import 'inspection/inspection_checklist_page.dart';
 
 class ExtinguisherItem {
   final Extinguisher extinguisher;
   final ServiceExtinguisherEntity? serviceExtinguisher;
+  final bool hasRecord;
 
   ExtinguisherItem({
     required this.extinguisher,
     this.serviceExtinguisher,
+    this.hasRecord = false,
   });
 }
 
@@ -113,11 +116,25 @@ class _ServiceExtinguisherListPageState
         };
 
         // 3. Emparejar extintores con su servicio si lo tienen
+        final getInspectionUseCase = GetInspectionDetailByServiceExtinguisherIdUseCase(ServiceRepositoryImpl());
+        
         for (final ext in allExtinguishers) {
           final se = serviceExtByExtId[ext.id];
+          bool hasRecord = false;
+
+          if (se != null) {
+            if (widget.serviceType == ServiceType.inspection) {
+              final detail = await getInspectionUseCase.call(se.id);
+              hasRecord = detail != null;
+            } else {
+              hasRecord = se.completado;
+            }
+          }
+
           tempItems.add(ExtinguisherItem(
             extinguisher: ext,
             serviceExtinguisher: se,
+            hasRecord: hasRecord,
           ));
         }
 
@@ -439,7 +456,7 @@ class _ServiceExtinguisherListPageState
     final se = item.serviceExtinguisher;
 
     // Verificar si se completó el servicio
-    final bool isCompleted = se != null && se.completado;
+    final bool isCompleted = item.hasRecord;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
