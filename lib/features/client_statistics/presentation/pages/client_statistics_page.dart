@@ -341,7 +341,20 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
   /// Obtener etiqueta del tipo de extintor (para mostrar en lista de equipos)
   String _getExtinguisherTypeLabel(Extinguisher ext) {
     if (ext.type != null && ext.agent != null) {
-      return '${ext.type} ${ext.agent}';
+      final type = ext.type!.trim();
+      final agent = ext.agent!.trim();
+      
+      if (type.toLowerCase() == agent.toLowerCase()) {
+        return type;
+      }
+      if (type.toLowerCase().contains(agent.toLowerCase())) {
+        return type;
+      }
+      if (agent.toLowerCase().contains(type.toLowerCase())) {
+        return agent;
+      }
+      
+      return '$type $agent';
     } else if (ext.type != null) {
       return ext.type!;
     } else if (ext.agent != null) {
@@ -945,10 +958,6 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            title: Text(
-              '$numero. ${extinguisher.codeExtintor ?? extinguisher.serialNumberNFC ?? 'Sin serie'}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
