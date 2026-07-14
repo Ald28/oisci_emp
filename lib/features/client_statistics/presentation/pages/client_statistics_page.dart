@@ -946,10 +946,6 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                 ),
               ),
             ),
-            title: Text(
-              '$numero. ${extinguisher.codeExtintor ?? extinguisher.serialNumberNFC ?? 'Sin serie'}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
