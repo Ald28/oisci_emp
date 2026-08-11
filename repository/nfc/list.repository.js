@@ -24,7 +24,7 @@ export const ListRepository = {
     },
 
     async findByCodeExtintor(codeExtintor) {
-        return prisma.extintor.findUnique({
+        return prisma.extintor.findFirst({
             where: { codeExtintor },
             include: {
                 usuarioCreador: {

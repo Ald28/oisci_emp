@@ -264,7 +264,7 @@ model Sede {
 
 model Extintor {
   id               Int        @id @default(autoincrement())
-  codeExtintor     String?    @unique @db.VarChar(45)
+  codeExtintor     String?    @db.VarChar(45)
   serialNumberNFC  String?    @db.VarChar(45)
   type             String?    @db.VarChar(45)
   capacity         String?    @db.VarChar(45)

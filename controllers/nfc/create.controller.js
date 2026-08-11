@@ -13,13 +13,6 @@ export async function createExtintorController(req, res) {
 
         res.status(201).json({ ok: true, data: extintor });
     } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(409).json({
-                ok: false,
-                message: 'El código de extintor o número de serie NFC ya existe'
-            });
-        }
-
         return res.status(500).json({
             ok: false,
             message: error.message
