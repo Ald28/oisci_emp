@@ -464,7 +464,6 @@ export const ReporteInspeccionController = {
 
             const logoPath = path.resolve('uploads/logo.png')
             try {
-                doc.image(logoPath, doc.page.margins.left, 20, { width: 100 })
                 doc.image(
                     logoPath,
                     doc.page.width - doc.page.margins.right - 100,
@@ -476,7 +475,7 @@ export const ReporteInspeccionController = {
             }
 
             const titleWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right
-            doc.font('Helvetica-Bold').fontSize(14).text(
+            doc.font('Helvetica-Bold').fontSize(12).text(
                 'REPORTE FOTOGRÁFICO DE EXTINTORES CONTRA INCENDIOS',
                 doc.page.margins.left,
                 36,
