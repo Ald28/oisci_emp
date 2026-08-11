@@ -1,6 +1,24 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 
-const serverUrl = process.env.API_URL || 'http://localhost:8000';
+const configuredServerUrl = process.env.API_URL;
+
+const servers = [
+  {
+    url: 'http://localhost:8000',
+    description: 'Local',
+  },
+  {
+    url: 'https://api.aldosanchez.es',
+    description: 'Produccion',
+  },
+];
+
+if (configuredServerUrl && !servers.some((server) => server.url === configuredServerUrl)) {
+  servers.unshift({
+    url: configuredServerUrl,
+    description: 'Servidor configurado por API_URL',
+  });
+}
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -9,12 +27,7 @@ const swaggerDefinition = {
     version: '1.0.0',
     description: 'Documentación de la API de clientes',
   },
-  servers: [
-    {
-      url: serverUrl,
-      description: 'Servidor API',
-    },
-  ],
+  servers,
   components: {
     securitySchemes: {
       bearerAuth: {

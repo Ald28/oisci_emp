@@ -10,7 +10,19 @@ export const ReporteInspeccionRepository = {
                     include: {
                         client: true
                     }
-                }
+                },
+                user: true,
+                certificados: {
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                        tipo: true,
+                        numeroCertificado: true,
+                        fechaEmision: true,
+                    },
+                },
             }
         })
     },
@@ -19,13 +31,11 @@ export const ReporteInspeccionRepository = {
         return prisma.servicioExtintor.findMany({
             where: {
                 servicioId,
-                inspeccionDetalle: {
-                    isNot: null
-                }
             },
             include: {
                 extintor: true,
-                inspeccionDetalle: true
+                inspeccionDetalle: true,
+                mantenimientoDetalle: true,
             }
         })
     }

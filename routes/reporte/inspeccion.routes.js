@@ -155,10 +155,16 @@ router.get(
  * @swagger
  * /reporte/fotografico/{servicioId}/download:
  *   get:
- *     summary: Descargar certificado PDF de inspección
- *     description: >
+ *     summary: Descargar certificado fotográfico PDF de inspección
+ *     description: |
  *       Genera y descarga el certificado en formato PDF con toda la
  *       información de la inspección y fotografías de los equipos.
+ *
+ *       Ejemplo en local:
+ *       - http://localhost:8000/reporte/fotografico/6/download
+ *
+ *       Ejemplo en servidor:
+ *       - https://api.aldosanchez.es/reporte/fotografico/6/download
  *     tags:
  *       - Reporte Inspección
  *     security:
@@ -190,6 +196,101 @@ router.get(
 router.get(
     '/fotografico/:servicioId/download',
     ReporteInspeccionController.descargarCertificado
+)
+
+/**
+ * @swagger
+ * /reporte/fotografico/{servicioId}/download-servicio:
+ *   get:
+ *     summary: Descargar certificado unificado general de 3 paginas por servicio en un solo PDF
+ *     description: |
+ *       Genera un solo PDF con tres secciones dentro del mismo documento:
+ *       Integridad/Mantenimiento, Prueba Hidrostática y Extintores dados de Baja.
+ *       Cada sección se pagina de 10 en 10 según la cantidad de extintores.
+ *
+ *       Ejemplo en local:
+ *       - http://localhost:8000/reporte/fotografico/13/download-servicio
+ *
+ *       Ejemplo en servidor:
+ *       - https://api.aldosanchez.es/reporte/fotografico/13/download-servicio
+ *     tags:
+ *       - Reporte Inspección
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: servicioId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 16
+ *     responses:
+ *       200:
+ *         description: PDF unificado generado correctamente
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Sin permisos
+ *       404:
+ *         description: Servicio no encontrado
+ *       500:
+ *         description: Error interno al generar PDF
+ */
+router.get(
+    '/fotografico/:servicioId/download-servicio',
+    ReporteInspeccionController.descargarCertificadoServicio
+)
+
+/**
+ * @swagger
+ * /reporte/fotografico/{servicioId}/download-pdf:
+ *   get:
+ *     summary: Descargar certificado BAJA/HIDRO/OPER en formato pdf
+ *     description: |
+ *       Genera y descarga el certificado en PDF con formato de certificado
+ *       (encabezado, tabla y texto normativo) según la plantilla del servicio.
+ *
+ *       Ejemplo en local:
+ *       - http://localhost:8000/reporte/fotografico/1/download-pdf
+ *
+ *       Ejemplo en servidor:
+ *       - https://api.aldosanchez.es/reporte/fotografico/1/download-pdf
+ *     tags:
+ *       - Reporte Inspección
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: servicioId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 26
+ *     responses:
+ *       200:
+ *         description: PDF generado correctamente
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Sin permisos
+ *       404:
+ *         description: Servicio no encontrado
+ *       500:
+ *         description: Error interno al generar PDF
+ */
+router.get(
+    '/fotografico/:servicioId/download-pdf',
+    ReporteInspeccionController.descargarWord
 )
 
 export default router

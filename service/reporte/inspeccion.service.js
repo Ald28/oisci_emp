@@ -13,13 +13,20 @@ export const ReporteInspeccionService = {
             if (a.extintorId !== b.extintorId) {
                 return a.extintorId - b.extintorId
             }
-            return new Date(a.inspeccionDetalle.createdAt) - new Date(b.inspeccionDetalle.createdAt)
+            const fechaA = a.inspeccionDetalle?.createdAt ?? a.mantenimientoDetalle?.createdAt ?? a.createdAt
+            const fechaB = b.inspeccionDetalle?.createdAt ?? b.mantenimientoDetalle?.createdAt ?? b.createdAt
+            return new Date(fechaA) - new Date(fechaB)
         })
+
+        const certificado = servicio.certificados?.[0] ?? null
 
         return {
             servicio: {
                 id: servicio.id,
                 tipo: servicio.type,
+                certificadoTipo: certificado?.tipo ?? null,
+                numeroCertificado: certificado?.numeroCertificado ?? null,
+                fechaEmision: toPeruDateTime(certificado?.fechaEmision),
 
                 // ISO en hora Perú (-05:00) y parseable por Flutter
                 fechaInicio: toPeruDateTime(servicio.dateStart),
@@ -36,14 +43,41 @@ export const ReporteInspeccionService = {
                 direccion: servicio.sede.address,
                 ciudad: servicio.sede.city,
             },
-
             equipos: inspecciones.map((i) => ({
                 extintorId: i.extintor.id,
                 codigo: i.extintor.codeExtintor,
                 tipo: i.extintor.type,
                 ubicacion: i.extintor.location,
+                capacidad: i.extintor.capacity,
+                agente: i.extintor.agent,
+                nSerie: i.extintor.serialNumberNFC ?? i.extintor.cylinderNumber ?? null,
+                marca: i.extintor.brand,
+                modelo: i.extintor.model,
+                anioFabricacion: i.extintor.yearManufacture,
+                presionTrabajo: i.extintor.pressure ?? null,
+                presionPrueba: i.extintor.rating ?? null,
+                fechaHidrostatica: toPeruDateTime(i.extintor.dateHydrostatic),
+                fechaMantenimiento: toPeruDateTime(i.extintor.dateMaintenance),
+                fechaBaja: toPeruDateTime(i.extintor.dateLow),
 
                 estadoFinal: i.estadoFinal,
+                recomendaciones:
+                    i.inspeccionDetalle?.observaciones
+                    ?? i.observaciones
+                    ?? i.mantenimientoDetalle?.detallesCambioPartes
+                    ?? 'Ninguna',
+
+                mantenimientoDetalle: i.mantenimientoDetalle
+                    ? {
+                        mantenimiento: i.mantenimientoDetalle.mantenimiento,
+                        recarga: i.mantenimientoDetalle.recarga,
+                        pruebaHidrostatica: i.mantenimientoDetalle.pruebaHidrostatica,
+                        bajaExtintor: i.mantenimientoDetalle.bajaExtintor,
+                        pintura: i.mantenimientoDetalle.pintura,
+                        cambioPartes: i.mantenimientoDetalle.cambioPartes,
+                        motivoBaja: i.mantenimientoDetalle.motivoBaja,
+                    }
+                    : null,
 
                 fotos: i.inspeccionDetalle
                     ? {
@@ -52,6 +86,13 @@ export const ReporteInspeccionService = {
                         foto3Url: i.inspeccionDetalle.foto3Url,
                     }
                     : null,
+                fotosArray: i.inspeccionDetalle
+                    ? [
+                        i.inspeccionDetalle.foto1Url,
+                        i.inspeccionDetalle.foto2Url,
+                        i.inspeccionDetalle.foto3Url,
+                    ].filter(Boolean)
+                    : [],
 
                 checklist: i.inspeccionDetalle
                     ? {

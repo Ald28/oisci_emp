@@ -2,6 +2,7 @@ import express from "express";
 import {
   listExtintores,
   getExtintor,
+  exportExtintoresExcel,
 } from "../../controllers/inspeccionD/extintor.controller.js";
 
 const router = express.Router();
@@ -136,5 +137,60 @@ router.get("/info", listExtintores);
  *         description: Error del servidor
  */
 router.get("/pdf", getExtintor);
+
+/**
+ * @swagger
+ * /extintores/excel:
+ *   get:
+ *     summary: Descargar extintores en formato Excel o PDF
+ *     description: |
+ *       Exporta extintores por servicio o por extintor en formato Excel (por defecto) o PDF.
+ *
+ *       Ejemplos en local:
+ *       - http://localhost:8000/extintores/excel?serviceId=3
+ *       - http://localhost:8000/extintores/excel?format=pdf&serviceId=6
+ *
+ *       Ejemplos en servidor:
+ *       - https://api.aldosanchez.es/extintores/excel?serviceId=3
+ *       - https://api.aldosanchez.es/extintores/excel?format=pdf&serviceId=6
+ *     tags: [Reporte Inspección]
+ *     parameters:
+ *       - in: query
+ *         name: extintorId
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: ID del extintor para exportar un registro en específico
+ *       - in: query
+ *         name: serviceId
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: ID del servicio para exportar únicamente los extintores asociados a ese servicio
+ *         example: 6
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [excel, pdf]
+ *         required: false
+ *         description: Formato de descarga (por defecto excel)
+ *         example: pdf
+ *     responses:
+ *       200:
+ *         description: Archivo generado
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       500:
+ *         description: Error del servidor
+ */
+router.get("/excel", exportExtintoresExcel);
 
 export default router;

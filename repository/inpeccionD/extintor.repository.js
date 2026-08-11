@@ -37,7 +37,37 @@ export const getData = async () => {
   });
 };
 
+export const getDataByServiceId = async (serviceId) => {
+  return await prisma.extintor.findMany({
+    where: {
+      serviciosExtintor: {
+        some: {
+          servicioId: Number(serviceId),
+        },
+      },
+    },
+    include: {
+      sede: {
+        include: {
+          client: true,
+        },
+      },
+      serviciosExtintor: {
+        where: {
+          servicioId: Number(serviceId),
+        },
+        include: {
+          servicio: true,
+          mantenimientoDetalle: true,
+          inspeccionDetalle: true,
+        },
+      },
+    },
+  });
+};
+
 export default {
   getExtintoresFull,
   getData,
+  getDataByServiceId,
 };
