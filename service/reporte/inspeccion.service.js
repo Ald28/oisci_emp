@@ -1,6 +1,33 @@
 import { ReporteInspeccionRepository } from '../../repository/reporte/inspeccion.repository.js'
 import { toPeruDateTime } from '../../utils/datetime.js'
 
+const filtrarEquiposPorTipo = (equipos, tipo) => {
+    if (!tipo) return equipos
+
+    if (tipo === 'OPER') {
+        return equipos.filter((equipo) => {
+            const m = equipo.mantenimientoDetalle || {}
+            return Boolean(
+                m.mantenimiento
+                || m.recarga
+                || m.pintura
+                || m.cambioPartes
+                || equipo.estadoFinal === 'OPERATIVO'
+            )
+        })
+    }
+
+    if (tipo === 'HIDRO') {
+        return equipos.filter((equipo) => Boolean(equipo.mantenimientoDetalle?.pruebaHidrostatica))
+    }
+
+    if (tipo === 'BAJA') {
+        return equipos.filter((equipo) => Boolean(equipo.mantenimientoDetalle?.bajaExtintor))
+    }
+
+    return equipos
+}
+
 export const ReporteInspeccionService = {
     async generar(servicioId) {
         const servicio = await ReporteInspeccionRepository.obtenerServicio(servicioId)
@@ -119,5 +146,39 @@ export const ReporteInspeccionService = {
                 fechaHora: toPeruDateTime(i.inspeccionDetalle?.createdAt),
             })),
         }
+    },
+
+    filtrarPorTipo(equipos, tipo) {
+        return filtrarEquiposPorTipo(equipos, tipo)
+    },
+
+    async listar({ tipo } = {}) {
+        const servicios = await ReporteInspeccionRepository.listarServiciosAptos()
+        const resultados = []
+
+        for (const servicio of servicios) {
+            const reporte = await this.generar(servicio.id)
+            if (!reporte) continue
+
+            const equipos = Array.isArray(reporte.equipos) ? reporte.equipos : []
+            const equiposFiltrados = filtrarEquiposPorTipo(equipos, tipo)
+
+            if (tipo && equiposFiltrados.length === 0) {
+                continue
+            }
+
+            resultados.push({
+                servicioId: reporte.servicio.id,
+                numeroCertificado: reporte.servicio.numeroCertificado,
+                fechaInicio: reporte.servicio.fechaInicio,
+                fechaEmision: reporte.servicio.fechaEmision,
+                certificadoTipo: reporte.servicio.certificadoTipo,
+                cliente: reporte.cliente,
+                totalEquipos: equipos.length,
+                totalEquiposFiltrados: equiposFiltrados.length,
+            })
+        }
+
+        return resultados
     },
 }

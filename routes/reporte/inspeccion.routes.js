@@ -6,6 +6,84 @@ const router = Router()
 
 /**
  * @swagger
+ * /reporte/fotografico/download-pdf:
+ *   get:
+ *     summary: API flexible para descargar certificado PDF
+ *     description: |
+ *       API flexible para descargar certificados en PDF.
+ *
+ *       Comportamiento:
+ *       - Con servicioId: genera PDF de ese servicio (opcionalmente filtrado por tipo).
+ *       - Sin servicioId: autoselecciona el servicio más reciente que cumpla el filtro tipo y genera PDF.
+ *
+ *       Casos de uso (query params opcionales):
+ *       - Solo servicioId: /reporte/fotografico/download-pdf?servicioId=13
+ *       - Solo tipo: /reporte/fotografico/download-pdf?tipo=BAJA
+ *       - Ambos: /reporte/fotografico/download-pdf?servicioId=13&tipo=HIDROSTATICA
+ *
+ *       Rutas legacy compatibles:
+ *       - /reporte/fotografico/{servicioId}/download-pdf
+ *       - /reporte/fotografico/{servicioId}/download-pdf/{tipo}
+ *     tags:
+ *       - Reporte Inspección
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: servicioId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         example: 13
+ *       - in: query
+ *         name: tipo
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [OPERATIVIDAD, HIDROSTATICA, BAJA]
+ *         example: BAJA
+ *     responses:
+ *       200:
+ *         description: PDF generado correctamente
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Parámetros inválidos (tipo o servicioId)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Tipo invalido. Use uno de: OPERATIVIDAD, HIDROSTATICA o BAJA"
+ *       404:
+ *         description: Servicio no encontrado o sin resultados para filtros
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No se encontraron servicios para los filtros enviados
+ *       401:
+ *         description: No autorizado
+ *       403:
+ *         description: Sin permisos
+ *       500:
+ *         description: Error interno al generar PDF o listar datos
+ */
+router.get(
+    '/fotografico/download-pdf',
+    ReporteInspeccionController.descargarWord
+)
+
+/**
+ * @swagger
  * /reporte/fotografico/{servicioId}:
  *   get:
  *     summary: Obtener reporte de inspección por servicio
@@ -246,48 +324,11 @@ router.get(
     ReporteInspeccionController.descargarCertificadoServicio
 )
 
-/**
- * @swagger
- * /reporte/fotografico/{servicioId}/download-pdf:
- *   get:
- *     summary: Descargar certificado BAJA/HIDRO/OPER en formato pdf
- *     description: |
- *       Genera y descarga el certificado en PDF con formato de certificado
- *       (encabezado, tabla y texto normativo) según la plantilla del servicio.
- *
- *       Ejemplo en local:
- *       - http://localhost:8000/reporte/fotografico/1/download-pdf
- *
- *       Ejemplo en servidor:
- *       - https://api.aldosanchez.es/reporte/fotografico/1/download-pdf
- *     tags:
- *       - Reporte Inspección
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: servicioId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 26
- *     responses:
- *       200:
- *         description: PDF generado correctamente
- *         content:
- *           application/pdf:
- *             schema:
- *               type: string
- *               format: binary
- *       401:
- *         description: No autorizado
- *       403:
- *         description: Sin permisos
- *       404:
- *         description: Servicio no encontrado
- *       500:
- *         description: Error interno al generar PDF
- */
+router.get(
+    '/fotografico/:servicioId/download-pdf/:tipo',
+    ReporteInspeccionController.descargarWord
+)
+
 router.get(
     '/fotografico/:servicioId/download-pdf',
     ReporteInspeccionController.descargarWord

@@ -84,12 +84,12 @@ const router = Router();
  *                 summary: Tipo inválido
  *                 value:
  *                   success: false
- *                   message: tipo no válido. Debe ser uno de: INSPECCION, REPORTE_FOTOGRAFICO
+ *                   message: "tipo no válido. Debe ser uno de: INSPECCION, REPORTE_FOTOGRAFICO"
  *               frecuenciaInvalida:
  *                 summary: Frecuencia inválida
  *                 value:
  *                   success: false
- *                   message: frecuencia no válida. Debe ser una de: MENSUAL
+ *                   message: "frecuencia no válida. Debe ser una de: MENSUAL"
  */
 
 router.post("/reportes", reportesController.createReporte);

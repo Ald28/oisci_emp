@@ -49,7 +49,16 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json());
+const jsonParser = express.json();
+
+app.use((req, res, next) => {
+    // Evita parsear body JSON en métodos que normalmente no envían cuerpo.
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+        return next();
+    }
+
+    return jsonParser(req, res, next);
+});
 
 app.get('/', (req, res) => {
     res.status(200).json({

@@ -42,6 +42,17 @@ function clasificarEquiposServicio(equipos) {
     return { oper, hidro, baja }
 }
 
+function normalizarTipoFiltro(tipoRaw) {
+    if (!tipoRaw) return null
+
+    const tipo = String(tipoRaw).trim().toUpperCase()
+    if (tipo === 'OPER' || tipo === 'OPERATIVIDAD') return 'OPER'
+    if (tipo === 'HIDRO' || tipo === 'HIDROSTATICA' || tipo === 'HIDROSTÁTICA') return 'HIDRO'
+    if (tipo === 'BAJA') return 'BAJA'
+
+    return null
+}
+
 function dibujarCabeceraPagina(doc, tituloGeneral, tituloSeccion, conteo, numeroPaginaSeccion, totalPaginasSeccion) {
     const logoPath = path.resolve('uploads/logo.png')
     try {
@@ -682,8 +693,35 @@ export const ReporteInspeccionController = {
 
     async descargarWord(req, res) {
         try {
-            const { servicioId } = req.params
-            const reporte = await ReporteInspeccionService.generar(Number(servicioId))
+            let servicioIdRaw = req.params.servicioId ?? req.query.servicioId
+            const tipoParamRaw = req.params.tipo ?? req.query.tipo
+            const tipoFiltro = normalizarTipoFiltro(tipoParamRaw)
+
+            if (tipoParamRaw && !tipoFiltro) {
+                return res.status(400).json({
+                    message: 'Tipo invalido. Use uno de: OPERATIVIDAD, HIDROSTATICA o BAJA',
+                })
+            }
+
+            if (!servicioIdRaw) {
+                const servicios = await ReporteInspeccionService.listar({ tipo: tipoFiltro })
+
+                if (!servicios.length) {
+                    return res.status(404).json({
+                        message: 'No se encontraron servicios para los filtros enviados',
+                    })
+                }
+
+                servicioIdRaw = servicios[0].servicioId
+            }
+
+            if (Number.isNaN(Number(servicioIdRaw))) {
+                return res.status(400).json({
+                    message: 'El serviceId es invalido',
+                })
+            }
+
+            const reporte = await ReporteInspeccionService.generar(Number(servicioIdRaw))
 
             if (!reporte) {
                 return res.status(404).json({ message: 'Servicio no encontrado' })
@@ -702,7 +740,8 @@ export const ReporteInspeccionController = {
             const certificadoTipo = (reporte.servicio?.certificadoTipo || '').toUpperCase()
             const fallbackTipo = (reporte.servicio?.tipo || '').toUpperCase()
 
-            const tipoPlantilla = certificadoTipo
+            const tipoPlantilla = tipoFiltro
+                || certificadoTipo
                 || (fallbackTipo === 'MANTENIMIENTO' ? 'OPER' : 'HIDRO')
 
             const isHydro = tipoPlantilla === 'HIDRO'
@@ -710,7 +749,7 @@ export const ReporteInspeccionController = {
             const isReporteTecnico = tipoPlantilla === 'REPORTE_TECNICO'
             const isOperatividad = tipoPlantilla === 'OPER'
 
-            const numeroCertificado = reporte.servicio?.numeroCertificado || servicioId
+            const numeroCertificado = reporte.servicio?.numeroCertificado || servicioIdRaw
 
             const tituloCertificado = isHydro
                 ? 'CERTIFICADO DE PRUEBA HIDROSTÁTICA'
@@ -755,7 +794,7 @@ export const ReporteInspeccionController = {
             res.setHeader('Content-Type', 'application/pdf')
             res.setHeader(
                 'Content-Disposition',
-                `attachment; filename=certificado-prueba-hidrostatica-${servicioId}.pdf`,
+                `attachment; filename=certificado-prueba-hidrostatica-${servicioIdRaw}.pdf`,
             )
             doc.pipe(res)
 
@@ -884,7 +923,21 @@ export const ReporteInspeccionController = {
 
             drawHeader()
 
-            const equipos = Array.isArray(reporte.equipos) ? reporte.equipos : []
+            const equiposBase = Array.isArray(reporte.equipos) ? reporte.equipos : []
+            const equiposClasificados = clasificarEquiposServicio(equiposBase)
+            const equipos = tipoFiltro === 'OPER'
+                ? equiposClasificados.oper
+                : tipoFiltro === 'HIDRO'
+                    ? equiposClasificados.hidro
+                    : tipoFiltro === 'BAJA'
+                        ? equiposClasificados.baja
+                        : equiposBase
+
+            if (tipoFiltro && !equipos.length) {
+                return res.status(404).json({
+                    message: `No hay extintores para el tipo ${tipoParamRaw} en el servicio ${servicioIdRaw}`,
+                })
+            }
 
             for (let start = 0; start < equipos.length; start += rowsPerPage) {
                 if (start > 0) {

@@ -38,6 +38,21 @@ export const ReporteInspeccionRepository = {
                 mantenimientoDetalle: true,
             }
         })
+    },
+
+    async listarServiciosAptos() {
+        return prisma.servicio.findMany({
+            where: {
+                type: 'MANTENIMIENTO',
+                status: 'FINALIZADO',
+            },
+            select: {
+                id: true,
+            },
+            orderBy: {
+                id: 'desc',
+            },
+        })
     }
 
 }
