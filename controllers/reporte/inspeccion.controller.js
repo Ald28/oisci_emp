@@ -477,7 +477,7 @@ export const ReporteInspeccionController = {
             try {
                 doc.image(
                     logoPath,
-                    doc.page.width - doc.page.margins.right - 100,
+                    doc.page.margins.left,
                     20,
                     { width: 100 },
                 )
@@ -487,7 +487,7 @@ export const ReporteInspeccionController = {
 
             const titleWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right
             doc.font('Helvetica-Bold').fontSize(12).text(
-                'REPORTE FOTOGRÁFICO DE EXTINTORES CONTRA INCENDIOS',
+                'REPORTE FOTOGRÁFICO DE\nEXTINTORES CONTRA INCENDIOS',
                 doc.page.margins.left,
                 36,
                 {
@@ -504,12 +504,16 @@ export const ReporteInspeccionController = {
             doc.text('Cliente :', labelX, infoY)
             doc.text(reporte.cliente.razonSocial, valueX, infoY)
             doc.text('Inspector :', labelX, infoY + 14)
-            doc.text(reporte.servicio.user?.name ?? '-', valueX, infoY + 14)
+            doc.text(reporte.servicio.usuarioCreador?.name ?? '-', valueX, infoY + 14)
             doc.text('Fecha :', labelX, infoY + 28)
             doc.text(reporte.servicio.fechaInicio ?? '-', valueX, infoY + 28)
 
             const tableTop = infoY + 52
-            const columns = [
+            const tableHorizontalGap = 6
+            const pageInnerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right
+            const maxTableWidth = pageInnerWidth - (tableHorizontalGap * 2)
+
+            const baseColumns = [
                 { header: 'COD.', key: 'codigo', width: 55 },
                 { header: 'CAP.', key: 'capacidad', width: 50 },
                 { header: 'AGENTE', key: 'agente', width: 55 },
@@ -518,19 +522,32 @@ export const ReporteInspeccionController = {
                 { header: 'FOTOGRAFÍA', key: 'foto', width: 165 },
                 { header: 'RECOMENDACIONES', key: 'recomendaciones', width: 120 },
             ]
+            const baseTotalWidth = baseColumns.reduce((acc, column) => acc + column.width, 0)
+            const scale = maxTableWidth / baseTotalWidth
+            const columns = baseColumns.map((column) => ({
+                ...column,
+                width: Math.round(column.width * scale),
+            }))
+            const scaledTotalWidth = columns.reduce((acc, column) => acc + column.width, 0)
+            columns[columns.length - 1].width += (maxTableWidth - scaledTotalWidth)
+
             const rowHeight = 120
-            const startX = doc.page.margins.left
+            const startX = doc.page.margins.left + tableHorizontalGap
             const bottomMargin = doc.page.height - doc.page.margins.bottom
             let y = tableTop
 
             const drawTableHeader = () => {
                 let x = startX
-                doc.font('Helvetica-Bold').fontSize(9)
+                doc.font('Helvetica-Bold')
                 columns.forEach((column) => {
                     doc.rect(x, y, column.width, 24).fill('#c20b0b').stroke()
+                    const headerFontSize = column.key === 'estadoFinal' ? 8 : 9
+                    doc.fontSize(headerFontSize)
                     doc.fillColor('white').text(column.header, x + 4, y + 6, {
-                        width: column.width - 8,
+                        lineBreak: false,
+                        ellipsis: true,
                         align: 'center',
+                        width: column.width - 8,
                     })
                     x += column.width
                 })
@@ -548,7 +565,9 @@ export const ReporteInspeccionController = {
                     capacidad: equipo.capacidad || '',
                     agente: equipo.agente || '',
                     nSerie: equipo.nSerie || '',
-                    estadoFinal: equipo.estadoFinal || '',
+                    estadoFinal: equipo.estadoFinal
+                        ? String(equipo.estadoFinal).toUpperCase()
+                        : '-',
                     recomendaciones: equipo.recomendaciones || 'Ninguna',
                 }
 
