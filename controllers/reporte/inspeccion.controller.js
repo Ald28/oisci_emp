@@ -498,14 +498,18 @@ export const ReporteInspeccionController = {
 
             const infoY = 78
             const labelX = doc.page.margins.left
-            const valueX = labelX + 80
+            const valueX = labelX + 108
+            const colonX = labelX + 60
 
             doc.font('Helvetica').fontSize(10)
-            doc.text('Cliente :', labelX, infoY)
+            doc.text('Cliente', labelX, infoY)
+            doc.text(':', colonX, infoY)
             doc.text(reporte.cliente.razonSocial, valueX, infoY)
-            doc.text('Inspector :', labelX, infoY + 14)
+            doc.text('Inspector', labelX, infoY + 14)
+            doc.text(':', colonX, infoY + 14)
             doc.text(reporte.servicio.usuarioCreador?.name ?? '-', valueX, infoY + 14)
-            doc.text('Fecha :', labelX, infoY + 28)
+            doc.text('Fecha', labelX, infoY + 28)
+            doc.text(':', colonX, infoY + 28)
             doc.text(reporte.servicio.fechaInicio ?? '-', valueX, infoY + 28)
 
             const tableTop = infoY + 52
