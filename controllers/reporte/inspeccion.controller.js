@@ -497,9 +497,10 @@ export const ReporteInspeccionController = {
             )
 
             const infoY = 78
-            const labelX = doc.page.margins.left
+            const tableHorizontalGap = 6
+            const labelX = doc.page.margins.left + tableHorizontalGap
             const valueX = labelX + 108
-            const colonX = labelX + 60
+            const colonX = labelX + 70
 
             doc.font('Helvetica').fontSize(10)
             doc.text('Cliente', labelX, infoY)
@@ -513,7 +514,6 @@ export const ReporteInspeccionController = {
             doc.text(reporte.servicio.fechaInicio ?? '-', valueX, infoY + 28)
 
             const tableTop = infoY + 52
-            const tableHorizontalGap = 6
             const pageInnerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right
             const maxTableWidth = pageInnerWidth - (tableHorizontalGap * 2)
 
