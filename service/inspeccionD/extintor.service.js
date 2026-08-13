@@ -3,13 +3,19 @@ import axios from "axios";
 import path from "path";
 import fs from "fs/promises";
 import ExcelJS from "exceljs";
-import { presignPreview } from "../../utils/presignPreview.js";
 import { obtenerKeyDesdeS3Url } from "./storage/keyS3.js";
 import {
   getExtintoresFull,
   getData,
   getDataByServiceId,
 } from "../../repository/inpeccionD/extintor.repository.js";
+
+const buildPreviewUrl = (url) => {
+  if (!url) return null;
+
+  const key = obtenerKeyDesdeS3Url(url);
+  return `${process.env.API_URL}/certificado/preview?key=${encodeURIComponent(key)}`;
+};
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -35,7 +41,7 @@ export const getExtintores = async () => {
   return data.map((ext) => ({
     id: ext.id,
     codeExtintor: ext.codeExtintor,
-    photo: ext.photo,
+    photo: buildPreviewUrl(ext.photo),
 
     cliente: ext.sede?.client?.razonSocial,
     sede: ext.sede?.name_sede,
@@ -49,6 +55,7 @@ export const getExtintores = async () => {
           s.inspeccionDetalle.foto3Url,
           s.inspeccionDetalle.foto4Url,
         ]
+          .map((url) => buildPreviewUrl(url))
           .filter(Boolean),
 
         observacionesDetalle: s.inspeccionDetalle.observaciones,
@@ -68,7 +75,7 @@ export const getExtintoresPDF = async () => {
     codigo: ext.codeExtintor,
     tipo: ext.type,
     capacidad: ext.capacity,
-    foto: ext.photo,
+    foto: buildPreviewUrl(ext.photo),
 
     empresa: ext.sede?.client?.razonSocial,
     sede: ext.sede?.name_sede,
@@ -122,6 +129,7 @@ export const getExtintoresPDF = async () => {
           s.inspeccionDetalle.foto3Url,
           s.inspeccionDetalle.foto4Url,
         ]
+          .map((url) => buildPreviewUrl(url))
           .filter(Boolean),
 
         observaciones: s.inspeccionDetalle.observaciones,
