@@ -203,7 +203,15 @@ function dibujarTablaSeccion(doc, equiposPagina, tipoSeccion, offsetIndice) {
     const drawCell = (x, yy, w, h, text, bold = false) => {
         doc.rect(x, yy, w, h).stroke()
         doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8)
-        doc.text(text, x + 2, yy + 5, { width: w - 4, align: 'center' })
+        doc.save()
+        doc.rect(x + 1, yy + 1, w - 2, h - 2).clip()
+        doc.text(String(text ?? '-'), x + 2, yy + 4, {
+            width: w - 4,
+            height: h - 6,
+            align: 'center',
+            ellipsis: true,
+        })
+        doc.restore()
     }
 
     let x = startX
@@ -314,7 +322,7 @@ function drawSectionTableCert(doc, equiposPagina, tipoSeccion, indiceInicio, fec
     const pageInnerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right
     const h1 = 18
     const h2 = 18
-    const rowH = 22
+    const rowH = 32
     const widths = tipoSeccion === 'HIDRO'
         ? [20, 42, 56, 54, 28, 44, 44, 44, 44, 48, 60]
         : tipoSeccion === 'BAJA'
@@ -326,8 +334,16 @@ function drawSectionTableCert(doc, equiposPagina, tipoSeccion, indiceInicio, fec
 
     const drawCell = (x, yy, w, h, text, bold = false) => {
         doc.rect(x, yy, w, h).stroke()
-        doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8)
-        doc.text(text, x + 2, yy + 5, { width: w - 4, align: 'center' })
+        doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(bold ? 8 : 7)
+        doc.save()
+        doc.rect(x + 1, yy + 1, w - 2, h - 2).clip()
+        doc.text(String(text ?? '-'), x + 2, yy + 4, {
+            width: w - 4,
+            height: h - 6,
+            align: 'center',
+            ellipsis: true,
+        })
+        doc.restore()
     }
 
     let x = startX
@@ -983,7 +999,7 @@ export const ReporteInspeccionController = {
 
             const h1 = 18
             const h2 = 18
-            const rowH = 22
+            const rowH = 32
             const widths = isHydro
                 ? [20, 42, 56, 54, 28, 44, 44, 44, 44, 48, 60]
                 : isBaja
@@ -996,8 +1012,16 @@ export const ReporteInspeccionController = {
 
             const drawCell = (x, yy, w, h, text, opts = {}) => {
                 doc.rect(x, yy, w, h).stroke()
-                doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(opts.size || 8)
-                doc.text(text, x + 2, yy + 5, { width: w - 4, align: opts.align || 'center' })
+                doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(opts.bold ? (opts.size || 8) : 7)
+                doc.save()
+                doc.rect(x + 1, yy + 1, w - 2, h - 2).clip()
+                doc.text(String(text ?? '-'), x + 2, yy + 4, {
+                    width: w - 4,
+                    height: h - 6,
+                    align: opts.align || 'center',
+                    ellipsis: true,
+                })
+                doc.restore()
             }
 
             const drawHeader = () => {
