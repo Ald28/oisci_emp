@@ -4,6 +4,11 @@ import {
   getExtintor,
   exportExtintoresExcel,
 } from "../../controllers/inspeccionD/extintor.controller.js";
+import {
+  softDeleteExtintorController,
+  restoreExtintorController,
+} from "../../controllers/inspeccionD/delete.controller.js";
+import { authenticate, authorize } from "../../middleware/auth.middleware.js";
 
 const router = express.Router();
 /**
@@ -192,5 +197,75 @@ router.get("/pdf", getExtintor);
  *         description: Error del servidor
  */
 router.get("/excel", exportExtintoresExcel);
+
+/**
+ * @swagger
+ * /extintores/soft-delete/{id}:
+ *   delete:
+ *     summary: Desactivar (soft delete) un extintor
+ *     tags: [Reporte Inspección]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: ID del extintor a desactivar
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Extintor desactivado correctamente
+ *       400:
+ *         description: ID inválido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Extintor no encontrado
+ */
+router.delete(
+  "/soft-delete/:id",
+  authenticate,
+  authorize(["admin"]),
+  softDeleteExtintorController,
+);
+
+/**
+ * @swagger
+ * /extintores/restore/{id}:
+ *   patch:
+ *     summary: Restaurar un extintor desactivado
+ *     tags: [Reporte Inspección]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: ID del extintor a restaurar
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Extintor restaurado correctamente
+ *       400:
+ *         description: ID inválido
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Extintor no encontrado
+ */
+router.patch(
+  "/restore/:id",
+  authenticate,
+  authorize(["admin"]),
+  restoreExtintorController,
+);
 
 export default router;
