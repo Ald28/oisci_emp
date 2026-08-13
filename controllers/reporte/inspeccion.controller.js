@@ -5,6 +5,125 @@ import { ReporteInspeccionService } from '../../service/reporte/inspeccion.servi
 import { obtenerKeyDesdeS3Url } from '../../service/inspeccionD/storage/keyS3.js'
 import { presignPreview } from '../../utils/presignPreview.js'
 
+const encabezadoDocumentoPath = path.resolve('uploads/encabezado-oisci.png')
+const footerDocumentoPath = path.resolve('uploads/footer-oisci.png')
+const marcaAguaDocumentoPath = path.resolve('uploads/marca-agua.png')
+const marcaAguaWidth = 570
+const marcaAguaXOffsetDerecha = -160
+const marcaAguaY = 125
+
+function dibujarMarcaAguaDocumento(doc) {
+    const marcaAguaX = doc.page.width - marcaAguaWidth - marcaAguaXOffsetDerecha
+
+    doc.save()
+    doc.opacity(0.55)
+    doc.image(marcaAguaDocumentoPath, marcaAguaX, marcaAguaY, {
+        width: marcaAguaWidth,
+    })
+    doc.restore()
+}
+
+// Datos de contacto editables que se muestran en el pie de todos los PDF.
+const contactoFooter = {
+    telefono: '+51 940 481 887',
+    correo: 'jedquen@oisciglobal.com',
+}
+
+function dibujarIconoTelefono(doc, x, y) {
+    doc.save()
+    doc.lineWidth(1.5).strokeColor('#6f7778')
+    doc.circle(x + 8, y + 8, 7).stroke()
+    doc.moveTo(x + 3, y + 13).lineTo(x + 1, y + 17).lineTo(x + 6, y + 15).stroke()
+    doc.moveTo(x + 5, y + 4)
+        .bezierCurveTo(x + 4, y + 7, x + 9, y + 12, x + 12, y + 11)
+        .stroke()
+    doc.restore()
+}
+
+function dibujarIconoCorreo(doc, x, y) {
+    const width = 18
+    const height = 12
+
+    doc.save()
+    doc.lineWidth(1.3).strokeColor('#6f7778')
+    doc.roundedRect(x, y, width, height, 1.5).stroke()
+    doc.moveTo(x, y + 1).lineTo(x + (width / 2), y + 7).lineTo(x + width, y + 1).stroke()
+    doc.moveTo(x, y + height).lineTo(x + 6, y + 6).stroke()
+    doc.moveTo(x + width, y + height).lineTo(x + 12, y + 6).stroke()
+    doc.restore()
+}
+
+function dibujarContactoFooter(doc, footerY, footerHeight) {
+    const centerY = footerY + (footerHeight / 2)
+    const phoneIconX = doc.page.width * 0.12
+    const emailIconX = doc.page.width * 0.56
+    const cursorX = doc.x
+    const cursorY = doc.y
+    const bottomMargin = doc.page.margins.bottom
+
+    doc.save()
+    doc.opacity(0.95)
+    dibujarIconoTelefono(doc, phoneIconX, centerY - 8)
+    dibujarIconoCorreo(doc, emailIconX, centerY - 6)
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9.5)
+    // Permite escribir dentro del footer sin que PDFKit agregue otra página.
+    doc.page.margins.bottom = 0
+    doc.text(contactoFooter.telefono, phoneIconX + 24, centerY - 6, {
+        width: 150,
+        height: 12,
+        lineBreak: false,
+    })
+    doc.text(contactoFooter.correo, emailIconX + 26, centerY - 6, {
+        width: 205,
+        height: 12,
+        lineBreak: false,
+    })
+    doc.page.margins.bottom = bottomMargin
+    doc.x = cursorX
+    doc.y = cursorY
+    doc.restore()
+}
+
+function dibujarEncabezadoYPieDocumento(doc) {
+    const pageWidth = doc.page.width
+    const pageHeight = doc.page.height
+    const headerHeight = pageWidth * (134 / 1239)
+    const footerHeight = pageWidth * (98 / 1238)
+
+    try {
+        doc.save()
+        doc.opacity(0.55)
+        doc.image(encabezadoDocumentoPath, 0, 0, {
+            width: pageWidth,
+            height: headerHeight,
+        })
+        doc.restore()
+    } catch (err) {
+        doc.restore()
+        // ignore missing header image
+    }
+
+    try {
+        doc.save()
+        doc.opacity(0.55)
+        doc.image(footerDocumentoPath, 0, pageHeight - footerHeight, {
+            width: pageWidth,
+            height: footerHeight,
+        })
+        doc.restore()
+    } catch (err) {
+        doc.restore()
+        // ignore missing footer image
+    }
+
+    dibujarContactoFooter(doc, pageHeight - footerHeight, footerHeight)
+}
+
+function configurarEncabezadoYPieDocumento(doc) {
+    dibujarEncabezadoYPieDocumento(doc)
+    doc.on('pageAdded', () => dibujarEncabezadoYPieDocumento(doc))
+}
+
 async function descargarImagenPrivada(urlOrKey) {
     const key = obtenerKeyDesdeS3Url(urlOrKey)
     const signedUrl = await presignPreview(key, 'imagen.jpg')
@@ -54,28 +173,20 @@ function normalizarTipoFiltro(tipoRaw) {
 }
 
 function dibujarCabeceraPagina(doc, tituloGeneral, tituloSeccion, conteo, numeroPaginaSeccion, totalPaginasSeccion) {
-    const logoPath = path.resolve('uploads/logo.png')
-    try {
-        doc.image(logoPath, doc.page.margins.left, 18, { width: 62 })
-        doc.image(logoPath, doc.page.width - doc.page.margins.right - 62, 18, { width: 62 })
-    } catch (err) {
-        // ignore missing logo
-    }
-
-    doc.font('Helvetica-Bold').fontSize(14).text(tituloGeneral, 0, 42, { align: 'center' })
-    doc.font('Helvetica-Bold').fontSize(12).text(tituloSeccion, 0, 62, { align: 'center' })
-    doc.font('Helvetica').fontSize(9).text(`Extintores correspondientes: ${conteo}`, 0, 80, { align: 'center' })
+    doc.font('Helvetica-Bold').fontSize(14).text(tituloGeneral, 0, 76, { align: 'center' })
+    doc.font('Helvetica-Bold').fontSize(12).text(tituloSeccion, 0, 96, { align: 'center' })
+    doc.font('Helvetica').fontSize(9).text(`Extintores correspondientes: ${conteo}`, 0, 114, { align: 'center' })
     doc.font('Helvetica').fontSize(8).text(
         `Página sección: ${numeroPaginaSeccion}/${totalPaginasSeccion}`,
         0,
-        94,
+        128,
         { align: 'center' },
     )
 }
 
 function dibujarTablaSeccion(doc, equiposPagina, tipoSeccion, offsetIndice) {
     const startX = doc.page.margins.left
-    let y = 118
+    let y = 152
     const rowH = 20
     const widths = tipoSeccion === 'HIDRO'
         ? [24, 50, 50, 58, 62, 58, 48, 48, 58, 66]
@@ -190,20 +301,13 @@ function aspectoTextoCert(equipo) {
 }
 
 function drawSectionHeaderCert(doc, sectionTitle) {
-    const logoPath = path.resolve('uploads/logo.png')
     try {
-        doc.image(logoPath, doc.page.margins.left, 18, { width: 74 })
-        doc.image(logoPath, doc.page.width - doc.page.margins.right - 74, 18, { width: 74 })
-
-        doc.save()
-        doc.opacity(0.06)
-        doc.image(logoPath, doc.page.width / 2 - 180, doc.page.height / 2 - 100, { width: 360 })
-        doc.restore()
+        dibujarMarcaAguaDocumento(doc)
     } catch (err) {
-        // ignore missing logo
+        // ignore missing watermark
     }
 
-    doc.font('Helvetica-Bold').fontSize(17).text(sectionTitle, 0, 46, { align: 'center' })
+    doc.font('Helvetica-Bold').fontSize(17).text(sectionTitle, 0, 76, { align: 'center' })
 }
 
 function drawSectionTableCert(doc, equiposPagina, tipoSeccion, indiceInicio, fechaBaseMantenimiento) {
@@ -346,8 +450,10 @@ function drawSectionClosingTextCert(doc, tipoSeccion, blockX, blockWidth) {
     doc.font('Helvetica').text('Realizado por:', { width: blockWidth })
 
     const firmaPath = path.resolve('uploads/firma.png')
+    const firmaWidth = 150
+    const firmaX = blockX + ((blockWidth - firmaWidth) / 2)
     try {
-        doc.image(firmaPath, blockX, doc.y + 6, { width: 150 })
+        doc.image(firmaPath, firmaX, doc.y + 180, { width: firmaWidth })
     } catch (err) {
         // ignore missing signature image
     }
@@ -464,6 +570,7 @@ export const ReporteInspeccionController = {
             }
 
             const doc = new PDFDocument({ margin: 24, size: 'A4' })
+            configurarEncabezadoYPieDocumento(doc)
 
             res.setHeader('Content-Type', 'application/pdf')
             res.setHeader(
@@ -668,6 +775,7 @@ export const ReporteInspeccionController = {
             const empresaNombre = (reporte.cliente?.razonSocial || '').toUpperCase()
             const ruc = reporte.cliente?.ruc || ''
             const doc = new PDFDocument({ margin: 34, size: 'A4' })
+            configurarEncabezadoYPieDocumento(doc)
             res.setHeader('Content-Type', 'application/pdf')
             res.setHeader(
                 'Content-Disposition',
@@ -814,6 +922,7 @@ export const ReporteInspeccionController = {
                         ? 'Se emite el presente reporte técnico para las acciones correctivas y de seguimiento que correspondan.'
                         : 'Los equipos se encuentran operativos de acuerdo con la revisión efectuada.'
             const doc = new PDFDocument({ margin: 34, size: 'A4' })
+            configurarEncabezadoYPieDocumento(doc)
             res.setHeader('Content-Type', 'application/pdf')
             res.setHeader(
                 'Content-Disposition',
@@ -825,21 +934,14 @@ export const ReporteInspeccionController = {
             const blockX = doc.page.margins.left + 14
             const blockWidth = pageInnerWidth - 28
 
-            const logoPath = path.resolve('uploads/logo.png')
             try {
-                doc.image(logoPath, doc.page.margins.left, 18, { width: 74 })
-                doc.image(logoPath, doc.page.width - doc.page.margins.right - 74, 18, { width: 74 })
-
                 // Watermark suave de fondo para acercar el estilo visual del certificado.
-                doc.save()
-                doc.opacity(0.06)
-                doc.image(logoPath, doc.page.width / 2 - 180, doc.page.height / 2 - 100, { width: 360 })
-                doc.restore()
+                dibujarMarcaAguaDocumento(doc)
             } catch (err) {
-                // ignore missing logo
+                // ignore missing watermark
             }
 
-            doc.font('Helvetica-Bold').fontSize(17).text(tituloCertificado, 0, 48, { align: 'center' })
+            doc.font('Helvetica-Bold').fontSize(17).text(tituloCertificado, 0, 76, { align: 'center' })
             doc.moveDown(1.9)
             doc.font('Helvetica-Bold').fontSize(11).text(`Certificado: ${numeroCertificado}`, { align: 'center' })
             doc.text(`Fecha de Emisión: ${fechaEmision}`, { align: 'center' })
@@ -1055,15 +1157,17 @@ export const ReporteInspeccionController = {
 
             const firmaPath = path.resolve('uploads/firma.png')
             const firmaWidth = 150
-            const firmaHeight = 60
+            const firmaHeight = firmaWidth * (130 / 163)
+            const firmaGap = 180
 
-            if (doc.y + firmaHeight + 10 > doc.page.height - doc.page.margins.bottom) {
+            if (doc.y + firmaGap + firmaHeight > doc.page.height - doc.page.margins.bottom) {
                 doc.addPage({ margin: 34, size: 'A4' })
                 doc.font('Helvetica').fontSize(10).text('Realizado por:', blockX, doc.y, { width: textoWidth })
             }
 
+            const firmaX = blockX + ((textoWidth - firmaWidth) / 2)
             try {
-                doc.image(firmaPath, blockX, doc.y + 6, { width: firmaWidth })
+                doc.image(firmaPath, firmaX, doc.y + firmaGap, { width: firmaWidth })
             } catch (err) {
                 // ignore missing signature image
             }
