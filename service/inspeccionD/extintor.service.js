@@ -14,6 +14,7 @@ const buildPreviewUrl = (url) => {
   if (!url) return null;
 
   const key = obtenerKeyDesdeS3Url(url);
+  if (!key) return null;
   return `${process.env.API_URL}/certificado/preview?key=${encodeURIComponent(key)}`;
 };
 
