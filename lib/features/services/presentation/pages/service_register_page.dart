@@ -315,34 +315,26 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
           ? null
           : _numeroSerieController.text.trim();
 
-      // Solo validar duplicados cuando vamos a CREAR uno nuevo. Al vincular (actualizar) no aplica.
+      // Solo validar duplicados de código cuando vamos a CREAR uno nuevo. Al vincular (actualizar) no aplica.
       if (_selectedExtinguisher == null) {
         final duplicates = await _localDataSource.checkDuplicates(
           codeExtintor: codeExtintor,
-          serialNumberNFC: serialNumberNFC,
         );
 
-        if (duplicates['codeExtintor'] == true ||
-            duplicates['serialNumberNFC'] == true) {
+        if (duplicates['codeExtintor'] == true) {
           setState(() {
             _isLoading = false;
           });
 
-          final which = <String>[];
-          if (duplicates['codeExtintor'] == true) which.add('Código extintor');
-          if (duplicates['serialNumberNFC'] == true) {
-            which.add('Número de serie NFC');
-          }
-          final errorMessage =
-              'Ya existe un extintor con el mismo ${which.join(' o ')}.\n\n'
-              'Estos campos deben ser únicos. Si continúa, tendrá problemas al sincronizar.';
-
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
+            const SnackBar(
+              content: Text(
+                'Ya existe un extintor con el mismo código extintor. ' 
+                'El número de serie puede repetirse.',
+              ),
               backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
+              duration: Duration(seconds: 5),
             ),
           );
           return;
@@ -457,14 +449,12 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       if (errorMessage != null &&
           (errorMessage.toLowerCase().contains('unique') ||
               errorMessage.toLowerCase().contains('duplicate') ||
-              errorMessage.toLowerCase().contains('ya existe') ||
-              errorMessage.toLowerCase().contains('serialnumber'))) {
-        // Error de duplicado desde el backend
+              errorMessage.toLowerCase().contains('ya existe'))) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Ya existe un extintor con el mismo número de serie.\n\n'
-              'Nota: El número de serie debe ser único.',
+              'Ya existe un extintor con datos duplicados. ' 
+              'Verifica el código del extintor y vuelve a intentar.',
             ),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 5),
@@ -501,8 +491,8 @@ class _ServiceRegisterPageState extends State<ServiceRegisterPage> {
       } else if (errorStr.toLowerCase().contains('unique') ||
           errorStr.toLowerCase().contains('duplicate')) {
         errorMessage =
-            'Ya existe un extintor con el mismo número de serie.\n\n'
-            'Nota: El número de serie debe ser único.';
+            'Ya existe un extintor con datos duplicados. ' 
+            'Verifica el código del extintor y vuelve a intentar.';
       } else {
         errorMessage = 'Error al registrar extintor: ${e.toString()}';
       }

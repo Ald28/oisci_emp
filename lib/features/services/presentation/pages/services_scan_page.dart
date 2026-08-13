@@ -11,7 +11,6 @@ import '../../domain/entities/service_type.dart';
 import '../../domain/entities/service_extinguisher_entity.dart';
 import '../../domain/usecases/search_extinguisher_usecase.dart';
 import '../../domain/usecases/get_service_extinguishers_by_service_id_usecase.dart';
-import '../../domain/usecases/get_all_extinguishers_usecase.dart';
 import '../../domain/repositories/extinguisher_repository.dart';
 import '../../data/repositories/extinguisher_repository_impl.dart';
 import '../../data/repositories/service_repository_impl.dart';
@@ -49,8 +48,6 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
   _getServiceExtinguishersUseCase = GetServiceExtinguishersByServiceIdUseCase(
     ServiceRepositoryImpl(),
   );
-  late final GetAllExtinguishersUseCase _getAllExtinguishersUseCase =
-      GetAllExtinguishersUseCase(ExtinguisherRepositoryImpl());
   late final ServiceRepository _serviceRepository = ServiceRepositoryImpl();
   late final ExtinguisherRepository _extinguisherRepository =
       ExtinguisherRepositoryImpl();
@@ -83,9 +80,20 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
 
   Future<void> _loadAllAndUnlinkedExtinguishers() async {
     try {
-      // 1. Descarga todos los extintores para cachearlos offline y mostrarlos en el listado
-      final allList = await _getAllExtinguishersUseCase.call();
-      
+      if (_sedeId == null) {
+        if (mounted) {
+          setState(() {
+            _allExtinguishers = [];
+          });
+        }
+        return;
+      }
+
+      // Cargar solo extintores de la sede actual
+      final allList = await _extinguisherRepository.getExtinguishersBySedeId(
+        _sedeId!,
+      );
+
       if (mounted) {
         setState(() {
           _allExtinguishers = allList;
@@ -304,10 +312,24 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
     });
 
     try {
-      // Paso 1: Buscar extintor globalmente (sin filtrar por sede)
+      if (_sedeId == null) {
+        if (!mounted) return;
+        setState(() {
+          _isSearching = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo identificar la sede del servicio.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Paso 1: Buscar extintor filtrando por la sede del servicio
       final extinguisher = await _searchUseCase.call(
         searchTerm,
-        sedeId: null, // Buscar en cualquier sede y cliente
+        sedeId: _sedeId,
       );
 
       if (!mounted) return;
@@ -433,17 +455,14 @@ class _ServicesScanPageState extends State<ServicesScanPage> {
                       ),
                     ),
                   )
-                  : CodeSearchField(
-                      controller: _codeController,
-                      onSearch: _handleManualSearch,
-                      extinguishersList: _allExtinguishers,
-                    ),
+                : CodeSearchField(
+                    controller: _codeController,
+                    onSearch: _handleManualSearch,
+                    extinguishersList: _allExtinguishers,
+                  ),
           ],
         ),
       ),
     );
   }
-
-
-
 }

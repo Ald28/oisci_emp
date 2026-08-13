@@ -717,15 +717,6 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
         (codeExtintor == null || codeExtintor.isEmpty)) {
       return false;
     }
-    if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
-      final r = await db.query(
-        'extintor',
-        where: 'serialNumberNFC = ?',
-        whereArgs: [serialNumberNFC],
-        limit: 1,
-      );
-      if (r.isNotEmpty) return true;
-    }
     if (codeExtintor != null && codeExtintor.isNotEmpty) {
       final r = await db.query(
         'extintor',
@@ -744,9 +735,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
       try {
         final payload =
             jsonDecode(item['payload'] as String) as Map<String, dynamic>;
-        final pSn = payload['serialNumberNFC'] as String?;
         final pCe = payload['codeExtintor'] as String?;
-        if (serialNumberNFC != null && pSn == serialNumberNFC) return true;
         if (codeExtintor != null && pCe != null && pCe == codeExtintor) {
           return true;
         }
@@ -807,9 +796,7 @@ class LocalExtinguisherDataSource implements ExtinguisherDataSource {
     if (codeExtintor != null && codeExtintor.isNotEmpty) {
       await check('codeExtintor', codeExtintor, 'codeExtintor');
     }
-    if (serialNumberNFC != null && serialNumberNFC.isNotEmpty) {
-      await check('serialNumberNFC', serialNumberNFC, 'serialNumberNFC');
-    }
+    // El número de serie NFC puede repetirse, por lo que no se valida como duplicado.
     return result;
   }
 

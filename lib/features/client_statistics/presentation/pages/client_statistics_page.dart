@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/database/app_database.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../home/presentation/widgets/home_app_bar.dart';
@@ -16,15 +20,6 @@ import '../../domain/entities/service_stats_entity.dart';
 import 'equipment_detail_page.dart';
 
 import '../../../../core/network/dio_client.dart';
-import '../../../../core/network/network_checker.dart';
-
-import '../../../services/domain/entities/doc_type.dart';
-import '../../../services/domain/entities/cached_document_entity.dart';
-import '../../../services/domain/usecases/get_documents_by_services_usecase.dart';
-import '../../../services/domain/usecases/download_document_usecase.dart';
-import '../../../services/data/datasources/documents_local_datasource.dart';
-import '../../../services/data/datasources/documents_remote_datasource.dart';
-import '../../../services/data/repositories/documents_repository_impl.dart';
 
 /// Página: Estadísticas del Cliente
 class ClientStatisticsPage extends StatefulWidget {
@@ -50,12 +45,9 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
   late final GetExtinguisherStatsUseCase _getExtinguisherStatsUseCase;
   late final GetServiceStatsUseCase _getServiceStatsUseCase;
 
-  late final GetDocumentsByServicesUseCase _getDocumentsByServicesUseCase;
-  late final DownloadDocumentUseCase _downloadDocumentUseCase;
-
   List<Map<String, dynamic>> _serviciosLocal =
       []; // lista de servicios desde SQLite
-  List<CachedDocumentEntity> _documents = [];
+  Set<int> _serviciosConBaja = {};
   bool _loadingDocs = false;
 
   @override
@@ -72,14 +64,6 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     _getServiceStatsUseCase = GetServiceStatsUseCase(
       StatisticsRepositoryImpl(),
     );
-    final docsRepo = DocumentsRepositoryImpl(
-      networkChecker: NetworkChecker(),
-      remote: DocumentsRemoteDataSource(DioClient()),
-      local: DocumentsLocalDataSource(),
-    );
-
-    _getDocumentsByServicesUseCase = GetDocumentsByServicesUseCase(docsRepo);
-    _downloadDocumentUseCase = DownloadDocumentUseCase(docsRepo);
 
     _loadData();
   }
@@ -242,12 +226,6 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     }
   }
 
-  DateTime _parseDateSafe(String? iso) {
-    if (iso == null || iso.isEmpty)
-      return DateTime.fromMillisecondsSinceEpoch(0);
-    return DateTime.tryParse(iso) ?? DateTime.fromMillisecondsSinceEpoch(0);
-  }
-
   Future<void> _loadDocumentsForServicios() async {
     if (mounted) setState(() => _loadingDocs = true);
 
@@ -255,10 +233,26 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       await _loadServiciosFromSQLite();
 
       final servicioIds = _serviciosLocal.map((s) => s['id'] as int).toList();
-      final docs = await _getDocumentsByServicesUseCase.call(servicioIds);
+      Set<int> serviciosConBaja = {};
+
+      if (servicioIds.isNotEmpty) {
+        final db = await AppDatabase.database;
+        final placeholders = List.filled(servicioIds.length, '?').join(',');
+        final rows = await db.rawQuery('''
+          SELECT DISTINCT se.servicioId
+          FROM mantenimiento_detalle md
+          INNER JOIN servicio_extintor se ON se.id = md.servicioExtintorId
+          WHERE md.bajaExtintor = 1
+          AND se.servicioId IN ($placeholders)
+          ''', servicioIds);
+        serviciosConBaja = rows
+            .map((r) => r['servicioId'])
+            .whereType<int>()
+            .toSet();
+      }
 
       setState(() {
-        _documents = docs;
+        _serviciosConBaja = serviciosConBaja;
         _loadingDocs = false;
       });
     } catch (e) {
@@ -274,47 +268,78 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     }
   }
 
-  CachedDocumentEntity _getDoc(int servicioId, DocType type) {
-    return _documents.firstWhere(
-      (d) => d.servicioId == servicioId && d.docType == type,
-      orElse: () => CachedDocumentEntity(servicioId: servicioId, docType: type),
-    );
+  String _formatDate(String? rawDate) {
+    if (rawDate == null || rawDate.trim().isEmpty) return '-';
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return rawDate;
+
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    return '$day/$month/${parsed.year}';
   }
 
-  Future<void> _downloadDoc(
-    int servicioId,
-    DocType type,
-    DateTime servicioUpdatedAt,
-  ) async {
+  Future<void> _openPdfCertificate(int servicioId) async {
     try {
-      await _downloadDocumentUseCase.call(
-        servicioId: servicioId,
-        type: type,
-        servicioUpdatedAt: servicioUpdatedAt,
+      final response = await DioClient().dio.get<List<int>>(
+        '/reporte/fotografico/$servicioId/download-pdf',
+        options: Options(responseType: ResponseType.bytes),
       );
 
-      // recarga lista para reflejar “Disponible offline”
-      await _loadDocumentsForServicios();
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('El certificado no contiene datos.');
+      }
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('${type.title} descargado ✅')));
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/certificados_pdf');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
       }
+
+      final file = File('${folder.path}/certificados_servicio_$servicioId.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No se pudo descargar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo abrir el certificado: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  void _openPdf(String path) {
-    OpenFilex.open(path);
+  Future<void> _openFotograficoReport(int servicioId) async {
+    try {
+      final response = await DioClient().dio.get<List<int>>(
+        '/reporte/fotografico/$servicioId/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('El reporte no contiene datos.');
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/reportes_pdf');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+
+      final file = File('${folder.path}/reporte_servicio_$servicioId.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo abrir el reporte: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   /// Obtener distribución de tipos de extintores desde estadísticas
@@ -343,7 +368,7 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     if (ext.type != null && ext.agent != null) {
       final type = ext.type!.trim();
       final agent = ext.agent!.trim();
-      
+
       if (type.toLowerCase() == agent.toLowerCase()) {
         return type;
       }
@@ -353,7 +378,7 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       if (agent.toLowerCase().contains(type.toLowerCase())) {
         return agent;
       }
-      
+
       return '$type $agent';
     } else if (ext.type != null) {
       return ext.type!;
@@ -1025,11 +1050,11 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
           final s = _serviciosLocal[index];
           final servicioId = s['id'] as int;
           final typeService = (s['type'] ?? '').toString();
-          final dateStart = (s['dateStart'] ?? '').toString();
-          final updatedAt = _parseDateSafe((s['updatedAt'] ?? '').toString());
-
-          final inspeccionDoc = _getDoc(servicioId, DocType.inspeccionMensual);
-          final fotoDoc = _getDoc(servicioId, DocType.fotografico);
+          final dateStart = _formatDate((s['dateStart'] ?? '').toString());
+          final dateEnd = _formatDate((s['dateEnd'] ?? '').toString());
+          final showBajaCertificate =
+              _serviciosConBaja.contains(servicioId) ||
+              typeService.toUpperCase().contains('BAJA');
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -1040,39 +1065,117 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                 children: [
                   ListTile(
                     title: Text(
-                      'Servicio #$servicioId - $typeService',
+                      'Servicio #$servicioId${typeService.isNotEmpty ? ' - $typeService' : ''}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text('Inicio: $dateStart'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Fecha de realización: $dateStart'),
+                        Text('Fecha fin: $dateEnd'),
+                      ],
+                    ),
                   ),
                   const Divider(height: 1),
 
-                  _docTile(
-                    title: 'Certificado: Inspección mensual',
-                    available: inspeccionDoc.isAvailableOffline,
-                    onDownload: () => _downloadDoc(
-                      servicioId,
-                      DocType.inspeccionMensual,
-                      updatedAt,
-                    ),
-                    onOpen: inspeccionDoc.isAvailableOffline
-                        ? () => _openPdf(inspeccionDoc.filePath!)
-                        : null,
+                  _certificateTile(
+                    title: 'Certificado de operatividad',
+                    onView: () => _openPdfCertificate(servicioId),
                   ),
 
                   const Divider(height: 1),
 
-                  _docTile(
-                    title: 'Certificado: Reporte fotográfico',
-                    available: fotoDoc.isAvailableOffline,
-                    onDownload: () => _downloadDoc(
-                      servicioId,
-                      DocType.fotografico,
-                      updatedAt,
+                  _certificateTile(
+                    title: 'Certificado de prueba hidrostática',
+                    onView: () => _openPdfCertificate(servicioId),
+                  ),
+
+                  if (showBajaCertificate) ...[
+                    const Divider(height: 1),
+                    _certificateTile(
+                      title: 'Certificado de baja',
+                      onView: () => _openPdfCertificate(servicioId),
                     ),
-                    onOpen: fotoDoc.isAvailableOffline
-                        ? () => _openPdf(fotoDoc.filePath!)
-                        : null,
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _certificateTile({
+    required String title,
+    required VoidCallback onView,
+  }) {
+    return ListTile(
+      leading: const Icon(Icons.description_outlined, color: Color(0xFFE84343)),
+      title: Text(title),
+      trailing: IconButton(
+        icon: const Icon(Icons.remove_red_eye_outlined),
+        onPressed: onView,
+      ),
+    );
+  }
+
+  Widget _buildReportsTab() {
+    if (_loadingDocs) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFE84343)),
+      );
+    }
+
+    if (_serviciosLocal.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay servicios guardados para mostrar reportes',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadDocumentsForServicios,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _serviciosLocal.length,
+        itemBuilder: (context, index) {
+          final s = _serviciosLocal[index];
+          final servicioId = s['id'] as int;
+          final dateStart = _formatDate((s['dateStart'] ?? '').toString());
+          final dateEnd = _formatDate((s['dateEnd'] ?? '').toString());
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    title: Text(
+                      'Servicio #$servicioId',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Fecha inicio: $dateStart'),
+                        Text('Fecha fin: $dateEnd'),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _reportTile(
+                    title: 'Reporte de prueba hidrostática',
+                    onView: () => _openFotograficoReport(servicioId),
+                  ),
+                  const Divider(height: 1),
+                  _reportTile(
+                    title: 'Reporte de prueba fotográfica',
+                    onView: () => _openFotograficoReport(servicioId),
                   ),
                 ],
               ),
@@ -1083,34 +1186,13 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     );
   }
 
-  Widget _docTile({
-    required String title,
-    required bool available,
-    required VoidCallback onDownload,
-    required VoidCallback? onOpen,
-  }) {
+  Widget _reportTile({required String title, required VoidCallback onView}) {
     return ListTile(
-      leading: Icon(
-        Icons.picture_as_pdf,
-        color: available ? Colors.green : Colors.grey,
-      ),
+      leading: const Icon(Icons.description_outlined, color: Color(0xFFE84343)),
       title: Text(title),
-      subtitle: Text(available ? 'Disponible offline' : 'No descargado'),
-      trailing: Wrap(
-        spacing: 8,
-        children: [
-          IconButton(icon: const Icon(Icons.download), onPressed: onDownload),
-          IconButton(icon: const Icon(Icons.open_in_new), onPressed: onOpen),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReportsTab() {
-    return const Center(
-      child: Text(
-        'Reportes se implementarán aquí',
-        style: TextStyle(color: Colors.grey),
+      trailing: IconButton(
+        icon: const Icon(Icons.remove_red_eye_outlined),
+        onPressed: onView,
       ),
     );
   }
