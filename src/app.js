@@ -36,6 +36,7 @@ import listCertificadoRoutes from '../routes/certificado/certificados.routes.js'
 
 import reporteRoutes from '../routes/reporte/inspeccion.routes.js';
 import reporteMensualRoutes from '../routes/reporte/inspeccionMensual.routes.js';
+import mantenimientoAnualRoutes from '../routes/reporte/mantenimientoAnual.routes.js';
 import reporteCreate from '../routes/reporte/reportes.routes.js';
 import listReporte from '../routes/reporte/list.routes.js';
 
@@ -125,6 +126,7 @@ app.use('/certificados', listCertificadoRoutes);
 
 app.use('/reporte', reporteRoutes);
 app.use('/reporte', reporteMensualRoutes);
+app.use('/reporte', mantenimientoAnualRoutes);
 app.use('/reporte', reporteCreate);
 app.use('/reporte', listReporte);
 
