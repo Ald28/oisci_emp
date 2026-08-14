@@ -207,4 +207,35 @@ router.get(
     ReporteInspeccionMensualController.descargar
 )
 
+/**
+ * @swagger
+ * /reporte/inspeccion-mensual/{servicioId}/download-excel:
+ *   get:
+ *     summary: Descargar reporte mensual en Excel
+ *     tags:
+ *       - Reporte Inspección Mensual
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: servicioId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Excel generado correctamente
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get(
+    '/inspeccion-mensual/:servicioId/download-excel',
+    authenticate,
+    authorize(['admin', 'tecnico']),
+    ReporteInspeccionMensualController.descargarExcel
+)
+
 export default router

@@ -26,6 +26,7 @@ export const ReporteInspeccionMensualService = {
             instalacion: servicio.sede.name_sede,
             direccion: servicio.sede.address,
             ciudad: servicio.sede.city,
+            responsable: servicio.sede.manager_name,
 
             mes: toPeruDateTime(servicio.dateStart),
 
