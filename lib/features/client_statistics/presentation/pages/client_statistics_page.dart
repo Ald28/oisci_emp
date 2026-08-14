@@ -347,8 +347,7 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
   Future<void> _openInspectionReport(int servicioId) async {
     try {
       final response = await DioClient().dio.get<List<int>>(
-        '/extintores/excel',
-        queryParameters: {'format': 'pdf', 'serviceId': servicioId},
+        '/reporte/inspeccion-mensual/$servicioId/download',
         options: Options(responseType: ResponseType.bytes),
       );
 
@@ -373,6 +372,78 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No se pudo abrir el reporte de inspección: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openInspectionExcel(int servicioId) async {
+    try {
+      final response = await DioClient().dio.get<List<int>>(
+        '/reporte/inspeccion-mensual/$servicioId/download-excel',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('El reporte de inspección en Excel no contiene datos.');
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/reportes_excel');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+
+      final file = File(
+        '${folder.path}/reporte_inspeccion_servicio_$servicioId.xlsx',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo abrir el reporte de inspección en Excel: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openAnnualMaintenanceReport(int servicioId) async {
+    try {
+      final response = await DioClient().dio.get<List<int>>(
+        '/reporte/mantenimientos-anuales/$servicioId/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('El reporte de mantenimientos anuales no contiene datos.');
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/reportes_pdf');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+
+      final file = File(
+        '${folder.path}/mantenimientos_anuales_servicio_$servicioId.pdf',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo abrir el reporte de mantenimientos anuales: $e',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -1211,13 +1282,23 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                   ),
                   const Divider(height: 1),
                   _reportTile(
-                    title: 'Reporte de Inpección',
+                    title: 'Reporte de Inspección PDF',
                     onView: () => _openInspectionReport(servicioId),
                   ),
                   const Divider(height: 1),
                   _reportTile(
-                    title: 'Reporte de prueba fotográfica',
+                    title: 'Reporte de Inspección Excel',
+                    onView: () => _openInspectionExcel(servicioId),
+                  ),
+                  const Divider(height: 1),
+                  _reportTile(
+                    title: 'Reporte Fotográfico',
                     onView: () => _openFotograficoReport(servicioId),
+                  ),
+                  const Divider(height: 1),
+                  _reportTile(
+                    title: 'Reporte de Mantenimientos Anuales',
+                    onView: () => _openAnnualMaintenanceReport(servicioId),
                   ),
                 ],
               ),
