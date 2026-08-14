@@ -4,14 +4,14 @@ export const DeleteExtintores = {
   softDeleteExtintor(id) {
     return prisma.extintor.update({
       where: { id },
-      data: { active: false },
+      data: { historic: 1 },
     });
   },
 
   restoreExtintor(id) {
     return prisma.extintor.update({
       where: { id },
-      data: { active: true },
+      data: { historic: 0 },
     });
   },
 };

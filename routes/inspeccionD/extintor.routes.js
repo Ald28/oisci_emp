@@ -217,6 +217,19 @@ router.get("/excel", exportExtintoresExcel);
  *     responses:
  *       200:
  *         description: Extintor desactivado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     historic:
+ *                       type: integer
+ *                       example: 1
  *       400:
  *         description: ID inválido
  *       401:
@@ -252,6 +265,19 @@ router.delete(
  *     responses:
  *       200:
  *         description: Extintor restaurado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     historic:
+ *                       type: integer
+ *                       example: 0
  *       400:
  *         description: ID inválido
  *       401:

@@ -272,8 +272,7 @@ model Extintor {
   cylinderNumber   String?    @db.VarChar(45)
   location         String?    @db.VarChar(45)
   status           StatusEnum?
-  historic         Int?
-  active           Boolean    @default(true)
+  historic         Int        @default(0)
 
   pressure         String?    @db.VarChar(255)
   brand            String?    @db.VarChar(255)
