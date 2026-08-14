@@ -596,10 +596,8 @@ export const ReporteInspeccionController = {
 
             doc.pipe(res)
 
-            const logoPath = path.resolve('uploads/logo.png')
             try {
                 doc.image(
-                    logoPath,
                     doc.page.margins.left,
                     20,
                     { width: 100 },
@@ -612,14 +610,15 @@ export const ReporteInspeccionController = {
             doc.font('Helvetica-Bold').fontSize(12).text(
                 'REPORTE FOTOGRÁFICO DE\nEXTINTORES CONTRA INCENDIOS',
                 doc.page.margins.left,
-                36,
+                72,
                 {
                     width: titleWidth,
                     align: 'center',
                 },
             )
 
-            const infoY = 78
+            // Mantiene el bloque de datos debajo del título desplazado.
+            const infoY = 112
             const tableHorizontalGap = 6
             const labelX = doc.page.margins.left + tableHorizontalGap
             const valueX = labelX + 108
