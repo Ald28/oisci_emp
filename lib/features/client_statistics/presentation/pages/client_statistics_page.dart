@@ -211,15 +211,17 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
     if (widget.sede != null) {
       _serviciosLocal = await db.query(
         'servicio',
-        where: 'sedeId = ?',
-        whereArgs: [widget.sede!.id],
+        where: 'sedeId = ? AND status = ?',
+        whereArgs: [widget.sede!.id, 'FINALIZADO'],
         orderBy: 'dateStart DESC',
         limit: 30,
       );
     } else {
-      // si no hay sede, muestra igual los últimos 30 servicios de todas las sedes cacheadas
+      // si no hay sede, muestra igual los últimos 30 servicios finalizados de todas las sedes cacheadas
       _serviciosLocal = await db.query(
         'servicio',
+        where: 'status = ?',
+        whereArgs: ['FINALIZADO'],
         orderBy: 'dateStart DESC',
         limit: 30,
       );
@@ -336,6 +338,41 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No se pudo abrir el reporte: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openInspectionReport(int servicioId) async {
+    try {
+      final response = await DioClient().dio.get<List<int>>(
+        '/extintores/excel',
+        queryParameters: {'format': 'pdf', 'serviceId': servicioId},
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('El reporte de inspección no contiene datos.');
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}/reportes_pdf');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+
+      final file = File(
+        '${folder.path}/reporte_inspeccion_servicio_$servicioId.pdf',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo abrir el reporte de inspección: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1032,10 +1069,15 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       );
     }
 
-    if (_serviciosLocal.isEmpty) {
+    final serviciosMantenimiento = _serviciosLocal.where((servicio) {
+      final tipo = (servicio['type'] ?? '').toString().trim().toUpperCase();
+      return tipo == 'MANTENIMIENTO';
+    }).toList();
+
+    if (serviciosMantenimiento.isEmpty) {
       return const Center(
         child: Text(
-          'No hay servicios guardados para mostrar certificados',
+          'No hay servicios de mantenimiento para mostrar certificados',
           style: TextStyle(color: Colors.grey),
         ),
       );
@@ -1045,9 +1087,9 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
       onRefresh: _loadDocumentsForServicios,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: _serviciosLocal.length,
+        itemCount: serviciosMantenimiento.length,
         itemBuilder: (context, index) {
-          final s = _serviciosLocal[index];
+          final s = serviciosMantenimiento[index];
           final servicioId = s['id'] as int;
           final typeService = (s['type'] ?? '').toString();
           final dateStart = _formatDate((s['dateStart'] ?? '').toString());
@@ -1169,8 +1211,8 @@ class _ClientStatisticsPageState extends State<ClientStatisticsPage>
                   ),
                   const Divider(height: 1),
                   _reportTile(
-                    title: 'Reporte de prueba hidrostática',
-                    onView: () => _openFotograficoReport(servicioId),
+                    title: 'Reporte de Inpección',
+                    onView: () => _openInspectionReport(servicioId),
                   ),
                   const Divider(height: 1),
                   _reportTile(
