@@ -8,7 +8,11 @@ const router = Router()
  * @swagger
  * /users/clients/{id}:
  *   delete:
- *     summary: Eliminar cliente
+ *     summary: Desactivar cliente y todas sus sedes
+ *     description: |
+ *       Realiza un borrado lógico dentro de una transacción:
+ *       establece `Client.active = false` y desactiva todas las sedes
+ *       relacionadas mediante `Sede.active = false`.
  *     tags: [Clients]
  *     security:
  *       - bearerAuth: []
@@ -21,7 +25,28 @@ const router = Router()
  *           type: integer
  *     responses:
  *       200:
- *         description: Cliente eliminado correctamente
+ *         description: Cliente y sedes desactivados correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cliente eliminado correctamente
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     active:
+ *                       type: boolean
+ *                       example: false
+ *                     sedesDesactivadas:
+ *                       type: integer
+ *                       description: Cantidad de sedes activas que fueron desactivadas
+ *                       example: 2
  *       401:
  *         description: Token inválido o no enviado
  *       403:
@@ -35,7 +60,11 @@ router.delete('/clients/:id', authenticate, authorize(['admin']), deleteClient)
  * @swagger
  * /users/clients/{id}/restore:
  *   patch:
- *     summary: Restaurar cliente eliminado
+ *     summary: Activar cliente y todas sus sedes
+ *     description: |
+ *       Revierte el borrado lógico dentro de una transacción:
+ *       establece `Client.active = true` y activa todas las sedes
+ *       relacionadas mediante `Sede.active = true`.
  *     tags: [Clients]
  *     security:
  *       - bearerAuth: []
@@ -48,7 +77,28 @@ router.delete('/clients/:id', authenticate, authorize(['admin']), deleteClient)
  *           type: integer
  *     responses:
  *       200:
- *         description: Cliente restaurado correctamente
+ *         description: Cliente y sedes activados correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cliente restaurado correctamente
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     active:
+ *                       type: boolean
+ *                       example: true
+ *                     sedesActivadas:
+ *                       type: integer
+ *                       description: Cantidad de sedes inactivas que fueron activadas
+ *                       example: 2
  *       401:
  *         description: Token inválido o no enviado
  *       403:
