@@ -210,51 +210,82 @@ export const ListRepository = {
     },
 
     async listWithFilters(filters = {}) {
-        const where = {};
+        const conditions = [];
 
         if (filters.hasCodeExtintor === true) {
-            where.AND = [
+            conditions.push(
                 { codeExtintor: { not: null } },
                 { codeExtintor: { not: "" } }
-            ];
+            );
         }
 
         if (filters.hasCodeExtintor === false) {
-            where.OR = [
-                { codeExtintor: null },
-                { codeExtintor: "" }
-            ];
+            conditions.push({
+                OR: [
+                    { codeExtintor: null },
+                    { codeExtintor: "" }
+                ]
+            });
         }
 
         if (filters.hasSerialNumberNFC === true) {
-            where.AND = [
-                ...(where.AND || []),
+            conditions.push(
                 { serialNumberNFC: { not: null } },
                 { serialNumberNFC: { not: "" } }
-            ];
+            );
         }
 
         if (filters.hasSerialNumberNFC === false) {
-            where.OR = [
-                ...(where.OR || []),
-                { serialNumberNFC: null },
-                { serialNumberNFC: "" }
-            ];
+            conditions.push({
+                OR: [
+                    { serialNumberNFC: null },
+                    { serialNumberNFC: "" }
+                ]
+            });
         }
 
-        return prisma.extintor.findMany({
-            where,
-            include: {
-                usuarioCreador: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
+        if (filters.sedeId) {
+            conditions.push({ sedeId: filters.sedeId });
+        }
+
+        if (filters.clientId) {
+            conditions.push({ sede: { clientId: filters.clientId } });
+        }
+
+        const where = conditions.length ? { AND: conditions } : {};
+        const skip = (filters.page - 1) * filters.limit;
+
+        const [total, extintores] = await prisma.$transaction([
+            prisma.extintor.count({ where }),
+            prisma.extintor.findMany({
+                where,
+                skip,
+                take: filters.limit,
+                orderBy: { id: 'asc' },
+                include: {
+                    usuarioCreador: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    },
+                    sede: {
+                        include: {
+                            client: {
+                                select: {
+                                    id: true,
+                                    razonSocial: true,
+                                    active: true
+                                }
+                            }
+                        }
                     }
-                },
-                sede: true
-            }
-        });
+                }
+            })
+        ]);
+
+        return { total, extintores };
     },
 
     async getExtintoresDetalleByServicio(servicioId) {

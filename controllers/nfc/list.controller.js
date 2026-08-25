@@ -213,14 +213,15 @@ export async function updateExtinguisherController(req, res) {
 
 export async function listExtintoresWithFiltersController(req, res) {
     try {
-        const extintores = await listExtintoresWithFiltersService(req.query);
+        const result = await listExtintoresWithFiltersService(req.query);
 
         return res.status(200).json({
             ok: true,
-            data: extintores
+            ...result
         });
     } catch (error) {
-        return res.status(500).json({
+        const invalidQuery = /^(page|sedeId|clientId) debe/.test(error.message);
+        return res.status(invalidQuery ? 400 : 500).json({
             ok: false,
             message: error.message
         });

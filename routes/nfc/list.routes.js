@@ -239,10 +239,12 @@ router.get('/list-extintor-number', listExtintorNumberController);
  *   get:
  *     summary: Listar extintores con filtros opcionales
  *     description: |
- *       Permite listar extintores aplicando filtros opcionales.
- *       Si no se envía ningún parámetro, retorna todos los extintores.
+ *       Retorna los extintores paginados de 10 en 10.
+ *       Si no se envía `page`, devuelve la primera página.
  *
  *       Filtros disponibles:
+ *       - sedeId: extintores pertenecientes a una sede.
+ *       - clientId: extintores de todas las sedes de un cliente.
  *       - hasCodeExtintor=true → solo extintores con codeExtintor
  *       - hasCodeExtintor=false → solo extintores sin codeExtintor
  *       - hasSerialNumberNFC=true → solo extintores con serialNumberNFC
@@ -254,6 +256,34 @@ router.get('/list-extintor-number', listExtintorNumberController);
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página; cada página contiene hasta 10 registros
+ *         example: 1
+ *
+ *       - in: query
+ *         name: sedeId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Filtrar por ID de sede
+ *         example: 1
+ *
+ *       - in: query
+ *         name: clientId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Filtrar por ID de cliente a través de sus sedes
+ *         example: 1
+ *
  *       - in: query
  *         name: hasCodeExtintor
  *         required: false
@@ -312,6 +342,29 @@ router.get('/list-extintor-number', listExtintorNumberController);
  *                       sedeId:
  *                         type: integer
  *                         example: 1
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 10
+ *                     total:
+ *                       type: integer
+ *                       example: 24
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 3
+ *                     hasNextPage:
+ *                       type: boolean
+ *                       example: true
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: page, sedeId o clientId inválido
  *       401:
  *         description: No autenticado
  *       403:

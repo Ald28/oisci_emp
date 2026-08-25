@@ -69,7 +69,21 @@ export async function updateExtinguisherService(extintorId, data) {
 }
 
 export async function listExtintoresWithFiltersService(query) {
-    const filters = {};
+    const page = query.page === undefined ? 1 : Number(query.page);
+    const sedeId = query.sedeId === undefined ? null : Number(query.sedeId);
+    const clientId = query.clientId === undefined ? null : Number(query.clientId);
+
+    if (!Number.isInteger(page) || page < 1) {
+        throw new Error('page debe ser un entero mayor o igual a 1');
+    }
+    if (sedeId !== null && (!Number.isInteger(sedeId) || sedeId < 1)) {
+        throw new Error('sedeId debe ser un entero mayor o igual a 1');
+    }
+    if (clientId !== null && (!Number.isInteger(clientId) || clientId < 1)) {
+        throw new Error('clientId debe ser un entero mayor o igual a 1');
+    }
+
+    const filters = { page, limit: 10, sedeId, clientId };
 
     if (query.hasCodeExtintor !== undefined) {
         filters.hasCodeExtintor = query.hasCodeExtintor === 'true';
@@ -79,8 +93,20 @@ export async function listExtintoresWithFiltersService(query) {
         filters.hasSerialNumberNFC = query.hasSerialNumberNFC === 'true';
     }
 
-    const extintores = await ListRepository.listWithFilters(filters);
-    return extintores.map(mapExtintorPhoto);
+    const { total, extintores } = await ListRepository.listWithFilters(filters);
+    const totalPages = Math.ceil(total / filters.limit);
+
+    return {
+        data: extintores.map(mapExtintorPhoto),
+        pagination: {
+            page,
+            limit: filters.limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+        }
+    };
 }
 
 export const servicioExtintorService = {
