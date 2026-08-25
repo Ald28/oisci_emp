@@ -1,8 +1,58 @@
 import { Router } from 'express'
-import { registerUser } from '../../controllers/client/register.controller.js'
+import {
+    registerTechnician,
+    registerUser,
+} from '../../controllers/client/register.controller.js'
 import { authenticate, authorize } from '../../middleware/auth.middleware.js'
 
 const router = Router()
+
+/**
+ * @swagger
+ * /users/technicians:
+ *   post:
+ *     summary: Crear un técnico sin enviar el ID del rol
+ *     tags: [Technicians]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Juan Pérez
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: juan.perez@empresa.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: "123456"
+ *     responses:
+ *       201:
+ *         description: Técnico creado correctamente
+ *       400:
+ *         description: Datos inválidos o email ya registrado
+ *       401:
+ *         description: Token inválido o no enviado
+ *       403:
+ *         description: Solo un administrador puede crear técnicos
+ */
+router.post(
+    '/technicians',
+    authenticate,
+    authorize(['admin']),
+    registerTechnician,
+)
 
 /**
  * @swagger

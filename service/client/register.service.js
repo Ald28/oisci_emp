@@ -2,6 +2,39 @@ import bcrypt from 'bcrypt'
 import { RegisterRepository } from '../../repository/client/register.repository.js'
 import { prisma } from '../../database/client.mjs'
 
+export async function registerTechnicianService(adminUser, technicianData) {
+    const name = technicianData.name?.trim()
+    const email = technicianData.email?.trim().toLowerCase()
+    const password = technicianData.password
+
+    if (!name || !email || !password) {
+        throw new Error('Nombre, email y contraseña son obligatorios')
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new Error('El email no es válido')
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+        throw new Error('La contraseña debe tener al menos 6 caracteres')
+    }
+
+    const technicianRole = await prisma.role.findUnique({
+        where: { name: 'tecnico' },
+    })
+
+    if (!technicianRole) {
+        throw new Error('El rol de técnico no está configurado')
+    }
+
+    return registerUserService(adminUser, {
+        name,
+        email,
+        password,
+        roleId: technicianRole.id,
+    })
+}
+
 export async function registerUserService(adminUser, userData) {
 
     if (adminUser.role !== 'admin') {
