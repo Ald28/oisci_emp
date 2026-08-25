@@ -6,6 +6,7 @@ import {
 } from "../../controllers/inspeccionD/extintor.controller.js";
 import {
   softDeleteExtintorController,
+  softDeleteManyExtintoresController,
   restoreExtintorController,
 } from "../../controllers/inspeccionD/delete.controller.js";
 import { authenticate, authorize } from "../../middleware/auth.middleware.js";
@@ -197,6 +198,76 @@ router.get("/pdf", getExtintor);
  *         description: Error del servidor
  */
 router.get("/excel", exportExtintoresExcel);
+
+/**
+ * @swagger
+ * /extintores/soft-delete:
+ *   delete:
+ *     summary: Eliminar lógicamente varios extintores
+ *     description: Recibe un arreglo de IDs y establece `historic = 1` en todos los extintores encontrados.
+ *     tags: [Reporte Inspección]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             minItems: 1
+ *             uniqueItems: true
+ *             items:
+ *               type: integer
+ *               minimum: 1
+ *           example: [58, 73, 80]
+ *     responses:
+ *       200:
+ *         description: Resultado del borrado lógico masivo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Extintores eliminados lógicamente
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     solicitados:
+ *                       type: integer
+ *                       example: 3
+ *                     eliminados:
+ *                       type: integer
+ *                       example: 2
+ *                     idsEliminados:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                     idsYaEliminados:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                     idsNoEncontrados:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *       400:
+ *         description: El cuerpo no es un arreglo válido de IDs
+ *       401:
+ *         description: No autenticado
+ *       403:
+ *         description: No autorizado
+ */
+router.delete(
+  "/soft-delete",
+  authenticate,
+  authorize(["admin"]),
+  softDeleteManyExtintoresController,
+);
 
 /**
  * @swagger
